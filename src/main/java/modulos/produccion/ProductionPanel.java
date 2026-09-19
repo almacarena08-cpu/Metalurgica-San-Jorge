@@ -1,7 +1,11 @@
 package modulos.produccion;
 
-import modulos.common.ApiClient;
-import modulos.common.JsonUtil;
+import modulos.common.dao.ApiResult;
+import modulos.common.EmployeeSession;
+import modulos.common.ModuleLogin;
+import modulos.common.SettingsDialog;
+import modulos.common.UiTheme;
+import modulos.produccion.dao.ProduccionDao;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -27,27 +31,65 @@ import java.util.Map;
 public class ProductionPanel {
     private static int usuarioId = 2;
     private static final List<Map<String, String>> maquinas = new ArrayList<>();
+    private static final ProduccionDao produccionDao = new ProduccionDao();
 
     public static void openProduccion() {
-        openProduccion(2);
+        EmployeeSession session = ModuleLogin.authenticate("Produccion", "Produccion");
+        if (session != null) {
+            openAuthenticated(session);
+        }
     }
 
-    public static void openProduccion(int idUsuario) {
-        usuarioId = idUsuario;
-        SwingUtilities.invokeLater(ProductionPanel::cargarMain);
+    public static void openAuthenticated(EmployeeSession session) {
+        usuarioId = session.getId();
+        SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static void cargarMain() {
+    public static JPanel createView(EmployeeSession session) {
+        usuarioId = session.getId();
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 12));
+        tabs.addTab("Ordenes recibidas", crearPanelOrdenes());
+        tabs.addTab("Historial de avance", crearPanelHistorial());
+        tabs.addTab("Aviso a mantenimiento", crearPanelMantenimiento());
+        JPanel shell = UiTheme.shell("Produccion", "Panel de Produccion", session.getNombreCompleto(), entry -> {
+            if ("Produccion".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+                tabs.setSelectedIndex(0);
+            } else if ("Mantenimiento".equals(entry)) {
+                tabs.setSelectedIndex(2);
+            } else if ("Configuracion".equals(entry)) {
+                SettingsDialog.open(session.getId());
+            } else if (!"Administracion".equals(entry)) {
+                JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
+        return shell;
+    }
+
+    private static void cargarMain(String employeeName) {
         JFrame ventana = new JFrame("MetalGest - Produccion");
-        ventana.setSize(1050, 650);
+        UiTheme.configureWindow(ventana);
         ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ventana.setLocationRelativeTo(null);
 
         JTabbedPane tabs = new JTabbedPane();
+        tabs.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 12));
         tabs.addTab("Ordenes recibidas", crearPanelOrdenes());
         tabs.addTab("Historial de avance", crearPanelHistorial());
         tabs.addTab("Aviso a mantenimiento", crearPanelMantenimiento());
-        ventana.add(tabs);
+        JPanel shell = UiTheme.shell("Produccion", "Panel de Produccion", employeeName, entry -> {
+            if ("Produccion".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+                tabs.setSelectedIndex(0);
+            } else if ("Mantenimiento".equals(entry)) {
+                tabs.setSelectedIndex(2);
+            } else if (!"Administracion".equals(entry)) {
+                JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        JPanel content = UiTheme.content(shell);
+        content.add(tabs, BorderLayout.CENTER);
+        ventana.add(shell);
 
         ventana.setVisible(true);
     }
@@ -62,7 +104,9 @@ public class ProductionPanel {
             }
         };
         JTable tabla = new JTable(modelo);
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        UiTheme.styleTable(tabla);
+        panel.setBackground(UiTheme.BACKGROUND);
+        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JPanel form = new JPanel(new GridLayout(2, 5, 8, 8));
         JTextField cantidad = new JTextField("0");
@@ -70,6 +114,11 @@ public class ProductionPanel {
         JTextArea observaciones = new JTextArea(3, 24);
         JButton registrar = new JButton("Registrar avance");
         JButton recargar = new JButton("Recargar");
+        UiTheme.styleInput(cantidad);
+        UiTheme.styleInput(avance);
+        UiTheme.styleInput(observaciones);
+        UiTheme.styleButton(registrar, true);
+        UiTheme.styleButton(recargar, false);
         form.add(new JLabel("Cantidad producida"));
         form.add(new JLabel("Avance %"));
         form.add(new JLabel("Observaciones"));
@@ -89,6 +138,10 @@ public class ProductionPanel {
             int row = tabla.getSelectedRow();
             if (row < 0) {
                 mostrarAviso("Selecciona una orden de trabajo.");
+                return;
+            }
+            if (!esNumeroNoNegativo(cantidad.getText()) || !esAvanceValido(avance.getText())) {
+                mostrarAviso("Ingresa una cantidad no negativa y un avance entre 0 y 100.");
                 return;
             }
             Map<String, String> data = new LinkedHashMap<>();
@@ -117,8 +170,11 @@ public class ProductionPanel {
             }
         };
         JTable tabla = new JTable(modelo);
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        UiTheme.styleTable(tabla);
+        panel.setBackground(UiTheme.BACKGROUND);
+        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
         JButton recargar = new JButton("Recargar historial");
+        UiTheme.styleButton(recargar, false);
         panel.add(recargar, BorderLayout.SOUTH);
         recargarHistorial(modelo);
         recargar.addActionListener(e -> recargarHistorial(modelo));
@@ -135,12 +191,17 @@ public class ProductionPanel {
             }
         };
         JTable tabla = new JTable(modelo);
-        panel.add(new JScrollPane(tabla), BorderLayout.CENTER);
+        UiTheme.styleTable(tabla);
+        panel.setBackground(UiTheme.BACKGROUND);
+        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JPanel form = new JPanel(new BorderLayout(8, 8));
         JTextArea problema = new JTextArea(4, 50);
         JButton reportar = new JButton("Reportar falla");
         JButton recargar = new JButton("Recargar maquinas");
+        UiTheme.styleInput(problema);
+        UiTheme.styleButton(reportar, true);
+        UiTheme.styleButton(recargar, false);
         JPanel botones = new JPanel();
         botones.add(reportar);
         botones.add(recargar);
@@ -226,7 +287,16 @@ public class ProductionPanel {
 
     private static List<Map<String, String>> getRows(String action) {
         try {
-            return JsonUtil.parseArray(ApiClient.get(action));
+            if ("ordenes_list".equals(action)) {
+                return produccionDao.listarOrdenes();
+            }
+            if ("produccion_list".equals(action)) {
+                return produccionDao.listarAvances();
+            }
+            if ("maquinas_list".equals(action)) {
+                return produccionDao.listarMaquinas();
+            }
+            return java.util.Collections.emptyList();
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "No se pudo conectar con MetalGest: " + e.getMessage(), "Conexion", JOptionPane.ERROR_MESSAGE);
             return java.util.Collections.emptyList();
@@ -235,12 +305,19 @@ public class ProductionPanel {
 
     private static boolean postOk(String action, Map<String, String> data, String okMessage) {
         try {
-            String response = ApiClient.post(action, data);
-            if (ApiClient.isSuccess(response)) {
+            ApiResult result;
+            if ("produccion_register".equals(action)) {
+                result = produccionDao.registrarAvance(data);
+            } else if ("mantenimiento_report".equals(action)) {
+                result = produccionDao.reportarFalla(data);
+            } else {
+                return false;
+            }
+            if (result.isSuccess()) {
                 JOptionPane.showMessageDialog(null, okMessage, "MetalGest", JOptionPane.INFORMATION_MESSAGE);
                 return true;
             }
-            JOptionPane.showMessageDialog(null, "La operacion no pudo completarse: " + response, "MetalGest", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, "La operacion no pudo completarse: " + result.getBody(), "MetalGest", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "No se pudo conectar con MetalGest: " + e.getMessage(), "Conexion", JOptionPane.ERROR_MESSAGE);
         }
@@ -249,6 +326,23 @@ public class ProductionPanel {
 
     private static void mostrarAviso(String mensaje) {
         JOptionPane.showMessageDialog(null, mensaje, "MetalGest", JOptionPane.WARNING_MESSAGE);
+    }
+
+    private static boolean esNumeroNoNegativo(String valor) {
+        try {
+            return Integer.parseInt(valor.trim()) >= 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private static boolean esAvanceValido(String valor) {
+        try {
+            int porcentaje = Integer.parseInt(valor.trim());
+            return porcentaje >= 0 && porcentaje <= 100;
+        } catch (NumberFormatException e) {
+            return false;
+        }
     }
 
     public static void main(String[] args) {
