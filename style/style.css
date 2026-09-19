@@ -1,0 +1,541 @@
+/* Reset y estilos base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Paleta de colores solicitada:
+   - Gris Mate (60%)     : Usado en fondos principales, tarjetas y textos neutros.
+   - Tonos oscuros (30%) : Usado en el header, footer y bordes o contenedores secundarios.
+   - Naranja (10%)       : Usado en botones (CTAs) y detalles de resalte (hover).
+*/
+:root {
+    --gris-mate: #14171d ; 
+    --gris-oscuro:#1e232a; /* Variante para el fondo principal */
+
+    --azul-petroleo: #000000;
+    --azul-petroleo-oscuro: #1e232a;
+
+    --naranja: #ff5722;
+    --naranja-hover: #ff6d40;
+    --amarillo-hover: #FFFF00; /* Variante más clara para hover */
+
+    --texto-claro: #d1d5db;
+    --texto-blanco: #ffffff;
+}
+
+body {
+    background-color: var(--gris-oscuro);
+    color: var(--texto-claro);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ================== AZUL PETRÓLEO (30%) ================== */
+.hder {
+    background-color: var(--azul-petroleo);
+    padding: 1.5rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 4px solid var(--naranja);
+}
+.bar{
+    text-align: right;
+}
+
+
+.logo{
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--texto-blanco);
+    letter-spacing: 2px;
+    text-align: center;
+    display: flex;
+}
+
+.bar a , .bar-log a{  /* enlaces para la barra de navegacion */
+    color: var(--texto-blanco);
+    text-decoration: none;
+    border-left: 2px solid var(--azul-petroleo);
+    margin-left: 2rem;
+    font-size: 1rem;
+    font-weight: 500;
+    transition: color 0.3s;
+    padding: 0.2rem 0.5rem;
+    
+}
+.bar a:hover {
+    color: var(--naranja);
+    border-left: 2px solid var(--naranja);
+    padding: 0.2rem 0.5rem;
+}
+.bar-log a:hover {
+    color: var(--naranja);
+    border-left: 2px solid var(--naranja);
+    padding: 0.2rem 0.5rem;
+}
+
+.footer {
+    background-color: var(--azul-petroleo);
+    padding: 2rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    border-top: 2px solid var(--gris-mate);
+}
+
+.footer-links a {
+    color: var(--texto-claro);
+    text-decoration: none;
+    margin-left: 1.5rem;
+    font-size: 0.9rem;
+}
+
+/* ================== GRIS MATE (60%) ================== */
+.main-content {
+    flex-grow: 1;
+    padding: 3rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.hero {
+    background-color: var(--gris-mate);
+    padding: 5rem 3rem;
+    text-align: center;
+    border-radius: 8px;
+    margin-bottom: 3rem;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.25);
+}
+
+.hero h1 {
+    font-size: 2.8rem;
+    margin-bottom: 1rem;
+    color: var(--texto-blanco);
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2.5rem;
+    color: #cbd5e1;
+}
+
+.services {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-bottom: 4rem;
+}
+.services div:hover {
+    transform: translateY(-3px);
+    transition: transform 0.3s;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.3);
+}
+.service-card {
+    background-color: var(--gris-mate);
+    padding: 2.5rem 2rem;
+    border-radius: 8px;
+    border-top: 5px solid var(--azul-petroleo);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.service-card h2 {
+    color: var(--texto-blanco);
+    margin-bottom: 1rem;
+    font-size: 1.4rem;
+}
+
+.service-card p {
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+}
+
+/* Áreas sobrantes con links inactivos */
+.extra-areas {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    background-color: var(--gris-mate);
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+.area {
+    background-color: var(--azul-petroleo-oscuro);
+    padding: 1.5rem;
+    border-radius: 6px;
+    text-align: center;
+    flex: 1;
+    min-width: 200px;
+}
+
+.area h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--texto-blanco);
+}
+
+.area a {
+    color: var(--amarillo-hover);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+/* ================== NARANJA (10%) ================== */
+.btn-primary {
+    display: inline-block;
+    background-color: var(--naranja);
+    color: var(--texto-blanco);
+    padding: 1rem 2.5rem;
+    text-decoration: none;
+    font-weight: bold;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--naranja-hover);
+    transform: translateY(-2px);
+}
+
+
+.footer-links a:hover{
+    color: var(--naranja);
+}
+.area a:hover {
+    color: var(--amarillo-hover);
+}
+
+.link-secondary {
+    color: var(--amarillo-hover);
+    text-decoration: none;
+    font-weight: bold;
+    display: inline-block;
+    transition: color 0.3s;
+}
+
+.link-secondary:hover {
+    color: var(--amarillo-hover);
+    text-decoration: underline;
+}
+
+.bodyl {
+    background-color: var(--gris-oscuro);
+    color: var(--texto-claro);
+    display: flex;
+    justify-content:center;
+    align-items: center;
+    min-height: 70vh;
+    padding: 20px;
+}
+
+.form-container {
+    background-color: var(--gris-mate);
+    padding: 2rem;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 450px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    border-top: 4px solid var(--naranja);
+}
+
+.form-container h2 {
+    color: var(--texto-blanco);
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+    letter-spacing: 1px;
+}
+
+.form-group {
+    margin-bottom: 1.2rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    margin-bottom: 0.5rem;
+    color: var(--texto-blanco);
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group textarea {
+    background-color: var(--azul-petroleo-oscuro);
+    border: 1px solid var(--azul-petroleo);
+    color: var(--texto-blanco);
+    padding: 0.8rem;
+    border-radius: 4px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: var(--naranja);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+/* Radios */
+.radio-group {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 0.3rem;
+}
+
+.radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    color: var(--texto-claro);
+    font-weight: normal;
+}
+
+.radio-group input[type="radio"] {
+    accent-color: var(--naranja); 
+    width: 16px;
+    height: 16px;
+}
+
+/* Botón Submit */
+.btn-submit {
+    background-color: var(--naranja);
+    color: var(--texto-blanco);
+    border: none;
+    padding: 1rem;
+    border-radius: 4px;
+    font-size: 1.05rem;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 1rem;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.btn-submit:hover {
+    background-color: var(--naranja-hover);
+    color: var(--amarillo-hover);
+}
+
+/* Enlaces */
+.links {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.links a {
+    color: var(--naranja);
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.links a:hover {
+    color: var(--naranja-hover);
+    text-decoration: underline;
+}
+
+/* =========================================================
+   ESTILOS ESPECÍFICOS PARA LA PÁGINA DE SERVICIOS
+========================================================= */
+
+/* Hero específico para servicios */
+.hero-servicios {
+    padding: 4rem 3rem;
+    margin-bottom: 2rem;
+    border-bottom: 3px solid var(--naranja);
+}
+
+/* Grilla para las tarjetas detalladas de servicios */
+.services-grid {
+    display: grid;
+    grid-template-columns: 1fr; /* Una columna para que ocupen todo el ancho y se vea como lista */
+    gap: 2.5rem;
+    margin-bottom: 4rem;
+}
+
+/* Tarjeta detallada de servicio */
+.service-detail-card {
+    background-color: var(--gris-mate);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+    border-left: 5px solid var(--azul-petroleo);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-left-color 0.3s ease;
+}
+
+/* En pantallas grandes, icono a la izquierda y texto a la derecha */
+@media (min-width: 768px) {
+    .service-detail-card {
+        flex-direction: row;
+    }
+}
+
+.service-detail-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+    border-left-color: var(--naranja);
+}
+
+/* Contenedor del ícono SVG */
+.service-icon {
+    background-color: var(--azul-petroleo-oscuro);
+    padding: 2.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-width: 180px;
+}
+
+.service-icon svg {
+    width: 60px;
+    height: 60px;
+    color: var(--naranja);
+    transition: transform 0.3s ease, color 0.3s ease;
+}
+
+.service-detail-card:hover .service-icon svg {
+    transform: scale(1.1);
+    color: var(--amarillo-hover);
+}
+
+/* Contenido de la tarjeta (textos y listas) */
+.service-content {
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.service-content h2 {
+    color: var(--texto-blanco);
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--azul-petroleo-oscuro);
+    padding-bottom: 0.5rem;
+}
+
+.service-content p {
+    color: var(--texto-claro);
+    line-height: 1.7;
+    margin-bottom: 1.5rem;
+}
+
+/* Lista de características del servicio */
+.service-features {
+    list-style: none;
+    margin-bottom: 2rem;
+    padding-left: 0;
+}
+
+.service-features li {
+    position: relative;
+    padding-left: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #a1a1aa; /* Un gris un poco más claro para la lista */
+    font-size: 0.95rem;
+}
+
+/* Viñetas personalizadas (flechitas naranjas) */
+.service-features li::before {
+    content: "▹";
+    position: absolute;
+    left: 0;
+    color: var(--naranja);
+    font-weight: bold;
+}
+
+/* Botón más pequeño para las tarjetas */
+.btn-small {
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
+    align-self: flex-start; /* Evita que el botón ocupe todo el ancho */
+    margin-top: auto; /* Empuja el botón hacia abajo si hay espacio extra */
+}
+
+
+/* ============================================ Asegurar que la tarjeta base sea la referencia posicional */
+.service-card {
+    position: relative;
+}
+
+/* Estilos del desplegable superpuesto */
+.service-details {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    min-height: 100%; /* Cubre la tarjeta completa, se expande si hay más texto */
+    background-color: #1c2a38; /* Fondo azul petróleo / gris mate oscuro */
+    border: 1px solid #b87333; /* Borde en acento cobre */
+    padding: 1.5rem;
+    box-sizing: border-box;
+    z-index: 10;
+    
+    /* Estado inicial oculto y retraído */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    
+    /* Para centrar el contenido internamente si lo deseas */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* Clase que se activa con JS */
+.service-details.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.service-details h3 {
+    color: #ffffff;
+    margin-top: 0;
+}
+
+.service-details p {
+    color: #e0e0e0;
+    font-size: 0.95rem;
+}
+
+/* Botón de cierre */
+.close-details {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: transparent;
+    border: none;
+    color: #b87333; /* Cobre */
+    font-size: 1.8rem;
+    cursor: pointer;
+    line-height: 1;
+    transition: color 0.3s ease;
+}
+
+.close-details:hover {
+    color: #ffffff;
+}
