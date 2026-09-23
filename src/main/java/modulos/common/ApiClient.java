@@ -12,7 +12,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 public class ApiClient {
-    public static final String API_BASE = "http://127.0.0.1:8080/clases/php/api.php";
+    public static final String API_BASE = System.getProperty(
+            "metalgest.api.url",
+            "http://localhost/MetalGest/clases/php/api.php");
 
     public static String get(String action) throws IOException {
         URL url = new URL(API_BASE + "?action=" + encode(action));

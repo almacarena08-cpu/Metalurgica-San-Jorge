@@ -34,7 +34,13 @@ La pagina publica y el contacto con clientes pertenecen a la rama `sistema-web`.
 
 ## Ejecutar
 
-Desde PowerShell:
+Con Apache y MySQL iniciados en XAMPP, la aplicacion usa automaticamente:
+
+```text
+http://localhost/MetalGest/clases/php/api.php
+```
+
+Si se prefiere levantar PHP manualmente desde PowerShell:
 
 ```powershell
 cd C:\xampp\htdocs\MetalGest
@@ -52,7 +58,7 @@ New-Item -ItemType Directory -Force build\classes
 Ejecutar la aplicacion con un unico login:
 
 ```powershell
-& C:\jdk\bin\java.exe -cp build\classes modulos.MetalGestApp
+& C:\jdk\bin\java.exe -Dmetalgest.api.url=http://localhost:8080/clases/php/api.php -cp build\classes modulos.MetalGestApp
 ```
 
 El sistema abre automaticamente el modulo segun el rol del empleado autenticado. Para pruebas directas tambien se pueden ejecutar:
@@ -63,7 +69,7 @@ El sistema abre automaticamente el modulo segun el rol del empleado autenticado.
 & C:\jdk\bin\java.exe -cp build\classes modulos.mantenimiento.MaintenancePanel
 ```
 
-La API queda disponible en `http://localhost:8080/clases/php/api.php?action=health`.
+La API queda disponible en `http://localhost/MetalGest/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 
 ## Acceso por modulo
 
