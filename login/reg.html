@@ -9,18 +9,44 @@
 
 <body >
     <header class="hder">
-            <nav class="bar-log">
-                <a href="../login/log.html">Logearse</a>
-                <a href="../login/reg.html">Registrarse</a>
-            </nav>
-        <p class="logo">METALGEST</p> 
-        <nav class="bar">
+        <!-- Izquierda: Botón Menú (tres rayas) y Logo -->
+        <div class="header-left">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menú">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <p class="logo">METALGEST</p> 
+        </div>
+
+        <!-- Derecha: Botones de Logearse y Registrarse -->
+        <nav class="bar-log">
+                <a href="../../login/log.html">Logearse</a>
+                <a href="../../login/reg.html">Registrarse</a>
+            <!-- 
+            <?php
+            if (isset($_SESSION['user_id'])) {
+                echo '<a href="../../login/logout.php">Cerrar Sesión</a>';
+            }
+            ?> -->
+        </nav>
+    </header>
+
+    <!-- Menú Lateral Desplegable -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <aside class="sidebar" id="sidebar">
+        <button class="close-sidebar" id="closeSidebar" aria-label="Cerrar menú">&times;</button>
+        <div class="sidebar-header">
+            <h3>Navegación</h3>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="../main/back-end/Mantenimiento.html">Mantenimiento</a>
             <a href="../main/index.html">Inicio</a>
             <a href="../main/services.html">Servicios Industriales</a>
             <a href="../main/maquinaria.html">Maquinaria</a>
             <a href="../main/contact.html">Contacto</a>
         </nav>
-    </header>
+    </aside>
 
     <main class="bodyl">
     <div class="form-container">
@@ -81,5 +107,6 @@
             <a href="#">Política de Privacidad</a>
         </div>
     </footer>
+    <script src="../JavaScript/script.js"></script>
 </body>
 </html>
