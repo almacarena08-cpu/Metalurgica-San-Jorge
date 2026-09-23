@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>METALGEST - Contacto</title>
+    <link rel="stylesheet" href="../style/style.css">
+</head>
+<body>
+    <header class="hder">
+        <nav class="bar-log">
+            <a href="../login/log.html">Logearse</a>
+            <a href="../login/reg.html">Registrarse</a>
+        </nav>
+        <p class="logo">METALGEST</p> 
+        <nav class="bar">
+            <a href="../main/index.html">Inicio</a>
+            <a href="../main/services.html">Servicios Industriales</a>
+            <a href="../main/maquinaria.html">Maquinaria</a>
+            <a href="../main/contact.html">Contacto</a>
+        </nav>
+    </header>
+
+    <main class="main-content">
+        <section class="hero hero-servicios">
+            <h1>Contáctanos</h1>
+            <p>Completa el siguiente formulario para evacuar cualquier duda técnica, comercial o sobre nuestros servicios industriales.</p>
+        </section>
+
+
+    <section class="bodyl">
+        <div class="form-container" style="max-width: 600px;">
+            <h2>Reporte de Incidencia</h2>
+            <form action="#" method="POST">
+                
+                <div class="form-group">
+                        <label for="nombre">Nombre y Apellido / Empresa</label>
+                        <input type="text" id="nombre" name="nombre" placeholder="Ej. Juan Pérez / Metalúrgica S.A." required>
+                    </div>
+        
+                <div class="form-group">
+                        <label for="email">Correo Electrónico</label>
+                        <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="telefono">Teléfono / Celular de Contacto</label>
+                        <input type="text" id="telefono" name="telefono" placeholder="Ej. +54 11 1234-5678">
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="asunto">Motivo de la Consulta</label>
+                        <select id="asunto" name="asunto" class="form-select" required>
+                            <option value="" disabled selected>Selecciona una opción</option>
+                            <option value="duda_tecnica">Duda sobre Especificaciones Técnicas</option>
+                            <option value="cotizacion">Presupuestos y Cotizaciones</option>
+                            <option value="maquinaria">Consultas sobre Maquinaria</option>
+                            <option value="otro">Otra consulta general</option>
+                        </select>
+                    </div>
+
+
+                    <div class="form-group">
+                        <label for="mensaje">Mensaje o Detalle de la Duda</label>
+                        <textarea id="mensaje" name="mensaje" placeholder="Escribe aquí los detalles de tu consulta..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn-submit">Enviar Consulta</button>
+                </form>
+            </div>
+        </div>
+    </section>
+ </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 MetalCorp S.A. Todos los derechos reservados.</p>
+        <div class="footer-links">
+            <a href="../main/Info.html#legal">Aviso Legal</a>
+            <a href="../main/Info.html#privacidad">Política de Privacidad</a>
+        </div>
+    </footer>
+</body>
+</html>

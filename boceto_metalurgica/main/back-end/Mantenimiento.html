@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro de problemas y errores</title>
+    <link rel="stylesheet" href="../../style/style.css">
+</head>
+<body>
+    <header class="hder">
+            <nav class="bar-log">
+                <a href="../login/log.html">Logearse</a>
+                <a href="../login/reg.html">Registrarse</a>
+                <!-- 
+            <?php
+            if (isset($_SESSION['user_id'])) {
+                echo '<a href="../login/logout.php">Cerrar Sesión</a>';
+            }
+            ?> -->
+            </nav>
+        <p class="logo">METALGEST</p> 
+        <nav class="bar">
+            <a href="Mantenimiento.html">Mantenimiento</a>
+            <a href="../index.html">Inicio</a>
+            <a href="../services.html">Servicios Industriales</a>
+            <a href="../maquinaria.html">Maquinaria</a>
+            <a href="../Us.html">Contacto</a>
+        <!-- 
+            <?php
+            if (isset($_SESSION['user_id'])) {
+                echo '<a href="../main/Front-end/Usuario/Perfil.html">Perfil</a>';
+                echo '<a href="../main/Front-end/Usuario/Ordenes.html">Ordenes</a>';
+                (etc....)
+
+            }
+            ?>
+        -->
+        </nav>
+    </header>
+    <main class="main-content">
+    <section class="hero hero-servicios">
+        <h1>Solicitud de Mantenimiento</h1>
+        <p>Complete el siguiente formulario para reportar incidencias o solicitar mantenimiento preventivo/correctivo en sus instalaciones.</p>
+    </section>
+
+    <section class="bodyl">
+        <div class="form-container" style="max-width: 600px;">
+            <h2>Reporte de Incidencia</h2>
+            <form action="#" method="POST">
+                
+                <!-- Tipo de Problema -->
+                <div class="form-group">
+                    <label for="tipo_problema">Tipo de Problema / Servicio Requerido</label>
+                    <select id="tipo_problema" name="tipo_problema" class="form-select" required>
+                        <option value="" disabled selected>Seleccione una opción...</option>
+                        <option value="preventivo">Mantenimiento Preventivo (Programado)</option>
+                        <option value="correctivo_urgente">Mantenimiento Correctivo (Urgencia)</option>
+                        <option value="reparacion_maquinaria">Reparación de Maquinaria</option>
+                        <option value="falla_estructural">Falla Estructural / Soldadura</option>
+                        <option value="calibracion">Calibración de Equipos CNC</option>
+                        <option value="otro">Otro (Especificar en descripción)</option>
+                    </select>
+                </div>
+
+                <!-- Área Perteneciente (Opciones) -->
+                <div class="form-group">
+                    <label>Área o Departamento Afectado</label>
+                    <div class="radio-group" style="flex-wrap: wrap;">
+                        <label><input type="radio" name="area_opcion" value="produccion" required> Producción / Planta</label>
+                        <label><input type="radio" name="area_opcion" value="logistica"> Logística / Almacén</label>
+                        <label><input type="radio" name="area_opcion" value="mantenimiento"> Taller de Mantenimiento</label>
+                        <label><input type="radio" name="area_opcion" value="exteriores"> Exteriores / Estructuras</label>
+                    </div>
+                </div>
+
+                <!-- Área Perteneciente (Texto Específico) -->
+                <div class="form-group">
+                    <label for="area_especifica">Ubicación Específica (Ej: Torno CNC #3, Nave Norte)</label>
+                    <input type="text" id="area_especifica" name="area_especifica" placeholder="Indique el lugar exacto o máquina..." required>
+                </div>
+
+                <!-- Prioridad (Extra a elección) -->
+                <div class="form-group">
+                    <label for="prioridad">Nivel de Prioridad</label>
+                    <select id="prioridad" name="prioridad" class="form-select">
+                        <option value="baja">Baja (Puede esperar programación)</option>
+                        <option value="media" selected>Media (Requiere atención esta semana)</option>
+                        <option value="alta">Alta (Afecta parcialmente la producción)</option>
+                        <option value="critica">Crítica (Línea detenida / Riesgo de seguridad)</option>
+                    </select>
+                </div>
+
+                <!-- Descripción del Problema -->
+                <div class="form-group">
+                    <label for="descripcion">Descripción Detallada del Problema</label>
+                    <textarea id="descripcion" name="descripcion" placeholder="Describa los síntomas, ruidos extraños, códigos de error en pantalla, etc..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Enviar Solicitud de Mantenimiento</button>
+            </form>
+        </div>
+    </section>
+</main>
+<footer class="footer">
+        <p>&copy; 2026 MetalCorp S.A. Todos los derechos reservados.</p>
+        <div class="footer-links">
+            <a href="../main/Info.html#legal">Aviso Legal</a>
+            <a href="../main/Info.html#privacidad">Política de Privacidad</a>
+        </div>
+    </footer>
+</body>
+</html>
