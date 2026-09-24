@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -14,10 +15,10 @@ import java.util.Map;
 public class ApiClient {
     public static final String API_BASE = System.getProperty(
             "metalgest.api.url",
-            "http://localhost/MetalGest/clases/php/api.php");
+            "http://localhost/Metalurgica-San-Jorge/clases/php/api.php");
 
     public static String get(String action) throws IOException {
-        URL url = new URL(API_BASE + "?action=" + encode(action));
+        URL url = URI.create(API_BASE + "?action=" + encode(action)).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
         conn.setConnectTimeout(4000);
@@ -26,7 +27,7 @@ public class ApiClient {
     }
 
     public static String post(String action, Map<String, String> data) throws IOException {
-        URL url = new URL(API_BASE + "?action=" + encode(action));
+        URL url = URI.create(API_BASE + "?action=" + encode(action)).toURL();
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
@@ -66,7 +67,8 @@ public class ApiClient {
             while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
-            return sb.toString();
+            String response = sb.toString();
+            return response.startsWith("\uFEFF") ? response.substring(1) : response;
         }
     }
 

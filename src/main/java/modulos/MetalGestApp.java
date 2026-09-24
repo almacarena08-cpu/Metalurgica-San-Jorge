@@ -1,10 +1,13 @@
 package modulos;
 
 import modulos.admin.AdminPanel;
+import modulos.calidad.QualityPanel;
+import modulos.compras.PurchasesPanel;
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
 import modulos.common.ModuleLoginPanel;
 import modulos.common.UiTheme;
+import modulos.deposito.DepositPanel;
 import modulos.mantenimiento.MaintenancePanel;
 import modulos.produccion.ProductionPanel;
 
@@ -38,6 +41,15 @@ public class MetalGestApp {
         } else if ("Mantenimiento".equalsIgnoreCase(rol)) {
             ventana.setTitle("MetalGest - Mantenimiento");
             ventana.setContentPane(MaintenancePanel.createView(session));
+        } else if ("Deposito".equalsIgnoreCase(rol)) {
+            ventana.setTitle("MetalGest - Deposito");
+            ventana.setContentPane(DepositPanel.createView(session));
+        } else if ("Compras".equalsIgnoreCase(rol)) {
+            ventana.setTitle("MetalGest - Compras");
+            ventana.setContentPane(PurchasesPanel.createView(session));
+        } else if ("Calidad".equalsIgnoreCase(rol)) {
+            ventana.setTitle("MetalGest - Calidad");
+            ventana.setContentPane(QualityPanel.createView(session));
         }
         ventana.revalidate();
         ventana.repaint();

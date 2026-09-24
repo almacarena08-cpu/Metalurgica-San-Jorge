@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/../daos/PedidoDAO.php';
 require_once __DIR__ . '/../daos/OrdenTrabajoDAO.php';
@@ -6,6 +6,9 @@ require_once __DIR__ . '/../daos/ProduccionDAO.php';
 require_once __DIR__ . '/../daos/MaquinaDAO.php';
 require_once __DIR__ . '/../daos/MantenimientoDAO.php';
 require_once __DIR__ . '/../daos/PreferenciasUsuarioDAO.php';
+require_once __DIR__ . '/../daos/DepositoDAO.php';
+require_once __DIR__ . '/../daos/ComprasDAO.php';
+require_once __DIR__ . '/../daos/CalidadDAO.php';
 
 function api_db() {
     return Database::getConnection();
@@ -45,6 +48,9 @@ $produccionDAO = new ProduccionDAO();
 $maquinaDAO = new MaquinaDAO();
 $mantenimientoDAO = new MantenimientoDAO();
 $preferenciasDAO = new PreferenciasUsuarioDAO();
+$depositoDAO = new DepositoDAO();
+$comprasDAO = new ComprasDAO();
+$calidadDAO = new CalidadDAO();
 
 if ($action === 'health') {
     api_json(['success' => true, 'app' => 'MetalGest']);
@@ -53,7 +59,7 @@ if ($action === 'health') {
 if ($action === 'preferences_get') {
     $idUsuario = api_int('id_usuario');
     if ($idUsuario <= 0) {
-        api_json(['success' => false, 'message' => 'Usuario inválido'], 422);
+        api_json(['success' => false, 'message' => 'Usuario invÃ¡lido'], 422);
     }
     $preferencias = $preferenciasDAO->obtener($idUsuario);
     api_json([
@@ -68,7 +74,7 @@ if ($action === 'preferences_save') {
         $idUsuario = api_int('id_usuario');
         $tamano = api_int('tamano_texto', 12);
         if ($idUsuario <= 0 || $tamano < 10 || $tamano > 20) {
-            api_json(['success' => false, 'message' => 'Preferencias inválidas'], 422);
+            api_json(['success' => false, 'message' => 'Preferencias invÃ¡lidas'], 422);
         }
         $preferenciasDAO->guardar([
             'id_usuario' => $idUsuario,
@@ -84,77 +90,49 @@ if ($action === 'preferences_save') {
 if ($action === 'login') {
     $nombreLogin = api_required('nombre');
     $contrasenaLogin = api_required('contrasena');
-    $rolEsperado = api_input('rol', '');
-    $contrasenasModulo = [
-        'Administracion' => 'admin',
-        'Produccion' => 'produccion',
-        'Mantenimiento' => 'mantenimiento'
+    $usuariosBase = [
+        ['Gerencia', 'San Jorge', 'gerencia', 'Gerencia'],
+        ['Administracion', 'San Jorge', 'admin', 'Administracion'],
+        ['Produccion', 'San Jorge', 'produccion', 'Produccion'],
+        ['Mantenimiento', 'San Jorge', 'mantenimiento', 'Mantenimiento'],
+        ['Deposito', 'San Jorge', 'deposito', 'Deposito'],
+        ['Compras', 'San Jorge', 'compras', 'Compras'],
+        ['Calidad', 'San Jorge', 'calidad', 'Calidad']
     ];
-    if ($rolEsperado !== '' && isset($contrasenasModulo[$rolEsperado])) {
-        if (!hash_equals($contrasenasModulo[$rolEsperado], $contrasenaLogin)) {
-            api_json(['success' => false, 'message' => 'Contraseña incorrecta'], 401);
-        }
-        $partesNombre = preg_split('/\s+/', $nombreLogin, 2);
-        $nombre = $partesNombre[0];
-        $apellido = $partesNombre[1] ?? '';
-        $stmt = api_db()->prepare(
-            'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, r.nombre AS rol
-             FROM usuario u
-             INNER JOIN rol r ON r.id_rol = u.id_rol
-             WHERE u.nombre = :nombre AND (u.apellido = :apellido OR :apellido_filtro = "") AND r.nombre = :rol
-             LIMIT 1'
-        );
-        $stmt->execute([
-            ':nombre' => $nombre,
-            ':apellido' => $apellido,
-            ':apellido_filtro' => $apellido,
-            ':rol' => $rolEsperado
+    $crearUsuarioBase = api_db()->prepare(
+        'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol)
+         SELECT :nombre, :apellido, :usuario, "1234", id_rol
+         FROM rol WHERE nombre = :rol
+         ON DUPLICATE KEY UPDATE
+            nombre = VALUES(nombre),
+            apellido = VALUES(apellido),
+            contrasena = VALUES(contrasena),
+            id_rol = VALUES(id_rol)'
+    );
+    foreach ($usuariosBase as $usuarioBase) {
+        $crearUsuarioBase->execute([
+            ':nombre' => $usuarioBase[0],
+            ':apellido' => $usuarioBase[1],
+            ':usuario' => $usuarioBase[2],
+            ':rol' => $usuarioBase[3]
         ]);
-        $user = $stmt->fetch();
-        if (!$user) {
-            $usuario = 'empleado_' . strtolower(preg_replace('/[^a-z0-9]+/i', '_', $nombreLogin)) . '_' . bin2hex(random_bytes(3));
-            $crear = api_db()->prepare(
-                'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol)
-                 SELECT :nombre, :apellido, :usuario, :contrasena, id_rol
-                 FROM rol WHERE nombre = :rol'
-            );
-            $crear->execute([
-                ':nombre' => $nombre,
-                ':apellido' => $apellido,
-                ':usuario' => $usuario,
-                ':contrasena' => $contrasenaLogin,
-                ':rol' => $rolEsperado
-            ]);
-            $id = (int)api_db()->lastInsertId();
-            $user = [
-                'id_usuario' => $id,
-                'nombre' => $nombre,
-                'apellido' => $apellido,
-                'usuario' => $usuario,
-                'rol' => $rolEsperado
-            ];
-        }
-        api_json(['success' => true, 'usuario' => $user]);
     }
     $stmt = api_db()->prepare(
         'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, r.nombre AS rol
          FROM usuario u
          INNER JOIN rol r ON r.id_rol = u.id_rol
-                 WHERE (u.nombre = :nombre OR CONCAT(u.nombre, " ", u.apellido) = :nombre_completo)
-                     AND u.contrasena = :contrasena'
+         WHERE (u.usuario = :usuario OR u.nombre = :nombre OR CONCAT(u.nombre, " ", u.apellido) = :nombre_completo)
+             AND u.contrasena = :contrasena
+         LIMIT 1'
     );
-        $stmt->execute([
-                ':nombre' => $nombreLogin,
-                ':nombre_completo' => $nombreLogin,
-            ':contrasena' => $contrasenaLogin
-        ]);
+    $stmt->execute([
+        ':usuario' => $nombreLogin,
+        ':nombre' => $nombreLogin,
+        ':nombre_completo' => $nombreLogin,
+        ':contrasena' => $contrasenaLogin
+    ]);
     $user = $stmt->fetch();
-    $rolesValidos = [
-        'Administracion' => ['Administracion', 'Gerencia'],
-        'Produccion' => ['Produccion'],
-        'Mantenimiento' => ['Mantenimiento']
-    ];
-    if (!$user || ($rolEsperado !== '' && (!isset($rolesValidos[$rolEsperado]) || !in_array($user['rol'], $rolesValidos[$rolEsperado], true)))) {
+    if (!$user) {
         api_json(['success' => false, 'message' => 'Credenciales incorrectas'], 401);
     }
     api_json(['success' => true, 'usuario' => $user]);
@@ -200,7 +178,7 @@ if ($action === 'ordenes_create') {
     try {
         $idPedido = api_int('id_pedido');
         if ($idPedido <= 0) {
-            api_json(['success' => false, 'message' => 'El pedido debe ser válido'], 422);
+            api_json(['success' => false, 'message' => 'El pedido debe ser vÃ¡lido'], 422);
         }
         $idOrden = $ordenTrabajoDAO->crear([
             'id_pedido' => $idPedido,
@@ -220,7 +198,7 @@ if ($action === 'orden_update_status') {
     try {
         $idOrden = api_int('id_orden');
         if ($idOrden <= 0) {
-            api_json(['success' => false, 'message' => 'La orden debe ser válida'], 422);
+            api_json(['success' => false, 'message' => 'La orden debe ser vÃ¡lida'], 422);
         }
         $ordenTrabajoDAO->actualizarEstado([
             'id_orden' => $idOrden,
@@ -241,7 +219,7 @@ if ($action === 'produccion_register') {
     $cantidad = api_int('cantidad_producida');
     $avance = api_int('avance');
     if (api_int('id_orden') <= 0 || $cantidad < 0 || $avance < 0 || $avance > 100) {
-        api_json(['success' => false, 'message' => 'Datos de producción inválidos'], 422);
+        api_json(['success' => false, 'message' => 'Datos de producciÃ³n invÃ¡lidos'], 422);
     }
     try {
         $idProduccion = $produccionDAO->registrar([
@@ -264,7 +242,7 @@ if ($action === 'mantenimiento_report') {
     try {
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
-            api_json(['success' => false, 'message' => 'La máquina debe ser válida'], 422);
+            api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
         }
         $idMantenimiento = $maquinaDAO->reportarFalla([
             'id_maquina' => $idMaquina,
@@ -286,7 +264,7 @@ if ($action === 'mantenimiento_preventivo_create') {
     try {
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
-            api_json(['success' => false, 'message' => 'La máquina debe ser válida'], 422);
+            api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
         }
         $idMantenimiento = $mantenimientoDAO->crearPreventivo([
             'id_maquina' => $idMaquina,
@@ -304,11 +282,11 @@ if ($action === 'mantenimiento_update') {
     try {
         $idMantenimiento = api_int('id_mantenimiento');
         if ($idMantenimiento <= 0) {
-            api_json(['success' => false, 'message' => 'El mantenimiento debe ser válido'], 422);
+            api_json(['success' => false, 'message' => 'El mantenimiento debe ser vÃ¡lido'], 422);
         }
         $estado = api_required('estado');
         if (!in_array($estado, ['Pendiente', 'En proceso', 'Resuelta'], true)) {
-            api_json(['success' => false, 'message' => 'Estado de mantenimiento inválido'], 422);
+            api_json(['success' => false, 'message' => 'Estado de mantenimiento invÃ¡lido'], 422);
         }
         $mantenimientoDAO->actualizar([
             'id_mantenimiento' => $idMantenimiento,
@@ -322,4 +300,106 @@ if ($action === 'mantenimiento_update') {
     }
 }
 
-api_json(['success' => false, 'message' => 'Acción no reconocida'], 404);
+if ($action === 'materiales_list') {
+    api_json($depositoDAO->listarMateriales());
+}
+
+if ($action === 'deposito_movimientos_list') {
+    api_json($depositoDAO->listarMovimientos());
+}
+
+if ($action === 'deposito_movimiento_create') {
+    try {
+        $idMaterial = api_int('id_material');
+        $cantidad = (float)api_input('cantidad', '0');
+        $tipo = api_required('tipo');
+        if ($idMaterial <= 0 || $cantidad <= 0 || !in_array($tipo, ['Ingreso', 'Salida'], true)) {
+            api_json(['success' => false, 'message' => 'Movimiento de stock invalido'], 422);
+        }
+        $idMovimiento = $depositoDAO->registrarMovimiento([
+            'id_material' => $idMaterial,
+            'tipo' => $tipo,
+            'cantidad' => $cantidad,
+            'motivo' => api_input('motivo', ''),
+            'id_usuario' => api_int('id_usuario', 1)
+        ]);
+        api_json(['success' => true, 'id_movimiento' => $idMovimiento]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'proveedores_list') {
+    api_json($comprasDAO->listarProveedores());
+}
+
+if ($action === 'proveedores_create') {
+    try {
+        $idProveedor = $comprasDAO->crearProveedor([
+            'razon_social' => api_required('razon_social'),
+            'cuit' => api_input('cuit', ''),
+            'telefono' => api_input('telefono', ''),
+            'email' => api_input('email', '')
+        ]);
+        api_json(['success' => true, 'id_proveedor' => $idProveedor]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'compras_list') {
+    api_json($comprasDAO->listarCompras());
+}
+
+if ($action === 'compras_create') {
+    try {
+        $idProveedor = api_int('id_proveedor');
+        $idMaterial = api_int('id_material');
+        $cantidad = (float)api_input('cantidad', '0');
+        $precio = (float)api_input('precio', '0');
+        if ($idProveedor <= 0 || $idMaterial <= 0 || $cantidad <= 0 || $precio < 0) {
+            api_json(['success' => false, 'message' => 'Datos de compra invalidos'], 422);
+        }
+        $estado = api_input('estado', 'Solicitada');
+        if (!in_array($estado, ['Solicitada', 'Recibida', 'Cancelada'], true)) {
+            api_json(['success' => false, 'message' => 'Estado de compra invalido'], 422);
+        }
+        $idCompra = $comprasDAO->crearCompra([
+            'id_proveedor' => $idProveedor,
+            'id_material' => $idMaterial,
+            'cantidad' => $cantidad,
+            'precio' => $precio,
+            'fecha' => api_input('fecha', date('Y-m-d')),
+            'estado' => $estado
+        ]);
+        api_json(['success' => true, 'id_compra' => $idCompra]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'calidad_list') {
+    api_json($calidadDAO->listarControles());
+}
+
+if ($action === 'calidad_register') {
+    try {
+        $idOrden = api_int('id_orden');
+        $resultado = api_required('resultado');
+        if ($idOrden <= 0 || !in_array($resultado, ['Aprobado', 'Observado', 'Rechazado'], true)) {
+            api_json(['success' => false, 'message' => 'Control de calidad invalido'], 422);
+        }
+        $idControl = $calidadDAO->registrar([
+            'id_orden' => $idOrden,
+            'id_usuario' => api_int('id_usuario', 1),
+            'fecha' => api_input('fecha', date('Y-m-d')),
+            'resultado' => $resultado,
+            'observaciones' => api_input('observaciones', '')
+        ]);
+        api_json(['success' => true, 'id_control' => $idControl]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+api_json(['success' => false, 'message' => 'AcciÃ³n no reconocida'], 404);

@@ -5,7 +5,6 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
-import javax.swing.JComboBox;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -21,7 +20,6 @@ import java.util.function.Consumer;
 public class ModuleLoginPanel extends JPanel {
     private final JTextField nombre = new JTextField(22);
     private final JPasswordField contrasena = new JPasswordField(22);
-    private final JComboBox<String> modulo = new JComboBox<>(new String[]{"Administracion", "Produccion", "Mantenimiento"});
     private final JLabel estado = new JLabel(" ");
 
     public ModuleLoginPanel(Consumer<EmployeeSession> onSuccess) {
@@ -47,20 +45,17 @@ public class ModuleLoginPanel extends JPanel {
         JLabel subtitle = new JLabel("Acceso seguro al sistema");
         subtitle.setForeground(UiTheme.MUTED);
         addToCard(card, subtitle, c, 2);
-        addToCard(card, new JLabel("Modulo"), c, 3);
-        UiTheme.styleInput(modulo);
-        addToCard(card, modulo, c, 4);
-        addToCard(card, new JLabel("Nombre del empleado"), c, 5);
+        addToCard(card, new JLabel("Usuario"), c, 3);
         UiTheme.styleInput(nombre);
-        addToCard(card, nombre, c, 6);
-        addToCard(card, new JLabel("Contraseña"), c, 7);
+        addToCard(card, nombre, c, 4);
+        addToCard(card, new JLabel("Contrasena"), c, 5);
         UiTheme.styleInput(contrasena);
-        addToCard(card, contrasena, c, 8);
+        addToCard(card, contrasena, c, 6);
         JButton ingresar = new JButton("Ingresar");
         UiTheme.styleButton(ingresar, true);
-        addToCard(card, ingresar, c, 9);
+        addToCard(card, ingresar, c, 7);
         estado.setForeground(new Color(190, 55, 65));
-        addToCard(card, estado, c, 10);
+        addToCard(card, estado, c, 8);
         add(card, new GridBagConstraints());
 
         ingresar.addActionListener(event -> autenticar(onSuccess));
@@ -84,8 +79,11 @@ public class ModuleLoginPanel extends JPanel {
             Map<String, String> datos = new LinkedHashMap<>();
             datos.put("nombre", nombreIngresado);
             datos.put("contrasena", clave);
-            datos.put("rol", modulo.getSelectedItem().toString());
             String cuerpo = ApiClient.post("login", datos);
+            if (cuerpo == null || !cuerpo.trim().startsWith("{")) {
+                estado.setText("No se pudo validar el acceso con la API.");
+                return;
+            }
             Map<String, String> respuesta = JsonUtil.parseObject(cuerpo);
             if (!"true".equals(respuesta.get("success"))) {
                 estado.setText("Nombre o contraseña incorrectos.");
