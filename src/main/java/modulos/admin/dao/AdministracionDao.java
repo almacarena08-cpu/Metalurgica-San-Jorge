@@ -12,6 +12,14 @@ public class AdministracionDao extends BaseApiDao {
         return getRows("pedidos_list");
     }
 
+    public List<Map<String, String>> listarClientes() throws IOException {
+        return getRows("clientes_list");
+    }
+
+    public List<Map<String, String>> listarMateriales() throws IOException {
+        return getRows("materiales_list");
+    }
+
     public ApiResult crearPedido(Map<String, String> datos) throws IOException {
         return post("pedidos_create", datos);
     }

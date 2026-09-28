@@ -49,6 +49,10 @@ public class DepositPanel {
         JPanel shell = UiTheme.shell("Deposito", "Gestion de deposito", session.getNombreCompleto(), entry -> {
             if ("Deposito".equals(entry) || "Inicio".equals(entry)) {
                 tabs.setSelectedIndex(0);
+            } else if ("Inventario".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Movimientos".equals(entry)) {
+                tabs.setSelectedIndex(2);
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             } else if (!"Deposito".equals(entry)) {
@@ -72,6 +76,11 @@ public class DepositPanel {
 
     private static JTabbedPane crearTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Depósito", "Controlá el inventario y los movimientos de materiales.", "Inventario",
+                new String[][]{{"Inventario", "Al día"}, {"Movimientos", "Registrar"}, {"Stock mínimo", "Revisar"}},
+                new String[]{"Verificá existencias antes de registrar una salida", "Registrá ingresos y salidas de materiales", "Atendé los materiales que requieren reposición"},
+                entry -> tabs.setSelectedIndex(1)));
         tabs.addTab("Inventario", crearInventario());
         tabs.addTab("Movimientos", crearMovimientos());
         return tabs;

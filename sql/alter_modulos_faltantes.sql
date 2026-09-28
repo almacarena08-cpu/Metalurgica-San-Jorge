@@ -1,5 +1,8 @@
 USE metalurgica_san_jorge;
 
+ALTER TABLE material ADD COLUMN IF NOT EXISTS stock_maximo DECIMAL(10,2) NOT NULL DEFAULT 0 AFTER stock_minimo;
+UPDATE material SET stock_maximo = GREATEST(stock, stock_minimo) WHERE stock_maximo < stock_minimo;
+
 CREATE TABLE IF NOT EXISTS material_movimiento (
     id_movimiento INT AUTO_INCREMENT PRIMARY KEY,
     id_material INT NOT NULL,

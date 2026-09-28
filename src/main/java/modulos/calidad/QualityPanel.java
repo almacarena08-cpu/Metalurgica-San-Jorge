@@ -50,6 +50,10 @@ public class QualityPanel {
         JPanel shell = UiTheme.shell("Calidad", "Control de calidad", session.getNombreCompleto(), entry -> {
             if ("Calidad".equals(entry) || "Inicio".equals(entry)) {
                 tabs.setSelectedIndex(0);
+            } else if ("Registrar control".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Historial".equals(entry)) {
+                tabs.setSelectedIndex(2);
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             } else if (!"Calidad".equals(entry)) {
@@ -73,6 +77,11 @@ public class QualityPanel {
 
     private static JTabbedPane crearTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Calidad", "Registrá controles y revisá los resultados de producción.", "Registrar control",
+                new String[][]{{"Controles pendientes", "Revisar"}, {"Resultados", "Registrar"}, {"Historial", "Consultar"}},
+                new String[]{"Seleccioná una orden para registrar su control", "Documentá observaciones y resultados de inspección", "Consultá controles anteriores del área"},
+                entry -> tabs.setSelectedIndex(1)));
         tabs.addTab("Registrar control", crearRegistro());
         tabs.addTab("Historial", crearHistorial());
         return tabs;

@@ -24,6 +24,8 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.GridLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -106,7 +108,8 @@ public class AdminPanel {
 
         JPanel intro = new JPanel(new BorderLayout());
         intro.setOpaque(false);
-        JLabel saludo = new JLabel("<html><b>Hola, equipo de Administración</b><br><font color='#777777'>Resumen general del estado de pedidos y actividad de la metalúrgica.</font></html>");
+        JLabel saludo = new JLabel("<html><b>Hola, equipo de Administración</b><br>Resumen general de pedidos, órdenes y actividad administrativa.</html>");
+        saludo.setForeground(UiTheme.INK);
         saludo.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 16));
         intro.add(saludo, BorderLayout.WEST);
         dashboard.add(intro, BorderLayout.NORTH);
@@ -143,9 +146,9 @@ public class AdminPanel {
         JPanel panel = panelDashboard("🔔  Notificaciones recientes");
         JPanel items = new JPanel(new GridLayout(0, 1, 0, 8));
         items.setOpaque(false);
-        String[] avisos = {"⚠  Pedido demorado", "!  Stock mínimo de acero", "✓  Pedido finalizado", "ⓘ  Nueva actividad"};
+        String[] avisos = {"⚠  Pedido demorado", "!  Orden pendiente de generar", "✓  Pedido finalizado", "ⓘ  Nueva actividad"};
         for (String aviso : avisos) {
-            JLabel item = new JLabel("<html><b>" + aviso + "</b><br><font color='#999999'>Actualización registrada en el sistema</font></html>");
+            JLabel item = new JLabel("<html><b>" + aviso + "</b><br>Actualización registrada en el sistema</html>");
             item.setForeground(UiTheme.INK);
             items.add(item);
         }
@@ -157,7 +160,7 @@ public class AdminPanel {
         JPanel panel = panelDashboard("⚡  Accesos rápidos");
         JPanel items = new JPanel(new GridLayout(0, 1, 0, 8));
         items.setOpaque(false);
-        for (String texto : new String[]{"▣  Nueva orden de trabajo  →", "▤  Ver inventario  →", "▥  Generar reporte  →"}) {
+        for (String texto : new String[]{"▣  Gestionar pedidos  →", "▤  Ver órdenes de trabajo  →", "▥  Actualizar panel  →"}) {
             JButton boton = new JButton(texto);
             UiTheme.styleButton(boton, false);
             items.add(boton);
@@ -243,7 +246,7 @@ public class AdminPanel {
         accesos.add(tituloAccesos, BorderLayout.NORTH);
         JPanel acciones = new JPanel(new GridLayout(0, 1, 0, 10));
         acciones.setOpaque(false);
-        JButton nuevo = new JButton("＋  Nueva orden de trabajo");
+        JButton nuevo = new JButton("＋  Gestionar pedidos");
         JButton pedidosButton = new JButton("▣  Ver pedidos");
         JButton reporte = new JButton("▤  Actualizar indicadores");
         UiTheme.styleButton(nuevo, true);
@@ -275,12 +278,12 @@ public class AdminPanel {
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JPanel form = new JPanel(new GridLayout(2, 6, 8, 8));
-        JTextField cliente = new JTextField();
+        JComboBox<String> cliente = new JComboBox<>();
         JTextField email = new JTextField();
         JTextField telefono = new JTextField();
         JTextField descripcion = new JTextField();
         JTextField cantidad = new JTextField("1");
-        JTextField material = new JTextField();
+        JComboBox<String> material = new JComboBox<>();
         JTextField entrega = new JTextField(LocalDate.now().plusDays(14).toString());
         form.add(new JLabel("Cliente"));
         form.add(new JLabel("Email"));
@@ -313,36 +316,50 @@ public class AdminPanel {
         UiTheme.styleInput(cantidad);
         UiTheme.styleInput(material);
         UiTheme.styleInput(entrega);
+        email.setEditable(false);
+        telefono.setEditable(false);
         acciones.add(crearPedido);
         acciones.add(crearOrden);
         acciones.add(recargar);
         inferior.add(acciones, BorderLayout.SOUTH);
         panel.add(inferior, BorderLayout.SOUTH);
 
+        cargarClientes(cliente, email, telefono);
+        cargarMateriales(material);
         recargarPedidos(modelo);
 
-        recargar.addActionListener(e -> recargarPedidos(modelo));
+        recargar.addActionListener(e -> {
+            cargarClientes(cliente, email, telefono);
+            cargarMateriales(material);
+            recargarPedidos(modelo);
+        });
         crearPedido.addActionListener(e -> {
-            if (cliente.getText().trim().isEmpty() || descripcion.getText().trim().isEmpty() || material.getText().trim().isEmpty()) {
+            if (cliente.getSelectedItem() == null || material.getSelectedItem() == null || descripcion.getText().trim().isEmpty()) {
                 mostrarAviso("Completa cliente, descripcion y material.");
                 return;
             }
             Map<String, String> data = new LinkedHashMap<>();
-            data.put("razon_social", cliente.getText().trim());
+            data.put("id_cliente", idSeleccionado(cliente));
+            data.put("razon_social", textoSeleccionado(cliente));
             data.put("email", email.getText().trim());
             data.put("telefono", telefono.getText().trim());
             data.put("descripcion", descripcion.getText().trim());
             data.put("cantidad", cantidad.getText().trim());
-            data.put("material", material.getText().trim());
+            data.put("material", textoSeleccionado(material));
             data.put("fecha_entrega", entrega.getText().trim());
             if (postOk("pedidos_create", data, "Pedido creado.")) {
-                cliente.setText("");
-                email.setText("");
-                telefono.setText("");
                 descripcion.setText("");
                 cantidad.setText("1");
-                material.setText("");
                 recargarPedidos(modelo);
+            }
+        });
+
+        tabla.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() == 2 && tabla.getSelectedRow() >= 0) {
+                    mostrarDetallePedido(String.valueOf(modelo.getValueAt(tabla.getSelectedRow(), 0)));
+                }
             }
         });
 
@@ -452,6 +469,68 @@ public class AdminPanel {
         }
     }
 
+    private static void cargarClientes(JComboBox<String> cliente, JTextField email, JTextField telefono) {
+        cliente.removeAllItems();
+        List<Map<String, String>> clientes = getRows("clientes_list");
+        for (Map<String, String> fila : clientes) {
+            cliente.addItem(fila.get("id_cliente") + " - " + fila.get("razon_social"));
+        }
+        cliente.addActionListener(event -> completarContacto(cliente, clientes, email, telefono));
+        completarContacto(cliente, clientes, email, telefono);
+    }
+
+    private static void completarContacto(JComboBox<String> cliente, List<Map<String, String>> clientes,
+                                          JTextField email, JTextField telefono) {
+        String idCliente = idSeleccionado(cliente);
+        for (Map<String, String> fila : clientes) {
+            if (idCliente.equals(fila.get("id_cliente"))) {
+                email.setText(fila.getOrDefault("email", ""));
+                telefono.setText(fila.getOrDefault("telefono", ""));
+                return;
+            }
+        }
+        email.setText("");
+        telefono.setText("");
+    }
+
+    private static void cargarMateriales(JComboBox<String> material) {
+        material.removeAllItems();
+        for (Map<String, String> fila : getRows("materiales_list")) {
+            material.addItem(fila.get("id_material") + " - " + fila.get("nombre"));
+        }
+    }
+
+    private static void mostrarDetallePedido(String idPedido) {
+        for (Map<String, String> pedido : getRows("pedidos_list")) {
+            if (!idPedido.equals(pedido.get("id_pedido"))) {
+                continue;
+            }
+            JPanel detalle = new JPanel(new GridLayout(0, 2, 12, 8));
+            detalle.setBackground(UiTheme.WHITE);
+            detalle.setBorder(javax.swing.BorderFactory.createEmptyBorder(14, 16, 14, 16));
+            agregarDetalle(detalle, "Cliente", pedido.get("razon_social"));
+            agregarDetalle(detalle, "Estado", pedido.get("estado"));
+            agregarDetalle(detalle, "E-mail", pedido.get("email"));
+            agregarDetalle(detalle, "Teléfono", pedido.get("telefono"));
+            agregarDetalle(detalle, "Descripción", pedido.get("descripcion"));
+            agregarDetalle(detalle, "Cantidad", pedido.get("cantidad"));
+            agregarDetalle(detalle, "Material", pedido.get("material"));
+            agregarDetalle(detalle, "Entrega", pedido.get("fecha_entrega"));
+            agregarDetalle(detalle, "Creado", pedido.get("fecha"));
+            JOptionPane.showMessageDialog(null, detalle, "Pedido #" + idPedido + " · Especificaciones", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+    }
+
+    private static void agregarDetalle(JPanel detalle, String etiqueta, String valor) {
+        JLabel label = new JLabel(etiqueta);
+        label.setForeground(UiTheme.MUTED);
+        JLabel contenido = new JLabel(valor == null || valor.isEmpty() ? "-" : valor);
+        contenido.setForeground(UiTheme.INK);
+        detalle.add(label);
+        detalle.add(contenido);
+    }
+
     private static void recargarOrdenes(DefaultTableModel modelo) {
         modelo.setRowCount(0);
         for (Map<String, String> row : getRows("ordenes_list")) {
@@ -476,6 +555,12 @@ public class AdminPanel {
             }
             if ("ordenes_list".equals(action)) {
                 return administracionDao.listarOrdenes();
+            }
+            if ("clientes_list".equals(action)) {
+                return administracionDao.listarClientes();
+            }
+            if ("materiales_list".equals(action)) {
+                return administracionDao.listarMateriales();
             }
             return java.util.Collections.emptyList();
         } catch (IOException e) {
@@ -509,6 +594,23 @@ public class AdminPanel {
 
     private static void mostrarAviso(String mensaje) {
         JOptionPane.showMessageDialog(null, mensaje, "MetalGest", JOptionPane.WARNING_MESSAGE);
+    }
+
+    private static String idSeleccionado(JComboBox<String> combo) {
+        Object seleccionado = combo.getSelectedItem();
+        if (seleccionado == null) {
+            return "";
+        }
+        return seleccionado.toString().split(" - ", 2)[0];
+    }
+
+    private static String textoSeleccionado(JComboBox<String> combo) {
+        Object seleccionado = combo.getSelectedItem();
+        if (seleccionado == null) {
+            return "";
+        }
+        String[] partes = seleccionado.toString().split(" - ", 2);
+        return partes.length > 1 ? partes[1] : "";
     }
 
     public static void main(String[] args) {

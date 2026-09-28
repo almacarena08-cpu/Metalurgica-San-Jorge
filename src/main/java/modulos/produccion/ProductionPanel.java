@@ -48,15 +48,23 @@ public class ProductionPanel {
     public static JPanel createView(EmployeeSession session) {
         usuarioId = session.getId();
         JTabbedPane tabs = new JTabbedPane();
-        tabs.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 12));
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Producción", "Seguimiento de órdenes, avances y avisos de planta.", "Ordenes recibidas",
+                new String[][]{{"Órdenes activas", "Revisar"}, {"Avances del día", "Registrar"}, {"Máquinas", "Operativas"}},
+                new String[]{"Consultá las órdenes asignadas al turno", "Registrá el avance real de cada orden", "Informá una falla para que sea atendida"},
+                entry -> tabs.setSelectedIndex(1)));
         tabs.addTab("Ordenes recibidas", crearPanelOrdenes());
         tabs.addTab("Historial de avance", crearPanelHistorial());
         tabs.addTab("Aviso a mantenimiento", crearPanelMantenimiento());
         JPanel shell = UiTheme.shell("Produccion", "Panel de Produccion", session.getNombreCompleto(), entry -> {
-            if ("Produccion".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+            if ("Inicio".equals(entry) || "Produccion".equals(entry)) {
                 tabs.setSelectedIndex(0);
-            } else if ("Mantenimiento".equals(entry)) {
+            } else if ("Ordenes recibidas".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Historial de avance".equals(entry)) {
                 tabs.setSelectedIndex(2);
+            } else if ("Aviso a mantenimiento".equals(entry)) {
+                tabs.setSelectedIndex(3);
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             } else if (!"Administracion".equals(entry)) {
@@ -74,15 +82,23 @@ public class ProductionPanel {
         ventana.setLocationRelativeTo(null);
 
         JTabbedPane tabs = new JTabbedPane();
-        tabs.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 12));
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Producción", "Seguimiento de órdenes, avances y avisos de planta.", "Ordenes recibidas",
+                new String[][]{{"Órdenes activas", "Revisar"}, {"Avances del día", "Registrar"}, {"Máquinas", "Operativas"}},
+                new String[]{"Consultá las órdenes asignadas al turno", "Registrá el avance real de cada orden", "Informá una falla para que sea atendida"},
+                entry -> tabs.setSelectedIndex(1)));
         tabs.addTab("Ordenes recibidas", crearPanelOrdenes());
         tabs.addTab("Historial de avance", crearPanelHistorial());
         tabs.addTab("Aviso a mantenimiento", crearPanelMantenimiento());
         JPanel shell = UiTheme.shell("Produccion", "Panel de Produccion", employeeName, entry -> {
-            if ("Produccion".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+            if ("Inicio".equals(entry) || "Produccion".equals(entry)) {
                 tabs.setSelectedIndex(0);
-            } else if ("Mantenimiento".equals(entry)) {
+            } else if ("Ordenes recibidas".equals(entry) || "Ordenes de trabajo".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Historial de avance".equals(entry)) {
                 tabs.setSelectedIndex(2);
+            } else if ("Aviso a mantenimiento".equals(entry)) {
+                tabs.setSelectedIndex(3);
             } else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }

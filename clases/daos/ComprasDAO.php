@@ -2,6 +2,46 @@
 require_once __DIR__ . '/BaseDAO.php';
 
 class ComprasDAO extends BaseDAO {
+    public function listarMateriales() {
+        return $this->db()->query(
+            'SELECT id_material, nombre, tipo, unidad, espesor, stock, stock_minimo, stock_maximo
+             FROM material
+             ORDER BY nombre'
+        )->fetchAll();
+    }
+
+    public function crearMaterial(array $datos) {
+        $stmt = $this->db()->prepare(
+            'INSERT INTO material (nombre, tipo, unidad, espesor, stock, stock_minimo, stock_maximo)
+             VALUES (:nombre, :tipo, :unidad, :espesor, :stock, :stock_minimo, :stock_maximo)'
+        );
+        $stmt->execute([
+            ':nombre' => $datos['nombre'], ':tipo' => $datos['tipo'] ?? '', ':unidad' => $datos['unidad'] ?? '',
+            ':espesor' => $datos['espesor'] ?? '', ':stock' => $datos['stock'] ?? 0,
+            ':stock_minimo' => $datos['stock_minimo'] ?? 0, ':stock_maximo' => $datos['stock_maximo'] ?? 0
+        ]);
+        return (int)$this->db()->lastInsertId();
+    }
+
+    public function actualizarMaterial(array $datos) {
+        $stmt = $this->db()->prepare(
+            'UPDATE material
+             SET nombre = :nombre, tipo = :tipo, unidad = :unidad, espesor = :espesor,
+                 stock_minimo = :stock_minimo, stock_maximo = :stock_maximo
+             WHERE id_material = :id_material'
+        );
+        $stmt->execute([
+            ':id_material' => (int)$datos['id_material'], ':nombre' => $datos['nombre'],
+            ':tipo' => $datos['tipo'] ?? '', ':unidad' => $datos['unidad'] ?? '', ':espesor' => $datos['espesor'] ?? '',
+            ':stock_minimo' => $datos['stock_minimo'], ':stock_maximo' => $datos['stock_maximo']
+        ]);
+    }
+
+    public function eliminarMaterial(int $idMaterial) {
+        $stmt = $this->db()->prepare('DELETE FROM material WHERE id_material = :id_material');
+        $stmt->execute([':id_material' => $idMaterial]);
+    }
+
     public function listarProveedores() {
         return $this->db()->query(
             'SELECT id_proveedor, razon_social, cuit, telefono, email

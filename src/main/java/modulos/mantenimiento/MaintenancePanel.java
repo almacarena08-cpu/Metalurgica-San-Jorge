@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
@@ -41,14 +42,17 @@ public class MaintenancePanel {
     }
 
     public static JPanel createView(EmployeeSession session) {
+        JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", session.getNombreCompleto(), entry -> {
-            if ("Configuracion".equals(entry)) {
+            if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) {
+                tabs.setSelectedIndex(0);
+            } else if ("Solicitudes".equals(entry) || "Preventivos".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
-            } else if (!"Mantenimiento".equals(entry)) {
-                JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
         });
-        UiTheme.content(shell).add(crearPanel(), BorderLayout.CENTER);
+        UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }
 
@@ -57,14 +61,25 @@ public class MaintenancePanel {
         UiTheme.configureWindow(ventana);
         ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         ventana.setLocationRelativeTo(null);
+        JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", employeeName, entry -> {
-            if (!"Mantenimiento".equals(entry)) {
-                JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
-            }
+            if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) tabs.setSelectedIndex(0);
+            else if ("Solicitudes".equals(entry) || "Preventivos".equals(entry)) tabs.setSelectedIndex(1);
         });
-        UiTheme.content(shell).add(crearPanel(), BorderLayout.CENTER);
+        UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         ventana.add(shell);
         ventana.setVisible(true);
+    }
+
+    private static JTabbedPane crearTabs() {
+        JTabbedPane tabs = new JTabbedPane();
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Mantenimiento", "Organizá solicitudes, reparaciones y tareas preventivas.", "Solicitudes",
+                new String[][]{{"Solicitudes", "Atender"}, {"Reparaciones", "En curso"}, {"Preventivos", "Programar"}},
+                new String[]{"Revisá reportes de falla pendientes", "Actualizá reparaciones y repuestos utilizados", "Programá controles preventivos para cada máquina"},
+                entry -> tabs.setSelectedIndex(1)));
+        tabs.addTab("Solicitudes y preventivos", crearPanel());
+        return tabs;
     }
 
     private static JPanel crearPanel() {

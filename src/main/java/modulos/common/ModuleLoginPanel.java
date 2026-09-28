@@ -7,7 +7,6 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
@@ -27,7 +26,7 @@ public class ModuleLoginPanel extends JPanel {
         setBackground(UiTheme.BACKGROUND);
 
         JPanel card = new JPanel(new GridBagLayout());
-        card.setBackground(Color.WHITE);
+        card.setBackground(UiTheme.WHITE);
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(UiTheme.LINE),
             BorderFactory.createEmptyBorder(20, 22, 20, 22)));
@@ -38,23 +37,27 @@ public class ModuleLoginPanel extends JPanel {
         c.insets = new Insets(6, 0, 6, 0);
 
         JLabel title = new JLabel("MetalGest");
-        title.setForeground(UiTheme.NAVY);
+        title.setForeground(UiTheme.ORANGE);
         title.setFont(new Font("SansSerif", Font.BOLD, 28));
         addToCard(card, new IndustrialBanner(), c, 0);
         addToCard(card, title, c, 1);
         JLabel subtitle = new JLabel("Acceso seguro al sistema");
         subtitle.setForeground(UiTheme.MUTED);
         addToCard(card, subtitle, c, 2);
-        addToCard(card, new JLabel("Usuario"), c, 3);
+        JLabel usuarioLabel = new JLabel("Usuario");
+        usuarioLabel.setForeground(UiTheme.INK);
+        addToCard(card, usuarioLabel, c, 3);
         UiTheme.styleInput(nombre);
         addToCard(card, nombre, c, 4);
-        addToCard(card, new JLabel("Contrasena"), c, 5);
+        JLabel contrasenaLabel = new JLabel("Contraseña");
+        contrasenaLabel.setForeground(UiTheme.INK);
+        addToCard(card, contrasenaLabel, c, 5);
         UiTheme.styleInput(contrasena);
         addToCard(card, contrasena, c, 6);
         JButton ingresar = new JButton("Ingresar");
         UiTheme.styleButton(ingresar, true);
         addToCard(card, ingresar, c, 7);
-        estado.setForeground(new Color(190, 55, 65));
+        estado.setForeground(UiTheme.YELLOW);
         addToCard(card, estado, c, 8);
         add(card, new GridBagConstraints());
 

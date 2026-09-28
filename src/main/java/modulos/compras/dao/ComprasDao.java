@@ -27,4 +27,16 @@ public class ComprasDao extends BaseApiDao {
     public ApiResult crearCompra(Map<String, String> datos) throws IOException {
         return post("compras_create", datos);
     }
+
+    public ApiResult crearMaterial(Map<String, String> datos) throws IOException {
+        return post("materiales_create", datos);
+    }
+
+    public ApiResult actualizarMaterial(Map<String, String> datos) throws IOException {
+        return post("materiales_update", datos);
+    }
+
+    public ApiResult eliminarMaterial(Map<String, String> datos) throws IOException {
+        return post("materiales_delete", datos);
+    }
 }

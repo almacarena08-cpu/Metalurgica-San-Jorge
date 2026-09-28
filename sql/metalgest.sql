@@ -237,13 +237,14 @@ CREATE TABLE material (
     unidad VARCHAR(20),
     espesor VARCHAR(30),
     stock DECIMAL(10,2) DEFAULT 0,
-    stock_minimo DECIMAL(10,2) DEFAULT 0
+    stock_minimo DECIMAL(10,2) DEFAULT 0,
+    stock_maximo DECIMAL(10,2) DEFAULT 0
 );
 
-INSERT INTO material (nombre, tipo, unidad, espesor, stock, stock_minimo) VALUES
-('Acero estructural', 'Chapa', 'kg', '6 mm', 1450.00, 300.00),
-('Acero SAE 1010', 'Barra', 'kg', '25 mm', 820.00, 250.00),
-('Electrodo E6013', 'Consumible', 'kg', NULL, 95.00, 40.00);
+INSERT INTO material (nombre, tipo, unidad, espesor, stock, stock_minimo, stock_maximo) VALUES
+('Acero estructural', 'Chapa', 'kg', '6 mm', 1450.00, 300.00, 2500.00),
+('Acero SAE 1010', 'Barra', 'kg', '25 mm', 820.00, 250.00, 1500.00),
+('Electrodo E6013', 'Consumible', 'kg', NULL, 95.00, 40.00, 250.00);
 
 
 -- =========================

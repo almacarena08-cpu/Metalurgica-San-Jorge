@@ -301,7 +301,57 @@ if ($action === 'mantenimiento_update') {
 }
 
 if ($action === 'materiales_list') {
-    api_json($depositoDAO->listarMateriales());
+    api_json($comprasDAO->listarMateriales());
+}
+
+if ($action === 'materiales_create') {
+    try {
+        $stockMinimo = (float)api_input('stock_minimo', '0');
+        $stockMaximo = (float)api_input('stock_maximo', '0');
+        if ($stockMinimo < 0 || $stockMaximo < $stockMinimo) {
+            api_json(['success' => false, 'message' => 'Los limites de stock no son validos'], 422);
+        }
+        $idMaterial = $comprasDAO->crearMaterial([
+            'nombre' => api_required('nombre'), 'tipo' => api_input('tipo', ''), 'unidad' => api_input('unidad', ''),
+            'espesor' => api_input('espesor', ''), 'stock' => (float)api_input('stock', '0'),
+            'stock_minimo' => $stockMinimo, 'stock_maximo' => $stockMaximo
+        ]);
+        api_json(['success' => true, 'id_material' => $idMaterial]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'materiales_update') {
+    try {
+        $idMaterial = api_int('id_material');
+        $stockMinimo = (float)api_input('stock_minimo', '0');
+        $stockMaximo = (float)api_input('stock_maximo', '0');
+        if ($idMaterial <= 0 || $stockMinimo < 0 || $stockMaximo < $stockMinimo) {
+            api_json(['success' => false, 'message' => 'Los limites de stock no son validos'], 422);
+        }
+        $comprasDAO->actualizarMaterial([
+            'id_material' => $idMaterial, 'nombre' => api_required('nombre'), 'tipo' => api_input('tipo', ''),
+            'unidad' => api_input('unidad', ''), 'espesor' => api_input('espesor', ''),
+            'stock_minimo' => $stockMinimo, 'stock_maximo' => $stockMaximo
+        ]);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'materiales_delete') {
+    try {
+        $idMaterial = api_int('id_material');
+        if ($idMaterial <= 0) {
+            api_json(['success' => false, 'message' => 'El material no es valido'], 422);
+        }
+        $comprasDAO->eliminarMaterial($idMaterial);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => 'No se puede eliminar un material que ya tiene movimientos u ordenes asociadas'], 409);
+    }
 }
 
 if ($action === 'deposito_movimientos_list') {

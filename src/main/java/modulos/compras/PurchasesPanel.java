@@ -46,6 +46,14 @@ public class PurchasesPanel {
         JPanel shell = UiTheme.shell("Compras", "Gestion de compras", session.getNombreCompleto(), entry -> {
             if ("Compras".equals(entry) || "Inicio".equals(entry)) {
                 tabs.setSelectedIndex(0);
+            } else if ("Ordenes de compra".equals(entry)) {
+                tabs.setSelectedIndex(1);
+            } else if ("Proveedores".equals(entry)) {
+                tabs.setSelectedIndex(2);
+            } else if ("Materiales".equals(entry)) {
+                tabs.setSelectedIndex(3);
+            } else if ("Alertas de stock".equals(entry)) {
+                tabs.setSelectedIndex(4);
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             } else if (!"Compras".equals(entry)) {
@@ -69,8 +77,14 @@ public class PurchasesPanel {
 
     private static JTabbedPane crearTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        UiTheme.styleTabs(tabs);
+        tabs.addTab("Dashboard", UiTheme.dashboard("Compras", "Gestioná proveedores, abastecimiento y alertas de stock.", "Ordenes de compra",
+                new String[][]{{"Compras abiertas", "Revisar"}, {"Proveedores", "Gestionar"}, {"Alertas", "Atender"}},
+                new String[]{"Creá y seguí órdenes de compra pendientes", "Mantené actualizada la información de proveedores", "Priorizá la reposición de materiales críticos"},
+                entry -> tabs.setSelectedIndex(1)));
         tabs.addTab("Ordenes de compra", crearCompras());
         tabs.addTab("Proveedores", crearProveedores());
+        tabs.addTab("Materiales", crearMateriales());
         tabs.addTab("Alertas de stock", crearAlertas());
         return tabs;
     }
@@ -222,6 +236,117 @@ public class PurchasesPanel {
         return panel;
     }
 
+    private static JPanel crearMateriales() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(UiTheme.BACKGROUND);
+        DefaultTableModel modelo = new DefaultTableModel(
+                new String[]{"ID", "Material", "Tipo", "Unidad", "Espesor", "Stock", "Mínimo", "Máximo"}, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable tabla = new JTable(modelo);
+        UiTheme.styleTable(tabla);
+        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
+
+        JTextField nombre = new JTextField();
+        JTextField tipo = new JTextField();
+        JTextField unidad = new JTextField("kg");
+        JTextField espesor = new JTextField();
+        JTextField stock = new JTextField("0");
+        JTextField minimo = new JTextField("0");
+        JTextField maximo = new JTextField("0");
+        JButton crear = new JButton("Crear material");
+        JButton guardar = new JButton("Guardar límites");
+        JButton eliminar = new JButton("Eliminar material");
+        JButton recargar = new JButton("Recargar");
+        for (javax.swing.JComponent input : new javax.swing.JComponent[]{nombre, tipo, unidad, espesor, stock, minimo, maximo}) {
+            UiTheme.styleInput(input);
+        }
+        UiTheme.styleButton(crear, true);
+        UiTheme.styleButton(guardar, false);
+        UiTheme.styleButton(eliminar, false);
+        UiTheme.styleButton(recargar, false);
+
+        JPanel form = new JPanel(new GridLayout(2, 8, 8, 8));
+        for (String label : new String[]{"Nombre", "Tipo", "Unidad", "Espesor", "Stock inicial", "Mínimo", "Máximo", "Acciones"}) {
+            JLabel campo = new JLabel(label);
+            campo.setForeground(UiTheme.INK);
+            form.add(campo);
+        }
+        form.add(nombre);
+        form.add(tipo);
+        form.add(unidad);
+        form.add(espesor);
+        form.add(stock);
+        form.add(minimo);
+        form.add(maximo);
+        JPanel acciones = new JPanel();
+        acciones.setBackground(UiTheme.BACKGROUND);
+        acciones.add(crear);
+        acciones.add(guardar);
+        acciones.add(eliminar);
+        acciones.add(recargar);
+        form.add(acciones);
+        panel.add(form, BorderLayout.SOUTH);
+
+        Runnable limpiar = () -> {
+            nombre.setText(""); tipo.setText(""); unidad.setText("kg"); espesor.setText("");
+            stock.setText("0"); minimo.setText("0"); maximo.setText("0"); tabla.clearSelection();
+        };
+        recargarMateriales(modelo);
+        tabla.getSelectionModel().addListSelectionListener(event -> {
+            if (!event.getValueIsAdjusting() && tabla.getSelectedRow() >= 0) {
+                int fila = tabla.getSelectedRow();
+                nombre.setText(valor(modelo, fila, 1));
+                tipo.setText(valor(modelo, fila, 2));
+                unidad.setText(valor(modelo, fila, 3));
+                espesor.setText(valor(modelo, fila, 4));
+                stock.setText(valor(modelo, fila, 5));
+                minimo.setText(valor(modelo, fila, 6));
+                maximo.setText(valor(modelo, fila, 7));
+            }
+        });
+        recargar.addActionListener(event -> recargarMateriales(modelo));
+        crear.addActionListener(event -> {
+            if (!materialValido(nombre, stock, minimo, maximo)) return;
+            Map<String, String> datos = datosMaterial(nombre, tipo, unidad, espesor, stock, minimo, maximo);
+            if (post(() -> comprasDao.crearMaterial(datos), "Material creado.")) {
+                limpiar.run();
+                recargarMateriales(modelo);
+            }
+        });
+        guardar.addActionListener(event -> {
+            int fila = tabla.getSelectedRow();
+            if (fila < 0) {
+                mostrarAviso("Selecciona un material para actualizar sus límites.");
+                return;
+            }
+            if (!materialValido(nombre, stock, minimo, maximo)) return;
+            Map<String, String> datos = datosMaterial(nombre, tipo, unidad, espesor, stock, minimo, maximo);
+            datos.put("id_material", valor(modelo, fila, 0));
+            if (post(() -> comprasDao.actualizarMaterial(datos), "Material actualizado.")) {
+                recargarMateriales(modelo);
+            }
+        });
+        eliminar.addActionListener(event -> {
+            int fila = tabla.getSelectedRow();
+            if (fila < 0) {
+                mostrarAviso("Selecciona un material para eliminar.");
+                return;
+            }
+            String material = valor(modelo, fila, 1);
+            int confirmacion = JOptionPane.showConfirmDialog(null, "¿Eliminar " + material + "?", "Eliminar material", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirmacion == JOptionPane.YES_OPTION) {
+                Map<String, String> datos = new LinkedHashMap<>();
+                datos.put("id_material", valor(modelo, fila, 0));
+                if (post(() -> comprasDao.eliminarMaterial(datos), "Material eliminado.")) {
+                    limpiar.run();
+                    recargarMateriales(modelo);
+                }
+            }
+        });
+        return panel;
+    }
+
     private static void recargarCompras(DefaultTableModel modelo) {
         modelo.setRowCount(0);
         for (Map<String, String> row : getRows("compras")) {
@@ -233,6 +358,14 @@ public class PurchasesPanel {
         modelo.setRowCount(0);
         for (Map<String, String> row : getRows("proveedores")) {
             modelo.addRow(new Object[]{row.get("id_proveedor"), row.get("razon_social"), row.get("cuit"), row.get("telefono"), row.get("email")});
+        }
+    }
+
+    private static void recargarMateriales(DefaultTableModel modelo) {
+        modelo.setRowCount(0);
+        for (Map<String, String> row : getRows("materiales")) {
+            modelo.addRow(new Object[]{row.get("id_material"), row.get("nombre"), row.get("tipo"), row.get("unidad"),
+                    row.get("espesor"), row.get("stock"), row.get("stock_minimo"), row.get("stock_maximo")});
         }
     }
 
@@ -297,6 +430,34 @@ public class PurchasesPanel {
 
     private static String idSeleccionado(JComboBox<String> combo) {
         return combo.getSelectedItem().toString().split(" - ", 2)[0];
+    }
+
+    private static Map<String, String> datosMaterial(JTextField nombre, JTextField tipo, JTextField unidad, JTextField espesor,
+                                                      JTextField stock, JTextField minimo, JTextField maximo) {
+        Map<String, String> datos = new LinkedHashMap<>();
+        datos.put("nombre", nombre.getText().trim());
+        datos.put("tipo", tipo.getText().trim());
+        datos.put("unidad", unidad.getText().trim());
+        datos.put("espesor", espesor.getText().trim());
+        datos.put("stock", stock.getText().trim());
+        datos.put("stock_minimo", minimo.getText().trim());
+        datos.put("stock_maximo", maximo.getText().trim());
+        return datos;
+    }
+
+    private static boolean materialValido(JTextField nombre, JTextField stock, JTextField minimo, JTextField maximo) {
+        if (nombre.getText().trim().isEmpty() || !esDecimalNoNegativo(stock.getText())
+                || !esDecimalNoNegativo(minimo.getText()) || !esDecimalNoNegativo(maximo.getText())
+                || numero(maximo.getText()) < numero(minimo.getText())) {
+            mostrarAviso("Completa nombre y límites válidos: el máximo debe ser mayor o igual al mínimo.");
+            return false;
+        }
+        return true;
+    }
+
+    private static String valor(DefaultTableModel modelo, int fila, int columna) {
+        Object valor = modelo.getValueAt(fila, columna);
+        return valor == null ? "" : valor.toString();
     }
 
     private static boolean esDecimalPositivo(String valor) {
