@@ -78,7 +78,7 @@ if ($action === 'preferences_save') {
         }
         $preferenciasDAO->guardar([
             'id_usuario' => $idUsuario,
-            'modo_oscuro' => api_int('modo_oscuro') === 1 ? 1 : 0,
+            'modo_oscuro' => 1,
             'tamano_texto' => $tamano
         ]);
         api_json(['success' => true]);

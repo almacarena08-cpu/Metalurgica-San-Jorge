@@ -6,7 +6,7 @@ class PreferenciasUsuarioDAO extends BaseDAO {
         $this->db()->exec(
             'CREATE TABLE IF NOT EXISTS preferencias_usuario (
                 id_usuario INT PRIMARY KEY,
-                modo_oscuro TINYINT(1) NOT NULL DEFAULT 0,
+                modo_oscuro TINYINT(1) NOT NULL DEFAULT 1,
                 tamano_texto INT NOT NULL DEFAULT 12,
                 FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
             )'
@@ -19,7 +19,7 @@ class PreferenciasUsuarioDAO extends BaseDAO {
         );
         $stmt->execute([':id_usuario' => (int)$idUsuario]);
         $preferencias = $stmt->fetch();
-        return $preferencias ?: ['modo_oscuro' => 0, 'tamano_texto' => 12];
+        return $preferencias ?: ['modo_oscuro' => 1, 'tamano_texto' => 12];
     }
 
     public function guardar(array $datos) {
@@ -30,7 +30,7 @@ class PreferenciasUsuarioDAO extends BaseDAO {
         );
         $stmt->execute([
             ':id_usuario' => (int)$datos['id_usuario'],
-            ':modo_oscuro' => (int)$datos['modo_oscuro'],
+            ':modo_oscuro' => 1,
             ':tamano_texto' => (int)$datos['tamano_texto']
         ]);
     }

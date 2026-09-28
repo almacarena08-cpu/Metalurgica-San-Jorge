@@ -56,7 +56,7 @@ SELECT 'Sofia', 'Martinez', 'calidad', 'calidad', id_rol FROM rol WHERE nombre =
 
 CREATE TABLE preferencias_usuario (
     id_usuario INT PRIMARY KEY,
-    modo_oscuro TINYINT(1) NOT NULL DEFAULT 0,
+    modo_oscuro TINYINT(1) NOT NULL DEFAULT 1,
     tamano_texto INT NOT NULL DEFAULT 12,
     FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
 );

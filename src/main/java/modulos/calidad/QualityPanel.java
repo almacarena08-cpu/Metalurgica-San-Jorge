@@ -44,7 +44,7 @@ public class QualityPanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         usuarioId = session.getId();
         JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Calidad", "Control de calidad", session.getNombreCompleto(), entry -> {
@@ -59,7 +59,7 @@ public class QualityPanel {
             } else if (!"Calidad".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este modulo pertenece a otra aplicacion.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }

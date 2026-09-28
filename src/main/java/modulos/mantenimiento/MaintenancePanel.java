@@ -41,7 +41,7 @@ public class MaintenancePanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto(), session.getId()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", session.getNombreCompleto(), entry -> {
             if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) {
@@ -51,7 +51,7 @@ public class MaintenancePanel {
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }

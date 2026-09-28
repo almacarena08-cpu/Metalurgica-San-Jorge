@@ -43,7 +43,7 @@ public class DepositPanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         usuarioId = session.getId();
         JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Deposito", "Gestion de deposito", session.getNombreCompleto(), entry -> {
@@ -58,7 +58,7 @@ public class DepositPanel {
             } else if (!"Deposito".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este modulo pertenece a otra aplicacion.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }

@@ -45,7 +45,7 @@ public class ProductionPanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         usuarioId = session.getId();
         JTabbedPane tabs = new JTabbedPane();
         UiTheme.styleTabs(tabs);
@@ -70,7 +70,7 @@ public class ProductionPanel {
             } else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }

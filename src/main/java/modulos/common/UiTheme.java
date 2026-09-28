@@ -26,6 +26,9 @@ import java.awt.Rectangle;
 import java.util.function.Consumer;
 
 public final class UiTheme {
+    private static final String SIDEBAR_PROPERTY = "metalgest.sidebar";
+    private static final String MENU_PROPERTY = "metalgest.menu";
+    private static final String ACTIVE_NAVIGATION_PROPERTY = "metalgest.activeNavigation";
     public static final Color BLACK = new Color(12, 14, 16);
     public static final Color NAVY = new Color(17, 20, 23);
     public static final Color NAVY_LIGHT = new Color(37, 42, 47);
@@ -66,9 +69,16 @@ public final class UiTheme {
     }
 
     public static JPanel shell(String module, String section, String employeeName, Consumer<String> onNavigate) {
+        return shell(module, section, employeeName, onNavigate, () -> {
+        });
+    }
+
+    public static JPanel shell(String module, String section, String employeeName, Consumer<String> onNavigate, Runnable onLogout) {
         JPanel shell = new JPanel(new BorderLayout());
         shell.setBackground(BACKGROUND);
-        shell.add(sidebar(module, onNavigate), BorderLayout.WEST);
+        JPanel sidebar = sidebar(module, onNavigate, onLogout);
+        shell.putClientProperty(SIDEBAR_PROPERTY, sidebar);
+        shell.add(sidebar, BorderLayout.WEST);
         JPanel content = new JPanel(new BorderLayout(0, 18));
         content.setBorder(BorderFactory.createEmptyBorder(0, 24, 24, 24));
         content.setBackground(BACKGROUND);
@@ -87,6 +97,11 @@ public final class UiTheme {
     }
 
     public static JPanel sidebar(String selected, Consumer<String> onNavigate) {
+        return sidebar(selected, onNavigate, () -> {
+        });
+    }
+
+    public static JPanel sidebar(String selected, Consumer<String> onNavigate, Runnable onLogout) {
         JPanel sidebar = new JPanel(new BorderLayout(0, 20));
         sidebar.setPreferredSize(new Dimension(190, 0));
         sidebar.setBackground(NAVY);
@@ -101,6 +116,7 @@ public final class UiTheme {
 
         JPanel menu = new JPanel(new GridLayout(0, 1, 0, 6));
         menu.setOpaque(false);
+        sidebar.putClientProperty(MENU_PROPERTY, menu);
         String[] entries = menuEntries(selected);
         for (String entry : entries) {
             JButton item = new JButton(entry);
@@ -112,27 +128,83 @@ public final class UiTheme {
             item.setBackground(active ? BLUE : NAVY);
             item.setForeground(Color.WHITE);
             item.setFont(new Font("SansSerif", active ? Font.BOLD : Font.PLAIN, 11));
+            if (active) {
+                sidebar.putClientProperty(ACTIVE_NAVIGATION_PROPERTY, item);
+            }
             item.setBorder(BorderFactory.createEmptyBorder(10, 9, 10, 6));
             String action = entry;
             if ("Ordenes".equals(action)) {
                 action = "Ordenes de trabajo";
             }
             String navigationAction = action;
-            item.addActionListener(event -> onNavigate.accept(navigationAction));
+            item.addActionListener(event -> {
+                selectSidebarItem(sidebar, item);
+                onNavigate.accept(navigationAction);
+            });
             menu.add(item);
         }
         sidebar.add(menu, BorderLayout.CENTER);
-        JButton footer = new JButton("⚙  Configuracion");
-        footer.setHorizontalAlignment(SwingConstants.LEFT);
-        footer.setFocusPainted(false);
-        footer.setBorderPainted(false);
+        JPanel footer = new JPanel(new GridLayout(0, 1, 0, 6));
         footer.setOpaque(false);
-        footer.setForeground(new Color(213, 224, 230));
-        footer.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        footer.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 0));
-        footer.addActionListener(event -> onNavigate.accept("Configuracion"));
+        JButton settings = new JButton("⚙  Configuracion");
+        settings.setHorizontalAlignment(SwingConstants.LEFT);
+        settings.setFocusPainted(false);
+        settings.setBorderPainted(false);
+        settings.setOpaque(false);
+        settings.setForeground(new Color(213, 224, 230));
+        settings.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        settings.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 0));
+        settings.addActionListener(event -> onNavigate.accept("Configuracion"));
+        footer.add(settings);
+        JButton logout = new JButton("Salir");
+        logout.setHorizontalAlignment(SwingConstants.LEFT);
+        logout.setFocusPainted(false);
+        logout.setBorderPainted(false);
+        logout.setOpaque(false);
+        logout.setForeground(ORANGE);
+        logout.setFont(new Font("SansSerif", Font.BOLD, 11));
+        logout.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 0));
+        logout.addActionListener(event -> onLogout.run());
+        footer.add(logout);
         sidebar.add(footer, BorderLayout.SOUTH);
         return sidebar;
+    }
+
+    public static void selectNavigationFrom(java.awt.Component source, String entry) {
+        java.awt.Component current = source;
+        while (current != null) {
+            if (current instanceof JPanel) {
+                Object sidebarValue = ((JPanel) current).getClientProperty(SIDEBAR_PROPERTY);
+                if (sidebarValue instanceof JPanel) {
+                    JPanel sidebar = (JPanel) sidebarValue;
+                    JPanel menu = (JPanel) sidebar.getClientProperty(MENU_PROPERTY);
+                    if (menu == null) {
+                        return;
+                    }
+                    String menuEntry = "Ordenes de trabajo".equals(entry) ? "Ordenes" : entry;
+                    for (java.awt.Component item : menu.getComponents()) {
+                        if (item instanceof JButton && menuEntry.equals(((JButton) item).getText())) {
+                            selectSidebarItem(sidebar, (JButton) item);
+                            return;
+                        }
+                    }
+                    return;
+                }
+            }
+            current = current.getParent();
+        }
+    }
+
+    private static void selectSidebarItem(JPanel sidebar, JButton item) {
+        Object activeValue = sidebar.getClientProperty(ACTIVE_NAVIGATION_PROPERTY);
+        if (activeValue instanceof JButton && activeValue != item) {
+            JButton activeItem = (JButton) activeValue;
+            activeItem.setBackground(NAVY);
+            activeItem.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        }
+        item.setBackground(ORANGE);
+        item.setFont(new Font("SansSerif", Font.BOLD, 11));
+        sidebar.putClientProperty(ACTIVE_NAVIGATION_PROPERTY, item);
     }
 
     private static String[] menuEntries(String module) {
@@ -231,13 +303,13 @@ public final class UiTheme {
     }
 
     public static void applyPreferences(java.awt.Component component, UserPreferences preferences) {
-        applyPreferences(component, preferences.isDarkMode(), preferences.getTextSize(), false);
+        applyPreferences(component, preferences.getTextSize(), false);
     }
 
-    private static void applyPreferences(java.awt.Component component, boolean dark, int textSize, boolean nested) {
-        Color background = dark ? BLACK : BACKGROUND;
-        Color surface = dark ? new Color(27, 31, 35) : WHITE;
-        Color input = dark ? new Color(39, 44, 49) : NAVY_LIGHT;
+    private static void applyPreferences(java.awt.Component component, int textSize, boolean nested) {
+        Color background = BLACK;
+        Color surface = new Color(27, 31, 35);
+        Color input = new Color(39, 44, 49);
         Color foreground = INK;
         Color secondary = MUTED;
         Color border = LINE;
@@ -279,7 +351,7 @@ public final class UiTheme {
         }
         if (component instanceof java.awt.Container) {
             for (java.awt.Component child : ((java.awt.Container) component).getComponents()) {
-                applyPreferences(child, dark, textSize, true);
+                applyPreferences(child, textSize, true);
             }
         }
     }
@@ -338,7 +410,10 @@ public final class UiTheme {
         copy.add(subtitle);
         JButton action = new JButton(primaryAction);
         styleButton(action, true);
-        action.addActionListener(event -> onNavigate.accept(primaryAction));
+        action.addActionListener(event -> {
+            onNavigate.accept(primaryAction);
+            selectNavigationFrom(dashboard, primaryAction);
+        });
         welcome.add(copy, BorderLayout.WEST);
         welcome.add(action, BorderLayout.EAST);
         dashboard.add(welcome, BorderLayout.NORTH);

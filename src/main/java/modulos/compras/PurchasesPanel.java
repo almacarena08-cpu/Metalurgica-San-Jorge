@@ -41,7 +41,7 @@ public class PurchasesPanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         JTabbedPane tabs = crearTabs();
         JPanel shell = UiTheme.shell("Compras", "Gestion de compras", session.getNombreCompleto(), entry -> {
             if ("Compras".equals(entry) || "Inicio".equals(entry)) {
@@ -59,7 +59,7 @@ public class PurchasesPanel {
             } else if (!"Compras".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este modulo pertenece a otra aplicacion.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }

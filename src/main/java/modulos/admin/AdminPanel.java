@@ -48,11 +48,14 @@ public class AdminPanel {
         SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
 
-    public static JPanel createView(EmployeeSession session) {
+    public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         usuarioId = session.getId();
         CardLayout layout = new CardLayout();
         JPanel pages = new JPanel(layout);
-        pages.add(crearDashboard(name -> layout.show(pages, name)), "resumen");
+        pages.add(crearDashboard(name -> {
+            layout.show(pages, name);
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "Ordenes");
+        }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", session.getNombreCompleto(), entry -> {
@@ -67,7 +70,7 @@ public class AdminPanel {
             } else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        });
+        }, onLogout);
         UiTheme.content(shell).add(pages, BorderLayout.CENTER);
         return shell;
     }
@@ -80,7 +83,10 @@ public class AdminPanel {
 
         CardLayout layout = new CardLayout();
         JPanel pages = new JPanel(layout);
-        pages.add(crearDashboard(name -> layout.show(pages, name)), "resumen");
+        pages.add(crearDashboard(name -> {
+            layout.show(pages, name);
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "Ordenes");
+        }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", employeeName, entry -> {
