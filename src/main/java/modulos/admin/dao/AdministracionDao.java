@@ -16,6 +16,10 @@ public class AdministracionDao extends BaseApiDao {
         return getRows("clientes_list");
     }
 
+    public List<Map<String, String>> listarChats() throws IOException {
+        return getRows("chat_list");
+    }
+
     public List<Map<String, String>> listarMateriales() throws IOException {
         return getRows("materiales_list");
     }
@@ -34,6 +38,10 @@ public class AdministracionDao extends BaseApiDao {
 
     public ApiResult actualizarOrden(Map<String, String> datos) throws IOException {
         return post("orden_update_status", datos);
+    }
+
+    public ApiResult responderChat(Map<String, String> datos) throws IOException {
+        return post("chat_reply", datos);
     }
 
 }

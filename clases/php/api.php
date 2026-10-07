@@ -9,6 +9,8 @@ require_once __DIR__ . '/../daos/PreferenciasUsuarioDAO.php';
 require_once __DIR__ . '/../daos/DepositoDAO.php';
 require_once __DIR__ . '/../daos/ComprasDAO.php';
 require_once __DIR__ . '/../daos/CalidadDAO.php';
+require_once __DIR__ . '/../daos/ClienteDAO.php';
+require_once __DIR__ . '/../daos/ChatDAO.php';
 
 function api_db() {
     return Database::getConnection();
@@ -41,6 +43,15 @@ function api_date($value) {
     return $value === '' || $value === null ? null : $value;
 }
 
+function api_ensure_role($nombre) {
+    $stmt = api_db()->prepare(
+        'INSERT INTO rol (nombre)
+         SELECT :nombre
+         WHERE NOT EXISTS (SELECT 1 FROM rol WHERE nombre = :nombre_check)'
+    );
+    $stmt->execute([':nombre' => $nombre, ':nombre_check' => $nombre]);
+}
+
 $action = $_GET['action'] ?? null;
 $pedidoDAO = new PedidoDAO();
 $ordenTrabajoDAO = new OrdenTrabajoDAO();
@@ -51,6 +62,8 @@ $preferenciasDAO = new PreferenciasUsuarioDAO();
 $depositoDAO = new DepositoDAO();
 $comprasDAO = new ComprasDAO();
 $calidadDAO = new CalidadDAO();
+$clienteDAO = new ClienteDAO();
+$chatDAO = new ChatDAO();
 
 if ($action === 'health') {
     api_json(['success' => true, 'app' => 'MetalGest']);
@@ -90,6 +103,7 @@ if ($action === 'preferences_save') {
 if ($action === 'login') {
     $nombreLogin = api_required('nombre');
     $contrasenaLogin = api_required('contrasena');
+    api_ensure_role('Cliente');
     $usuariosBase = [
         ['Gerencia', 'San Jorge', 'gerencia', 'Gerencia'],
         ['Administracion', 'San Jorge', 'admin', 'Administracion'],
@@ -118,7 +132,7 @@ if ($action === 'login') {
         ]);
     }
     $stmt = api_db()->prepare(
-        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, r.nombre AS rol
+        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.id_cliente, r.nombre AS rol
          FROM usuario u
          INNER JOIN rol r ON r.id_rol = u.id_rol
          WHERE (u.usuario = :usuario OR u.nombre = :nombre OR CONCAT(u.nombre, " ", u.apellido) = :nombre_completo)
@@ -138,8 +152,177 @@ if ($action === 'login') {
     api_json(['success' => true, 'usuario' => $user]);
 }
 
+if ($action === 'cliente_register') {
+    try {
+        api_ensure_role('Cliente');
+        $usuario = api_required('usuario');
+        $contrasena = api_required('contrasena');
+        $razonSocial = api_required('razon_social');
+        $email = api_required('email');
+        $pdo = api_db();
+        $pdo->beginTransaction();
+
+        $cliente = $pdo->prepare(
+            'INSERT INTO cliente (razon_social, cuit, telefono, email, direccion)
+             VALUES (:razon_social, :cuit, :telefono, :email, :direccion)'
+        );
+        $cliente->execute([
+            ':razon_social' => $razonSocial,
+            ':cuit' => api_input('cuit', ''),
+            ':telefono' => api_input('telefono', ''),
+            ':email' => $email,
+            ':direccion' => api_input('direccion', '')
+        ]);
+        $idCliente = (int)$pdo->lastInsertId();
+
+        $usuarioStmt = $pdo->prepare(
+            'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol, id_cliente)
+             SELECT :nombre, "", :usuario, :contrasena, id_rol, :id_cliente
+             FROM rol
+             WHERE nombre = "Cliente"'
+        );
+        $usuarioStmt->execute([
+            ':nombre' => $razonSocial,
+            ':usuario' => $usuario,
+            ':contrasena' => $contrasena,
+            ':id_cliente' => $idCliente
+        ]);
+        $idUsuario = (int)$pdo->lastInsertId();
+        $pdo->commit();
+        api_json([
+            'success' => true,
+            'usuario' => [
+                'id_usuario' => $idUsuario,
+                'nombre' => $razonSocial,
+                'apellido' => '',
+                'usuario' => $usuario,
+                'id_cliente' => $idCliente,
+                'rol' => 'Cliente'
+            ]
+        ]);
+    } catch (Throwable $e) {
+        if (api_db()->inTransaction()) {
+            api_db()->rollBack();
+        }
+        $message = strpos($e->getMessage(), 'Duplicate') !== false ? 'El usuario ya existe' : $e->getMessage();
+        api_json(['success' => false, 'message' => $message], 500);
+    }
+}
+
 if ($action === 'clientes_list') {
-    api_json(api_db()->query('SELECT * FROM cliente ORDER BY razon_social')->fetchAll());
+    api_json($clienteDAO->listar());
+}
+
+if ($action === 'clientes_create') {
+    try {
+        $idCliente = $clienteDAO->crear([
+            'razon_social' => api_required('razon_social'),
+            'cuit' => api_input('cuit', ''),
+            'telefono' => api_input('telefono', ''),
+            'email' => api_input('email', ''),
+            'direccion' => api_input('direccion', '')
+        ]);
+        api_json(['success' => true, 'id_cliente' => $idCliente]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'clientes_update') {
+    try {
+        $idCliente = api_int('id_cliente');
+        if ($idCliente <= 0) {
+            api_json(['success' => false, 'message' => 'El cliente debe ser valido'], 422);
+        }
+        $clienteDAO->actualizar([
+            'id_cliente' => $idCliente,
+            'razon_social' => api_required('razon_social'),
+            'cuit' => api_input('cuit', ''),
+            'telefono' => api_input('telefono', ''),
+            'email' => api_input('email', ''),
+            'direccion' => api_input('direccion', '')
+        ]);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'clientes_delete') {
+    try {
+        $idCliente = api_int('id_cliente');
+        if ($idCliente <= 0) {
+            api_json(['success' => false, 'message' => 'El cliente debe ser valido'], 422);
+        }
+        $clienteDAO->eliminar($idCliente);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => 'No se puede eliminar un cliente con pedidos asociados'], 409);
+    }
+}
+
+if ($action === 'chat_list') {
+    $idCliente = isset($_POST['id_cliente']) ? api_int('id_cliente') : 0;
+    api_json($idCliente > 0 ? $chatDAO->listarPorCliente($idCliente) : $chatDAO->listar());
+}
+
+if ($action === 'chat_messages') {
+    $idChat = api_int('id_chat');
+    if ($idChat <= 0) {
+        api_json(['success' => false, 'message' => 'El chat debe ser valido'], 422);
+    }
+    api_json($chatDAO->obtenerMensajes($idChat));
+}
+
+if ($action === 'chat_send') {
+    try {
+        $idChat = api_int('id_chat');
+        $idUsuario = api_int('id_usuario');
+        $idCliente = api_int('id_cliente');
+        $autorTipo = api_input('autor_tipo', 'Cliente');
+        if ($idUsuario <= 0 || !in_array($autorTipo, ['Cliente', 'Administracion'], true)) {
+            api_json(['success' => false, 'message' => 'Usuario o autor invalido'], 422);
+        }
+        if ($idChat > 0) {
+            $chatDAO->enviarMensaje([
+                'id_chat' => $idChat,
+                'id_usuario' => $idUsuario,
+                'autor_tipo' => $autorTipo,
+                'mensaje' => api_required('mensaje')
+            ]);
+            api_json(['success' => true, 'id_chat' => $idChat]);
+        }
+        if ($idCliente <= 0) {
+            api_json(['success' => false, 'message' => 'El cliente debe ser valido'], 422);
+        }
+        $nuevoChat = $chatDAO->crearConversacionCliente([
+            'id_cliente' => $idCliente,
+            'id_usuario' => $idUsuario,
+            'asunto' => api_input('asunto', 'Consulta a administracion'),
+            'mensaje' => api_required('mensaje')
+        ]);
+        api_json(['success' => true, 'id_chat' => $nuevoChat]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'chat_reply') {
+    try {
+        $idChat = api_int('id_chat');
+        if ($idChat <= 0) {
+            api_json(['success' => false, 'message' => 'El chat debe ser valido'], 422);
+        }
+        $chatDAO->enviarMensaje([
+            'id_chat' => $idChat,
+            'id_usuario' => api_int('id_usuario', 1),
+            'autor_tipo' => 'Administracion',
+            'mensaje' => api_required('mensaje')
+        ]);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
 }
 
 if ($action === 'pedidos_list') {
@@ -152,9 +335,10 @@ if ($action === 'pedidos_create') {
         if ($cantidad <= 0) {
             api_json(['success' => false, 'message' => 'La cantidad debe ser mayor que cero'], 422);
         }
+        $idCliente = api_int('id_cliente');
         $idPedido = $pedidoDAO->crear([
-            'id_cliente' => api_int('id_cliente'),
-            'razon_social' => api_required('razon_social'),
+            'id_cliente' => $idCliente,
+            'razon_social' => $idCliente > 0 ? api_input('razon_social', '') : api_required('razon_social'),
             'cuit' => api_input('cuit', ''),
             'telefono' => api_input('telefono', ''),
             'email' => api_input('email', ''),

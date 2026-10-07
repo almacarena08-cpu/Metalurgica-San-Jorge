@@ -48,20 +48,20 @@ La pagina publica y el contacto con clientes pertenecen a la rama `sistema-web`.
 Con Apache y MySQL iniciados en XAMPP, la aplicacion usa automaticamente:
 
 ```text
-http://localhost/MetalGest/clases/php/api.php
+http://localhost/Metalurgica-San-Jorge/clases/php/api.php
 ```
 
 Si se prefiere levantar PHP manualmente desde PowerShell:
 
 ```powershell
-cd C:\xampp\htdocs\MetalGest
+cd C:\xampp\htdocs\Metalurgica-San-Jorge
 php -S localhost:8080 -t .
 ```
 
 En otra terminal, compilar:
 
 ```powershell
-cd C:\xampp\htdocs\MetalGest
+cd C:\xampp\htdocs\Metalurgica-San-Jorge
 New-Item -ItemType Directory -Force build\classes
 & C:\jdk\bin\javac.exe -encoding UTF-8 -d build\classes (Get-ChildItem src\main\java -Recurse -Filter *.java)
 ```
@@ -72,7 +72,7 @@ Ejecutar la aplicacion con un unico login:
 & C:\jdk\bin\java.exe -Dmetalgest.api.url=http://localhost:8080/clases/php/api.php -cp build\classes modulos.MetalGestApp
 ```
 
-El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/MetalGest/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
+El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/Metalurgica-San-Jorge/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 
 ## Acceso por rol
 

@@ -15,7 +15,7 @@ import java.util.Map;
 public class ApiClient {
     public static final String API_BASE = System.getProperty(
             "metalgest.api.url",
-            "http://localhost/MetalGest/clases/php/api.php");
+            "http://localhost/Metalurgica-San-Jorge/clases/php/api.php");
 
     public static String get(String action) throws IOException {
         URL url = URI.create(API_BASE + "?action=" + encode(action)).toURL();

@@ -54,10 +54,11 @@ public class AdminPanel {
         JPanel pages = new JPanel(layout);
         pages.add(crearDashboard(name -> {
             layout.show(pages, name);
-            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "Ordenes");
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "Chat");
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
+        pages.add(crearPanelChat(), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", session.getNombreCompleto(), entry -> {
             if ("Inicio".equals(entry)) {
                 layout.show(pages, "resumen");
@@ -65,6 +66,8 @@ public class AdminPanel {
                 layout.show(pages, "pedidos");
             } else if ("Ordenes de trabajo".equals(entry)) {
                 layout.show(pages, "ordenes");
+            } else if ("Chat".equals(entry)) {
+                layout.show(pages, "chat");
             } else if ("Configuracion".equals(entry)) {
                 SettingsDialog.open(session.getId());
             } else if (!"Administracion".equals(entry)) {
@@ -85,10 +88,11 @@ public class AdminPanel {
         JPanel pages = new JPanel(layout);
         pages.add(crearDashboard(name -> {
             layout.show(pages, name);
-            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "Ordenes");
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "Chat");
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
+        pages.add(crearPanelChat(), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", employeeName, entry -> {
             if ("Inicio".equals(entry)) {
                 layout.show(pages, "resumen");
@@ -96,6 +100,8 @@ public class AdminPanel {
                 layout.show(pages, "pedidos");
             } else if ("Ordenes de trabajo".equals(entry)) {
                 layout.show(pages, "ordenes");
+            } else if ("Chat".equals(entry)) {
+                layout.show(pages, "chat");
             } else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -460,6 +466,84 @@ public class AdminPanel {
         return panel;
     }
 
+    private static JPanel crearPanelChat() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(UiTheme.BACKGROUND);
+
+        DefaultTableModel modelo = new DefaultTableModel(
+                new String[]{"ID Chat", "Cliente", "Email", "Ultimo mensaje", "Estado", "Actualizado"}, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        JTable tabla = new JTable(modelo);
+        UiTheme.styleTable(tabla);
+        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
+
+        JPanel respuestaPanel = new JPanel(new BorderLayout(8, 8));
+        respuestaPanel.setBackground(UiTheme.WHITE);
+        respuestaPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
+                javax.swing.BorderFactory.createLineBorder(UiTheme.LINE),
+                javax.swing.BorderFactory.createEmptyBorder(12, 12, 12, 12)));
+
+        JTextArea detalle = new JTextArea(6, 40);
+        JTextArea respuesta = new JTextArea(4, 40);
+        detalle.setEditable(false);
+        UiTheme.styleInput(detalle);
+        UiTheme.styleInput(respuesta);
+        respuestaPanel.add(new JScrollPane(detalle), BorderLayout.NORTH);
+        respuestaPanel.add(new JScrollPane(respuesta), BorderLayout.CENTER);
+
+        JPanel acciones = new JPanel();
+        acciones.setOpaque(false);
+        JButton enviar = new JButton("Responder");
+        JButton recargar = new JButton("Recargar");
+        UiTheme.styleButton(enviar, true);
+        UiTheme.styleButton(recargar, false);
+        acciones.add(enviar);
+        acciones.add(recargar);
+        respuestaPanel.add(acciones, BorderLayout.SOUTH);
+        panel.add(respuestaPanel, BorderLayout.SOUTH);
+
+        recargarChat(modelo);
+
+        tabla.getSelectionModel().addListSelectionListener(event -> {
+            int row = tabla.getSelectedRow();
+            if (row >= 0) {
+                detalle.setText("Cliente: " + modelo.getValueAt(row, 1)
+                        + "\nEmail: " + modelo.getValueAt(row, 2)
+                        + "\nActualizado: " + modelo.getValueAt(row, 5)
+                        + "\n\nMensaje:\n" + modelo.getValueAt(row, 3));
+                respuesta.setText("");
+            }
+        });
+
+        recargar.addActionListener(event -> recargarChat(modelo));
+        enviar.addActionListener(event -> {
+            int row = tabla.getSelectedRow();
+            if (row < 0) {
+                mostrarAviso("Selecciona un mensaje para responder.");
+                return;
+            }
+            if (respuesta.getText().trim().isEmpty()) {
+                mostrarAviso("Escribe una respuesta para el cliente.");
+                return;
+            }
+            Map<String, String> data = new LinkedHashMap<>();
+            data.put("id_chat", modelo.getValueAt(row, 0).toString());
+            data.put("mensaje", respuesta.getText().trim());
+            data.put("id_usuario", String.valueOf(usuarioId));
+            if (postOk("chat_reply", data, "Respuesta enviada al chat del cliente.")) {
+                respuesta.setText("");
+                detalle.setText("");
+                recargarChat(modelo);
+            }
+        });
+
+        return panel;
+    }
+
     private static void recargarPedidos(DefaultTableModel modelo) {
         modelo.setRowCount(0);
         for (Map<String, String> row : getRows("pedidos_list")) {
@@ -554,6 +638,20 @@ public class AdminPanel {
         }
     }
 
+    private static void recargarChat(DefaultTableModel modelo) {
+        modelo.setRowCount(0);
+        for (Map<String, String> row : getRows("chat_list")) {
+            modelo.addRow(new Object[]{
+                    row.get("id_chat"),
+                    row.get("nombre"),
+                    row.get("email"),
+                    row.get("ultimo_mensaje"),
+                    row.get("estado"),
+                    row.get("fecha_actualizacion")
+            });
+        }
+    }
+
     private static List<Map<String, String>> getRows(String action) {
         try {
             if ("pedidos_list".equals(action)) {
@@ -567,6 +665,9 @@ public class AdminPanel {
             }
             if ("materiales_list".equals(action)) {
                 return administracionDao.listarMateriales();
+            }
+            if ("chat_list".equals(action)) {
+                return administracionDao.listarChats();
             }
             return java.util.Collections.emptyList();
         } catch (IOException e) {
@@ -584,6 +685,8 @@ public class AdminPanel {
                 result = administracionDao.crearOrden(data);
             } else if ("orden_update_status".equals(action)) {
                 result = administracionDao.actualizarOrden(data);
+            } else if ("chat_reply".equals(action)) {
+                result = administracionDao.responderChat(data);
             } else {
                 return false;
             }

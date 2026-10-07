@@ -209,21 +209,21 @@ public final class UiTheme {
 
     private static String[] menuEntries(String module) {
         if ("Administracion".equals(module)) {
-            return new String[]{"Inicio", "Administracion", "Pedidos", "Ordenes"};
+            return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat"};
         }
         if ("Produccion".equals(module)) {
-            return new String[]{"Inicio", "Produccion", "Ordenes recibidas", "Historial de avance", "Aviso a mantenimiento"};
+            return new String[]{"Produccion", "Ordenes recibidas", "Historial de avance", "Aviso a mantenimiento"};
         }
         if ("Mantenimiento".equals(module)) {
-            return new String[]{"Inicio", "Mantenimiento", "Solicitudes", "Preventivos"};
+            return new String[]{"Mantenimiento", "Solicitudes", "Preventivos"};
         }
         if ("Deposito".equals(module)) {
-            return new String[]{"Inicio", "Deposito", "Inventario", "Movimientos"};
+            return new String[]{"Deposito", "Inventario", "Movimientos"};
         }
         if ("Compras".equals(module)) {
-            return new String[]{"Inicio", "Compras", "Ordenes de compra", "Proveedores", "Materiales", "Alertas de stock"};
+            return new String[]{"Compras", "Ordenes de compra", "Proveedores", "Materiales", "Alertas de stock"};
         }
-        return new String[]{"Inicio", "Calidad", "Registrar control", "Historial"};
+        return new String[]{"Calidad", "Registrar control", "Historial"};
     }
 
     public static JPanel topbar(String section) {
