@@ -44,6 +44,7 @@ class App {
         this.current = "dashboard";
         this.activeChat = null;
         this.chatTimer = null;
+        this.previousBodyOverflow = null;
     }
 
     start() {
@@ -60,6 +61,7 @@ class App {
                         <span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span>
                     </a>
                     <nav aria-label="Navegación principal">
+                        <a href="#planta">Instalaciones</a>
                         <a href="#servicios">Servicios</a>
                         <a href="#empresa">Empresa</a>
                         <a href="#beneficios">Beneficios</a>
@@ -72,35 +74,52 @@ class App {
                 </header>
                 <section class="public-hero" id="inicio">
                     <div class="hero-content">
-                        <span class="eyebrow">Metalúrgica San Jorge · Gestión industrial</span>
-                        <h1>Precisión en cada proceso.<br><span>Control en cada etapa.</span></h1>
-                        <p>Pedidos, órdenes de trabajo y producción conectados en un solo lugar. La información de cada proyecto, siempre a mano.</p>
+                        <span class="eyebrow">Fabricación · Mecanizado · Producción</span>
+                        <h1>Metalúrgica San Jorge<br><span>Fabricación industrial.</span></h1>
+                        <p>Fabricación y mecanizado de piezas, mantenimiento industrial y seguimiento de cada trabajo desde el pedido hasta la entrega.</p>
                         <div class="hero-actions">
-                            <button class="btn primary" data-auth="login">Entrar al portal <span aria-hidden="true">&rarr;</span></button>
-                            <a class="btn outline" href="#servicios">Conocer el sistema</a>
+                            <a class="btn primary" href="#contacto">Solicitar asesoramiento <span aria-hidden="true">&rarr;</span></a>
+                            <button class="btn outline" data-auth="login">Acceso al portal</button>
                         </div>
-                        <div class="hero-index"><span>01</span><i></i> OPERACIÓN CONECTADA</div>
+                        <div class="hero-index"><span>01</span><i></i> INDUSTRIA EN MOVIMIENTO</div>
                     </div>
                     <div class="hero-side-note" aria-hidden="true"><span>MSJ</span><i></i> INDUSTRIA EN MOVIMIENTO</div>
                 </section>
                 <section class="quote-band">
-                    <div><span class="eyebrow">Del taller a la entrega</span><h2>Información clara. Trabajo que avanza.</h2></div>
-                    <button class="btn dark" data-auth="register">Solicitar acceso <span aria-hidden="true">&rarr;</span></button>
+                    <div><span class="eyebrow">Metalúrgica San Jorge</span><h2>Capacidad industrial y seguimiento de cada trabajo.</h2></div>
+                    <button class="btn dark" data-auth="login">Acceso al portal <span aria-hidden="true">&rarr;</span></button>
+                </section>
+                <section class="public-band gallery-band" id="planta">
+                    <div class="section-heading"><span class="eyebrow">Instalaciones y procesos</span><h2>Experiencia aplicada a cada proyecto.</h2></div>
+                    <div class="gallery-grid">
+                        <figure class="gallery-card gallery-card-featured">
+                            <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1400&q=85" alt="Operario realizando trabajos de soldadura en un taller" loading="lazy" decoding="async">
+                            <figcaption><span>01 / FABRICACIÓN</span><strong>Precisión desde el taller</strong></figcaption>
+                        </figure>
+                        <figure class="gallery-card">
+                            <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1100&q=85" alt="Maquinaria instalada en una planta industrial" loading="lazy" decoding="async">
+                            <figcaption><span>02 / PRODUCCIÓN</span><strong>Equipos en acción</strong></figcaption>
+                        </figure>
+                        <figure class="gallery-card">
+                            <img src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1100&q=85" alt="Plano digital de un proceso de fabricación" loading="lazy" decoding="async">
+                            <figcaption><span>03 / PROCESOS</span><strong>Una operación conectada</strong></figcaption>
+                        </figure>
+                    </div>
                 </section>
                 <section class="public-band services-band" id="servicios">
-                    <div class="section-heading"><span class="eyebrow">Un sistema, cada sector</span><h2>La operación bajo control.</h2></div>
+                    <div class="section-heading"><span class="eyebrow">Servicios industriales</span><h2>Soluciones para acompañar la producción.</h2></div>
                     <div class="service-grid">
-                        <article><span class="service-number">01 / PEDIDOS</span><strong>Cada pedido, en contexto.</strong><span>Reuní requerimientos, materiales y fechas de entrega para que el trabajo empiece con toda la información.</span></article>
-                        <article><span class="service-number">02 / PRODUCCIÓN</span><strong>Avances visibles.</strong><span>Seguí órdenes de trabajo y avances de producción con trazabilidad entre los equipos.</span></article>
-                        <article><span class="service-number">03 / CALIDAD</span><strong>Control hasta el final.</strong><span>Coordiná mantenimiento, depósito y controles de calidad desde un mismo espacio.</span></article>
+                        <article><span class="service-number">01 / FABRICACIÓN</span><strong>Mecanizado y fabricación.</strong><span>Piezas y trabajos metalúrgicos desarrollados según los requerimientos de cada proyecto.</span></article>
+                        <article><span class="service-number">02 / MANTENIMIENTO</span><strong>Continuidad operativa.</strong><span>Atención de necesidades de mantenimiento para acompañar el trabajo diario de planta.</span></article>
+                        <article><span class="service-number">03 / GESTIÓN</span><strong>Seguimiento de producción.</strong><span>Órdenes, avances y controles centralizados en el portal MetalGest.</span></article>
                     </div>
                 </section>
                 <section class="public-band company-band split" id="empresa">
                     <div class="company-copy">
-                        <span class="eyebrow">Metalúrgica San Jorge</span>
-                        <h2>Una industria.<br><span>Un equipo conectado.</span></h2>
-                        <p>MetalGest acompaña el trabajo diario de San Jorge: conecta administración con producción y cada sector operativo, para que los pedidos avancen con seguimiento y claridad.</p>
-                        <button class="text-link" data-auth="login">Conocer el portal <span aria-hidden="true">&rarr;</span></button>
+                        <span class="eyebrow">Una operación conectada</span>
+                        <h2>Del pedido a la entrega.<br><span>Cada etapa en seguimiento.</span></h2>
+                        <p>MetalGest conecta administración, producción y calidad para que cada equipo trabaje con información actualizada sobre el avance de las órdenes.</p>
+                        <button class="text-link" data-auth="login">Ingresar a MetalGest <span aria-hidden="true">&rarr;</span></button>
                     </div>
                     <div class="process-panel">
                         <span class="process-label">UN FLUJO, DE PRINCIPIO A FIN</span>
@@ -113,16 +132,16 @@ class App {
                     </div>
                 </section>
                 <section class="benefits-band public-band" id="beneficios">
-                    <div class="section-heading"><span class="eyebrow">Hecho para el trabajo real</span><h2>Una mejor forma de avanzar.</h2></div>
+                    <div class="section-heading"><span class="eyebrow">Control operativo</span><h2>Información consistente para trabajar mejor.</h2></div>
                     <div class="benefit-grid">
-                        <article><span class="benefit-mark">A</span><h3>Todo conectado</h3><p>Pedidos, órdenes y sectores vinculados para reducir idas y vueltas.</p></article>
-                        <article><span class="benefit-mark">B</span><h3>Seguimiento claro</h3><p>Consultá el estado y el avance de cada trabajo con información actualizada.</p></article>
-                        <article><span class="benefit-mark">C</span><h3>Acceso por equipo</h3><p>Cada persona encuentra las herramientas de su sector y su rol.</p></article>
+                        <article><span class="benefit-mark">01</span><h3>Coordinación</h3><p>Administración, producción y calidad trabajan sobre un flujo compartido.</p></article>
+                        <article><span class="benefit-mark">02</span><h3>Trazabilidad</h3><p>El estado y avance de las órdenes se mantienen actualizados para consulta.</p></article>
+                        <article><span class="benefit-mark">03</span><h3>Control operativo</h3><p>Acceso a las herramientas correspondientes a cada sector y responsabilidad.</p></article>
                     </div>
                 </section>
                 <section class="contact-band" id="contacto">
-                    <div><span class="eyebrow">Contacto directo</span><h2>¿Empezamos con tu próximo trabajo?</h2><p>Escribinos desde el portal y mantené cada consulta en un solo lugar.</p></div>
-                    <div class="contact-actions"><button class="btn primary" data-auth="register">Crear cuenta cliente <span aria-hidden="true">&rarr;</span></button><button class="text-link" data-auth="login">Ya tengo cuenta</button></div>
+                    <div><span class="eyebrow">Atención comercial</span><h2>Cuéntenos sobre su proyecto.</h2><p>Regístrese para iniciar una consulta y mantener el seguimiento desde el portal.</p></div>
+                    <div class="contact-actions"><button class="btn primary" data-auth="register">Iniciar consulta <span aria-hidden="true">&rarr;</span></button><button class="text-link" data-auth="login">Acceso de clientes</button></div>
                 </section>
                 <footer class="public-footer">
                     <a class="brand-lockup" href="#inicio"><span class="brand-emblem">SJ</span><span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span></a>
@@ -130,13 +149,38 @@ class App {
                 </footer>
             </main>
             <div class="auth-modal hidden" id="authModal">
-                <div class="auth-card">
-                    <button class="close-btn" data-close>×</button>
-                    <div class="tabs">
-                        <button class="tab active" data-tab="login">Ingresar</button>
-                        <button class="tab" data-tab="register">Registrarse</button>
-                    </div>
-                    <div id="authContent"></div>
+                <div class="auth-shell" role="dialog" aria-modal="true" aria-label="Acceso a MetalGest">
+                    <aside class="auth-visual">
+                        <a class="brand-lockup" href="#inicio" aria-label="Metalúrgica San Jorge, inicio">
+                            <span class="brand-emblem">SJ</span>
+                            <span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span>
+                        </a>
+                        <div class="auth-visual-copy">
+                            <span class="auth-kicker">PORTAL OPERATIVO</span>
+                            <h1>La producción,<br><span>bajo control.</span></h1>
+                            <p>Pedidos, órdenes de trabajo y seguimiento operativo en un mismo espacio.</p>
+                            <div class="auth-steps" aria-label="Funciones del portal">
+                                <span><b>01</b> Acceso a órdenes de trabajo</span>
+                                <span><b>02</b> Seguimiento de producción</span>
+                                <span><b>03</b> Coordinación entre áreas</span>
+                            </div>
+                        </div>
+                        <div class="auth-visual-meta"><span>GESTIÓN INDUSTRIAL</span><span>METALGEST</span></div>
+                    </aside>
+                    <section class="auth-main">
+                        <button class="close-btn" data-close type="button" aria-label="Cerrar acceso">×</button>
+                        <div class="auth-content-wrap">
+                            <div class="auth-main-heading">
+                                <span>PORTAL SAN JORGE</span>
+                                <span class="auth-status"><i></i> ACCESO SEGURO</span>
+                            </div>
+                            <div class="tabs" role="tablist" aria-label="Tipo de acceso">
+                                <button class="tab active" data-tab="login" type="button" role="tab" aria-selected="true" aria-controls="authContent">Ingresar</button>
+                                <button class="tab" data-tab="register" type="button" role="tab" aria-selected="false" aria-controls="authContent" tabindex="-1">Registrarse</button>
+                            </div>
+                            <div id="authContent"></div>
+                        </div>
+                    </section>
                 </div>
             </div>
         `;
@@ -146,19 +190,36 @@ class App {
     }
 
     openAuth(mode) {
-        this.root.querySelector("#authModal").classList.remove("hidden");
-        this.root.querySelectorAll("[data-tab]").forEach(tab => tab.classList.toggle("active", tab.dataset.tab === mode));
+        const modal = this.root.querySelector("#authModal");
+        if (modal.classList.contains("hidden")) {
+            this.previousBodyOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+        }
+        modal.classList.remove("hidden");
+        this.root.querySelectorAll("[data-tab]").forEach(tab => {
+            const active = tab.dataset.tab === mode;
+            tab.classList.toggle("active", active);
+            tab.setAttribute("aria-selected", String(active));
+            tab.tabIndex = active ? 0 : -1;
+        });
         mode === "register" ? this.renderRegisterForm() : this.renderLoginForm();
     }
 
     closeAuth() {
         this.root.querySelector("#authModal").classList.add("hidden");
+        this.restorePageScroll();
+    }
+
+    restorePageScroll() {
+        if (this.previousBodyOverflow === null) return;
+        document.body.style.overflow = this.previousBodyOverflow;
+        this.previousBodyOverflow = null;
     }
 
     renderLoginForm() {
         this.root.querySelector("#authContent").innerHTML = `
-            <h2>Ingreso al portal</h2>
-            <p class="muted">El mismo acceso sirve para empleados y clientes.</p>
+            <h2>Bienvenido a MetalGest</h2>
+            <p class="muted">Ingresá con tu cuenta para acceder a tu espacio de trabajo.</p>
             <form id="loginForm" class="form-grid">
                 <label class="field full">Usuario<input name="nombre" autocomplete="username" required></label>
                 <label class="field full">Contrasena<input name="contrasena" type="password" autocomplete="current-password" required></label>
@@ -171,7 +232,7 @@ class App {
 
     renderRegisterForm() {
         this.root.querySelector("#authContent").innerHTML = `
-            <h2>Registro de cliente</h2>
+            <h2>Crear cuenta de cliente</h2>
             <p class="muted">El registro crea una cuenta con rol Cliente.</p>
             <form id="registerForm" class="form-grid">
                 <label>Empresa / nombre<input name="razon_social" required></label>
@@ -213,6 +274,7 @@ class App {
     }
 
     renderShell() {
+        this.restorePageScroll();
         const modules = this.modulesForRole();
         this.root.innerHTML = `
             <div class="app-shell">
@@ -683,7 +745,7 @@ class App {
 
 const app = new App(
     document.querySelector("#app"),
-    new ApiService("../clases/php/api.php"),
+    new ApiService("clases/php/api.php"),
     new SessionStore("metalgest_web_user")
 );
 app.start();
