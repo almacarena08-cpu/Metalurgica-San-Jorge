@@ -101,6 +101,16 @@
             <span>MetalGest · Gestión industrial</span>
         </footer>
     </main>
+    <button class="landing-chat-bubble" type="button" data-floating-chat aria-label="Abrir chat de atención comercial">
+        <span class="landing-chat-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" focusable="false">
+                <path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H6l-3 2v-6.5a7.5 7.5 0 1 1 17-3Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                <path d="M8 11.5h.01M12 11.5h.01M16 11.5h.01" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"></path>
+            </svg>
+        </span>
+        <span class="landing-chat-copy"><strong>¿Necesitás ayuda?</strong><small>Chateá con nosotros</small></span>
+        <span class="landing-chat-online" aria-label="Atención disponible"></span>
+    </button>
     <div class="auth-modal hidden" id="authModal">
         <div class="auth-shell" role="dialog" aria-modal="true" aria-label="Acceso a MetalGest">
             <aside class="auth-visual">
@@ -143,7 +153,7 @@
     <form id="loginForm" class="form-grid">
         <label class="field full">Usuario o correo electrónico<input name="identificador" autocomplete="username" required></label>
         <label class="field full">Contraseña<input name="contrasena" type="password" autocomplete="current-password" required></label>
-        <button class="btn primary field full">Ingresar</button>
+        <button class="btn primary field full" type="submit">Ingresar</button>
     </form>
     <button class="text-link" type="button" data-client-forgot>¿Necesitás recuperar la contraseña de una cuenta con correo?</button>
     <div class="message"></div>
@@ -192,7 +202,7 @@
         <label class="field full">Direccion<input name="direccion"></label>
         <label class="field full">Contraseña<input name="contrasena" type="password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número" autocomplete="new-password" required></label>
         <label class="field full">Repetir contraseña<input name="confirmar" type="password" minlength="8" autocomplete="new-password" required></label>
-        <p class="muted field full">La contraseña debe tener 8 caracteres como mínimo, una mayúscula, una minúscula y un número. Te enviaremos un código por correo.</p>
+        <p class="muted field full">La contraseña debe tener 8 caracteres como mínimo, una mayúscula, una minúscula y un número. Después del registro, podés ingresar con tu correo y contraseña.</p>
         <button class="btn primary field full">Registrar cliente</button>
     </form>
     <div class="message"></div>
@@ -203,7 +213,7 @@
     <form id="clientVerificationForm" class="form-grid">
         <label class="field full">Correo<input name="email" type="email" value="{{email}}" readonly required></label>
         <label class="field full">Código<input name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
-        <button class="btn primary field full">Verificar correo</button>
+        <button class="btn primary field full" type="submit">Verificar correo</button>
     </form>
     <button class="text-link" type="button" data-resend-code data-purpose="registro">Reenviar código</button>
     <div class="message">{{message}}</div>

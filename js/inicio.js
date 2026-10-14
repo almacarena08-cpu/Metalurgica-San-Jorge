@@ -4,7 +4,7 @@ import {mantenimientoPanel} from "./mantenimiento.js?v=modules-flat-20261014-3";
 import {depositoPanel} from "./deposito.js?v=modules-flat-20261014-3";
 import {comprasPanel} from "./compras.js?v=modules-flat-20261014-3";
 import {calidadPanel} from "./calidad.js?v=modules-flat-20261014-3";
-import {chatPanel} from "./chat.js?v=modules-flat-20261014-3";
+import {chatPanel} from "./chat.js?v=customer-chat-bubble-20261014-1";
 
 const panelModules = [comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel];
 
@@ -75,7 +75,7 @@ class App {
         try {
             const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=client-profile-menu-20261014-1`);
+                const response = await fetch(`html/${moduleName}.html?v=customer-chat-bubble-20261014-1`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));
@@ -109,11 +109,13 @@ class App {
         this.restorePageScroll();
         const modules = this.modulesForRole();
         this.root.innerHTML = `
-            <div class="app-shell">
+            <div class="app-shell ${this.session.user.tipo === "cliente" ? "client-chat-shell" : ""}">
                 <aside class="sidebar">
                     <div class="brand">METALURGICA<br>SAN JORGE</div>
                     <nav class="nav">${modules.map(module => `<button data-module="${module.id}">${module.label}</button>`).join("")}</nav>
-                    <button class="btn" data-logout>Salir</button>
+                    ${this.session.user.tipo === "cliente"
+                        ? '<button class="btn" data-client-site>Volver al sitio</button>'
+                        : '<button class="btn" data-logout>Salir</button>'}
                 </aside>
                 <main class="main">
                     <div class="topbar">
@@ -121,17 +123,17 @@ class App {
                             <h2 id="moduleTitle"></h2>
                             <span class="muted">Hola, ${this.escape(this.session.user.tipo === "cliente" ? this.session.user.razon_social : `${this.session.user.nombre} ${this.session.user.apellido || ""}`)} - ${this.escape(this.session.user.rol || "Cliente")}</span>
                         </div>
-                        ${this.session.user.tipo === "cliente" ? '<button class="btn" data-client-site>Volver al sitio</button>' : ""}
                         <button class="btn" data-refresh>Actualizar</button>
                     </div>
                     <div id="content"></div>
                 </main>
             </div>
         `;
-        this.root.querySelector("[data-logout]").addEventListener("click", () => this.logout());
+        const logoutButton = this.root.querySelector("[data-logout]");
+        if (logoutButton) logoutButton.addEventListener("click", () => this.logout());
         this.root.querySelector("[data-refresh]").addEventListener("click", () => this.openModule(this.current));
         const clientSiteButton = this.root.querySelector("[data-client-site]");
-        if (clientSiteButton) clientSiteButton.addEventListener("click", () => this.renderLanding());
+        if (clientSiteButton) clientSiteButton.addEventListener("click", () => this.returnToSite());
         this.root.querySelectorAll("[data-module]").forEach(button => button.addEventListener("click", () => this.openModule(button.dataset.module)));
         const initialModule = (this.session.user.rol || "").toLowerCase() === "gerencia"
             ? "administracion"
@@ -287,8 +289,7 @@ class PublicModule {
                     <div class="client-profile-dropdown">
                         <button class="client-profile-action" type="button" data-client-action="desactivar">Desactivar cuenta</button>
                     </div>
-                </details>
-                <button class="btn" data-client-logout>Cerrar sesión</button>`
+                </details>`
                 : '<button class="btn" data-auth="login">Ingresar</button><button class="btn primary" data-auth="register">Solicitar acceso</button>',
             menuActions: "",
             heroAccess: client
@@ -317,11 +318,10 @@ class PublicModule {
             link.addEventListener("click", () => this.closePublicMenu())
         );
         this.root.querySelector("[data-consultation]").addEventListener("click", () => this.startConsultation());
+        this.root.querySelector("[data-floating-chat]").addEventListener("click", () => this.startConsultation());
         this.root.querySelectorAll("[data-client-chat]").forEach(button =>
             button.addEventListener("click", () => this.renderShell())
         );
-        const clientLogoutButton = this.root.querySelector("[data-client-logout]");
-        if (clientLogoutButton) clientLogoutButton.addEventListener("click", () => this.logout());
         this.root.querySelectorAll("[data-client-action]").forEach(button =>
             button.addEventListener("click", () => this.clientAccountAction(button.dataset.clientAction))
         );
@@ -386,8 +386,11 @@ class AuthModule {
         this.previousBodyOverflow = null;
     }
 
-    renderLoginForm() {
+    renderLoginForm(initialMessage = "", email = "") {
         this.root.querySelector("#authContent").innerHTML = this.moduleTemplate("inicio", "login");
+        const identifier = this.root.querySelector('#loginForm input[name="identificador"]');
+        identifier.value = email;
+        this.root.querySelector("#authContent .message").textContent = initialMessage;
         this.root.querySelector("#loginForm").addEventListener("submit", event => this.login(event));
         this.root.querySelector("[data-client-forgot]").addEventListener("click", () => this.renderClientPasswordRequestForm());
     }
@@ -540,29 +543,44 @@ class AuthModule {
         const identifier = form.elements.identificador.value.trim();
         const contrasena = form.elements.contrasena.value;
         const isClient = identifier.includes("@");
-        const result = await this.api.post(
-            isClient ? "cliente_login" : "login",
-            isClient ? {email: identifier, contrasena} : {usuario: identifier, contrasena}
-        );
-        if (!result.success) {
-            form.parentElement.querySelector(".message").textContent = result.message || "No se pudo ingresar.";
-            return;
-        }
-        if (isClient) {
-            this.session.set(result.cliente);
-            const openChat = this.openChatAfterClientLogin;
-            this.openChatAfterClientLogin = false;
-            this.closeAuth();
-            if (openChat) {
-                this.renderShell();
-            } else {
-                this.renderLanding();
+        const message = form.parentElement.querySelector(".message");
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = "Ingresando...";
+        message.textContent = "";
+        try {
+            const result = await this.api.post(
+                isClient ? "cliente_login" : "login",
+                isClient ? {email: identifier, contrasena} : {usuario: identifier, contrasena}
+            );
+            if (!result.success) {
+                message.textContent = result.message || "No se pudo ingresar.";
+                return;
             }
-            return;
+            if (isClient) {
+                this.session.set(result.cliente);
+                const openChat = this.openChatAfterClientLogin;
+                this.openChatAfterClientLogin = false;
+                this.closeAuth();
+                if (openChat) {
+                    this.renderShell();
+                } else {
+                    this.renderLanding();
+                }
+                return;
+            }
+            this.openChatAfterClientLogin = false;
+            this.session.set(result.usuario);
+            this.renderShell();
+        } catch (error) {
+            console.error("Error al iniciar sesión:", error);
+            message.textContent = error.message || "No se pudo conectar con el servidor.";
+        } finally {
+            if (submitButton.isConnected) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Ingresar";
+            }
         }
-        this.openChatAfterClientLogin = false;
-        this.session.set(result.usuario);
-        this.renderShell();
     }
 
     async clientAccountAction(action) {
@@ -625,7 +643,7 @@ class AuthModule {
                 message.textContent = result.message || "No se pudo registrar la empresa.";
                 return;
             }
-            this.renderClientVerificationForm(data.email, result.message);
+            this.renderLoginForm(result.message, data.email);
         } catch (error) {
             console.error("Error al registrar cliente:", error);
             message.textContent = error.message || "No se pudo conectar con el servidor.";
@@ -648,13 +666,27 @@ class AuthModule {
     async verifyClientCode(event) {
         event.preventDefault();
         const form = event.currentTarget;
-        const result = await this.api.post("cliente_verify_code", Object.fromEntries(new FormData(form)));
-        if (!result.success) {
-            form.parentElement.querySelector(".message").textContent = result.message || "El código no es válido.";
-            return;
+        const message = form.parentElement.querySelector(".message");
+        const submitButton = form.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = "Verificando...";
+        try {
+            const result = await this.api.post("cliente_verify_code", Object.fromEntries(new FormData(form)));
+            if (!result.success) {
+                message.textContent = result.message || "El código no es válido.";
+                return;
+            }
+            this.renderLoginForm();
+            this.root.querySelector("#authContent .message").textContent = result.message;
+        } catch (error) {
+            console.error("Error al verificar el correo:", error);
+            message.textContent = error.message || "No se pudo conectar con el servidor.";
+        } finally {
+            if (submitButton.isConnected) {
+                submitButton.disabled = false;
+                submitButton.textContent = "Verificar correo";
+            }
         }
-        this.renderLoginForm();
-        this.root.querySelector("#authContent .message").textContent = result.message;
     }
 
     async verifyClientEmail(token) {

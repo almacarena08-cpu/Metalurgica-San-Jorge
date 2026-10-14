@@ -35,6 +35,7 @@ export const chatPanel = {
             }))).join("")
             : await this.moduleTemplate("chat", "chat-empty-list");
         this.content(await this.moduleTemplate("chat", "chat", {
+            clientSiteButton: isClient ? '<button class="chat-back-button" type="button" data-client-site>Volver al sitio</button>' : "",
             newChatButton: isClient ? '<button class="chat-new-button" data-new-chat aria-label="Iniciar nueva consulta" title="Iniciar nueva consulta"><span aria-hidden="true">+</span><span>Nueva</span></button>' : "",
             chatCount: chats.length,
             chatItems,
@@ -55,6 +56,8 @@ export const chatPanel = {
                 await this.chatView();
             });
         });
+        const clientSiteButton = this.root.querySelector(".chat-toolbar [data-client-site]");
+        if (clientSiteButton) clientSiteButton.addEventListener("click", () => this.renderLanding());
         const newChat = this.root.querySelector("[data-new-chat]");
         if (newChat) {
             newChat.addEventListener("click", async () => {
@@ -80,13 +83,6 @@ export const chatPanel = {
         if (!this.activeChat) {
             const isClient = (this.session.user.rol || this.session.user.tipo || "").toLowerCase() === "cliente";
             thread.innerHTML = await this.moduleTemplate("chat", isClient ? "chat-welcome-client" : "chat-welcome-staff");
-            thread.querySelectorAll("[data-chat-suggestion]").forEach(button => {
-                button.addEventListener("click", () => {
-                    const form = this.root.querySelector("#chatForm");
-                    if (form.elements.asunto) form.elements.asunto.value = button.dataset.chatSuggestion;
-                    form.elements.mensaje.focus();
-                });
-            });
             return;
         }
         const messages = await this.api.post("chat_messages", {id_chat: this.activeChat});

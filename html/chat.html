@@ -17,6 +17,7 @@
         </aside>
         <section class="chat-window">
             <header class="chat-toolbar">
+                {{clientSiteButton}}
                 <span class="chat-avatar chat-toolbar-avatar">{{contactInitials}}</span>
                 <span class="chat-toolbar-copy">
                     <strong>{{contactName}}</strong>
@@ -40,27 +41,18 @@
 </template>
 <template data-view="chat-welcome-client">
     <div class="chat-welcome">
-        <span class="chat-welcome-mark" aria-hidden="true">SJ</span>
-        <span class="chat-welcome-eyebrow">ATENCIÓN PERSONALIZADA</span>
-        <h3>¿En qué podemos ayudarte?</h3>
-        <p>Escribinos tu consulta. Nuestro equipo de Metalúrgica San Jorge te responderá por este mismo chat.</p>
-        <div class="chat-suggestions">
-            <button type="button" data-chat-suggestion="Consulta de presupuesto">Consultar presupuesto <span aria-hidden="true">↗</span></button>
-            <button type="button" data-chat-suggestion="Seguimiento de pedido">Seguimiento de pedido <span aria-hidden="true">↗</span></button>
-        </div>
+        <h3>Iniciá una consulta</h3>
+        <p>Escribí tu mensaje abajo. El equipo de Metalúrgica San Jorge te responderá por este chat.</p>
     </div>
 </template>
 <template data-view="chat-welcome-staff">
     <div class="chat-welcome chat-welcome-empty">
-        <span class="chat-welcome-mark" aria-hidden="true">SJ</span>
-        <span class="chat-welcome-eyebrow">CENTRO DE MENSAJES</span>
         <h3>Seleccioná una conversación</h3>
-        <p>Elegí un chat de la lista para consultar el historial y responder al cliente.</p>
+        <p>El historial y las respuestas aparecerán acá.</p>
     </div>
 </template>
 <template data-view="chat-empty-list">
     <div class="chat-list-empty">
-        <span class="chat-empty-icon" aria-hidden="true">✦</span>
         <strong>Sin conversaciones</strong>
         <span>Cuando inicies una consulta, aparecerá acá.</span>
     </div>

@@ -277,7 +277,7 @@ if ($action === 'cliente_login') {
     $email = strtolower(api_required('email'));
     $contrasena = api_required('contrasena');
     $stmt = api_db()->prepare(
-        'SELECT id_cliente, razon_social, email, contrasena, email_verificado, activo, eliminado
+        'SELECT id_cliente, razon_social, email, contrasena, activo, eliminado
          FROM cliente
          WHERE LOWER(email) = :email
          LIMIT 1'
@@ -286,9 +286,6 @@ if ($action === 'cliente_login') {
     $cliente = $stmt->fetch();
     if (!$cliente || !$cliente['contrasena'] || !password_verify($contrasena, $cliente['contrasena'])) {
         api_json(['success' => false, 'message' => 'Correo o contraseña incorrectos.'], 401);
-    }
-    if ((int)$cliente['email_verificado'] !== 1) {
-        api_json(['success' => false, 'message' => 'Primero verificá el correo desde el enlace que te enviamos.'], 403);
     }
     if ((int)$cliente['eliminado'] === 1) {
         api_json(['success' => false, 'message' => 'Esta cuenta fue eliminada.'], 403);
@@ -360,62 +357,32 @@ if ($action === 'cliente_register') {
             api_json(['success' => false, 'message' => 'La contraseña debe tener 8 caracteres como mínimo, una mayúscula, una minúscula y un número.'], 422);
         }
         $pdo = api_db();
-        $existingStmt = $pdo->prepare('SELECT id_cliente, razon_social, email_verificado, activo, eliminado FROM cliente WHERE LOWER(email) = :email LIMIT 1');
+        $existingStmt = $pdo->prepare('SELECT id_cliente, activo, eliminado FROM cliente WHERE LOWER(email) = :email LIMIT 1');
         $existingStmt->execute([':email' => $email]);
         $existing = $existingStmt->fetch();
-        if ($existing && ((int)$existing['email_verificado'] === 1 || $existing['razon_social'] !== $razonSocial)) {
-            api_json(['success' => false, 'message' => 'Ese correo ya está registrado.'], 409);
-        }
-        if ($existing && ((int)$existing['activo'] !== 1 || (int)$existing['eliminado'] === 1)) {
-            api_json(['success' => false, 'message' => 'Esta cuenta está desactivada. Contactá a la empresa.'], 403);
+        if ($existing) {
+            if ((int)$existing['activo'] !== 1 || (int)$existing['eliminado'] === 1) {
+                api_json(['success' => false, 'message' => 'Esta cuenta está desactivada. Contactá a la empresa.'], 403);
+            }
+            api_json(['success' => false, 'message' => 'Ese correo ya está registrado. Iniciá sesión o recuperá la contraseña si no la recordás.'], 409);
         }
 
-        $pdo->beginTransaction();
-        $code = str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        if ($existing) {
-            $cliente = $pdo->prepare(
-                'UPDATE cliente
-                 SET contrasena = :contrasena, token_verificacion = :token, token_verificacion_vence = DATE_ADD(NOW(), INTERVAL 10 MINUTE), token_proposito = "registro",
-                     token_cambio_contrasena = NULL, token_cambio_contrasena_vence = NULL
-                 WHERE id_cliente = :id_cliente'
-            );
-            $cliente->execute([
-                ':contrasena' => password_hash($contrasena, PASSWORD_DEFAULT),
-                ':token' => hash('sha256', $code),
-                ':id_cliente' => $existing['id_cliente']
-            ]);
-            $idCliente = (int)$existing['id_cliente'];
-        } else {
-            $cliente = $pdo->prepare(
-                'INSERT INTO cliente (razon_social, cuit, email, direccion, contrasena, email_verificado, token_verificacion, token_verificacion_vence, token_proposito)
-                 VALUES (:razon_social, :cuit, :email, :direccion, :contrasena, 0, :token, DATE_ADD(NOW(), INTERVAL 10 MINUTE), "registro")'
-            );
-            $cliente->execute([
-                ':razon_social' => $razonSocial,
-                ':cuit' => api_input('cuit', ''),
-                ':email' => $email,
-                ':direccion' => api_input('direccion', ''),
-                ':contrasena' => password_hash($contrasena, PASSWORD_DEFAULT),
-                ':token' => hash('sha256', $code)
-            ]);
-            $idCliente = (int)$pdo->lastInsertId();
-        }
-        $mailSent = api_send_client_code_email($email, $code, 'registro');
-        if (!$mailSent) {
-            $pdo->rollBack();
-            api_json([
-                'success' => false,
-                'mail_sent' => false,
-                'message' => 'No se pudo enviar el código. La cuenta no quedó registrada; verificá la configuración del correo e intentá de nuevo.'
-            ], 503);
-        }
-        $pdo->commit();
+        $cliente = $pdo->prepare(
+            'INSERT INTO cliente (razon_social, cuit, email, direccion, contrasena, email_verificado, token_verificacion, token_verificacion_vence, token_proposito)
+             VALUES (:razon_social, :cuit, :email, :direccion, :contrasena, 0, NULL, NULL, NULL)'
+        );
+        $cliente->execute([
+            ':razon_social' => $razonSocial,
+            ':cuit' => api_input('cuit', ''),
+            ':email' => $email,
+            ':direccion' => api_input('direccion', ''),
+            ':contrasena' => password_hash($contrasena, PASSWORD_DEFAULT)
+        ]);
+        $idCliente = (int)$pdo->lastInsertId();
         api_json([
             'success' => true,
             'id_cliente' => $idCliente,
-            'mail_sent' => true,
-            'code_required' => true,
-            'message' => 'Te enviamos un código de seis dígitos a tu correo.'
+            'message' => 'El registro quedó guardado. Ya podés iniciar sesión con tu correo y contraseña.'
         ]);
     } catch (Throwable $e) {
         if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
