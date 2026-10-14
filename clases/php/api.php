@@ -192,6 +192,111 @@ function api_clear_session() {
     session_destroy();
 }
 
+function api_chat_upload_directory() {
+    return __DIR__ . DIRECTORY_SEPARATOR . 'private' . DIRECTORY_SEPARATOR . 'chat_uploads';
+}
+
+function api_chat_store_uploads() {
+    if (empty($_FILES['adjuntos'])) {
+        return [];
+    }
+    $files = $_FILES['adjuntos'];
+    if (!isset($files['name'], $files['tmp_name'], $files['error'], $files['size'])) {
+        api_json(['success' => false, 'message' => 'No se pudieron leer los archivos adjuntos.'], 400);
+    }
+    $names = is_array($files['name']) ? $files['name'] : [$files['name']];
+    $temporaryPaths = is_array($files['tmp_name']) ? $files['tmp_name'] : [$files['tmp_name']];
+    $errors = is_array($files['error']) ? $files['error'] : [$files['error']];
+    $sizes = is_array($files['size']) ? $files['size'] : [$files['size']];
+    if (count($names) > 5) {
+        api_json(['success' => false, 'message' => 'Podés adjuntar hasta 5 archivos por mensaje.'], 413);
+    }
+    $allowed = [
+        'pdf' => ['application/pdf'],
+        'jpg' => ['image/jpeg'],
+        'jpeg' => ['image/jpeg'],
+        'png' => ['image/png'],
+        'webp' => ['image/webp'],
+        'dxf' => ['application/dxf', 'application/x-dxf', 'image/vnd.dxf', 'text/plain', 'application/octet-stream'],
+        'dwg' => ['application/acad', 'application/x-acad', 'application/x-dwg', 'image/vnd.dwg', 'application/octet-stream']
+    ];
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $validated = [];
+    $totalSize = 0;
+    foreach ($names as $index => $name) {
+        $error = (int)$errors[$index];
+        if ($error === UPLOAD_ERR_NO_FILE) {
+            continue;
+        }
+        if ($error !== UPLOAD_ERR_OK) {
+            api_json(['success' => false, 'message' => 'Hubo un error al subir uno de los archivos.'], 400);
+        }
+        $size = (int)$sizes[$index];
+        $extension = strtolower(pathinfo((string)$name, PATHINFO_EXTENSION));
+        if ($size <= 0 || $size > 10 * 1024 * 1024) {
+            api_json(['success' => false, 'message' => 'Cada archivo debe pesar como máximo 10 MB.'], 413);
+        }
+        $totalSize += $size;
+        if ($totalSize > 25 * 1024 * 1024) {
+            api_json(['success' => false, 'message' => 'El total de archivos por mensaje no puede superar 25 MB.'], 413);
+        }
+        if (!isset($allowed[$extension]) || !is_uploaded_file($temporaryPaths[$index])) {
+            api_json(['success' => false, 'message' => 'Tipo de archivo no permitido. Usá PDF, JPG, PNG, WebP, DXF o DWG.'], 415);
+        }
+        $mime = $finfo->file($temporaryPaths[$index]);
+        if (!in_array($mime, $allowed[$extension], true)) {
+            api_json(['success' => false, 'message' => 'El contenido de uno de los archivos no coincide con su extensión.'], 415);
+        }
+        $validated[] = [
+            'path' => $temporaryPaths[$index],
+            'nombre_original' => basename(str_replace('\\', '/', (string)$name)),
+            'extension' => $extension,
+            'tipo_mime' => $mime,
+            'tamano' => $size
+        ];
+    }
+    $directory = api_chat_upload_directory();
+    if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+        throw new RuntimeException('No se pudo preparar el almacenamiento de archivos.');
+    }
+    if (!is_writable($directory)) {
+        throw new RuntimeException('El almacenamiento de archivos no tiene permisos de escritura.');
+    }
+    $stored = [];
+    try {
+        foreach ($validated as $file) {
+            $key = bin2hex(random_bytes(24)) . '.' . $file['extension'];
+            $destination = $directory . DIRECTORY_SEPARATOR . $key;
+            if (!move_uploaded_file($file['path'], $destination)) {
+                throw new RuntimeException('No se pudo guardar uno de los archivos adjuntos.');
+            }
+            $stored[] = [
+                'nombre_original' => $file['nombre_original'],
+                'clave_archivo' => $key,
+                'tipo_mime' => $file['tipo_mime'],
+                'tamano' => $file['tamano']
+            ];
+        }
+    } catch (Throwable $e) {
+        api_chat_remove_uploads($stored);
+        throw $e;
+    }
+    return $stored;
+}
+
+function api_chat_remove_uploads(array $uploads) {
+    $directory = api_chat_upload_directory();
+    foreach ($uploads as $upload) {
+        $key = $upload['clave_archivo'] ?? '';
+        if (preg_match('/\A[a-f0-9]{48}\.(pdf|jpg|jpeg|png|webp|dxf|dwg)\z/', $key)) {
+            $path = $directory . DIRECTORY_SEPARATOR . $key;
+            if (is_file($path)) {
+                unlink($path);
+            }
+        }
+    }
+}
+
 $action = $_GET['action'] ?? null;
 $pedidoDAO = new PedidoDAO();
 $ordenTrabajoDAO = new OrdenTrabajoDAO();
@@ -698,33 +803,74 @@ if ($action === 'chat_messages') {
     api_json($chatDAO->obtenerMensajes($idChat));
 }
 
+if ($action === 'chat_attachment') {
+    $user = api_chat_require_user();
+    $idAdjunto = filter_input(INPUT_GET, 'id_adjunto', FILTER_VALIDATE_INT);
+    $adjunto = $idAdjunto ? $chatDAO->obtenerAdjunto((int)$idAdjunto) : false;
+    if (!$adjunto) {
+        api_json(['success' => false, 'message' => 'No se encontró el archivo adjunto.'], 404);
+    }
+    if (($user['tipo'] ?? '') === 'cliente') {
+        if ((int)$user['id_cliente'] !== (int)$adjunto['id_cliente']) {
+            api_json(['success' => false, 'message' => 'No tenés acceso a este archivo.'], 403);
+        }
+    } else {
+        api_chat_require_staff();
+    }
+    $directory = realpath(api_chat_upload_directory());
+    $filePath = $directory
+        ? realpath($directory . DIRECTORY_SEPARATOR . basename($adjunto['clave_archivo']))
+        : false;
+    if (!$directory || !$filePath || dirname($filePath) !== $directory || !is_file($filePath)) {
+        api_json(['success' => false, 'message' => 'El archivo adjunto no está disponible.'], 404);
+    }
+    $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $adjunto['nombre_original']);
+    header('Content-Type: ' . $adjunto['tipo_mime']);
+    header('Content-Length: ' . filesize($filePath));
+    header('Content-Disposition: attachment; filename="' . ($safeName ?: 'adjunto') . '"; filename*=UTF-8\'\'' . rawurlencode($adjunto['nombre_original']));
+    header('X-Content-Type-Options: nosniff');
+    header('Cache-Control: private, no-store');
+    readfile($filePath);
+    exit;
+}
+
 if ($action === 'chat_send') {
     try {
         $user = api_chat_require_user();
         if (($user['tipo'] ?? '') !== 'cliente') {
             api_json(['success' => false, 'message' => 'Solo las cuentas de cliente pueden iniciar consultas.'], 403);
         }
+        $mensaje = api_input('mensaje', '');
+        $uploads = api_chat_store_uploads();
+        if (trim($mensaje) === '' && !$uploads) {
+            api_json(['success' => false, 'message' => 'Escribí un mensaje o adjuntá al menos un archivo.'], 422);
+        }
         $idChat = api_int('id_chat');
         if ($idChat > 0) {
             if (!$chatDAO->perteneceACliente($idChat, (int)$user['id_cliente'])) {
+                api_chat_remove_uploads($uploads);
                 api_json(['success' => false, 'message' => 'No tenés acceso a esta conversación.'], 403);
             }
             $chatDAO->enviarMensaje([
                 'id_chat' => $idChat,
                 'id_usuario' => null,
                 'autor_tipo' => 'Cliente',
-                'mensaje' => api_required('mensaje')
+                'mensaje' => $mensaje,
+                'adjuntos' => $uploads
             ]);
             api_json(['success' => true, 'id_chat' => $idChat]);
         }
         $nuevoChat = $chatDAO->crearConversacionCliente([
             'id_cliente' => (int)$user['id_cliente'],
             'asunto' => api_input('asunto', 'Consulta a administracion'),
-            'mensaje' => api_required('mensaje')
+            'mensaje' => $mensaje,
+            'adjuntos' => $uploads
         ]);
         api_json(['success' => true, 'id_chat' => $nuevoChat]);
     } catch (Throwable $e) {
-        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+        api_chat_remove_uploads($uploads ?? []);
+        error_log('MetalGest chat upload failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudieron guardar los archivos. Intentá nuevamente.'], 500);
     }
 }
 
@@ -735,15 +881,23 @@ if ($action === 'chat_reply') {
         if ($idChat <= 0) {
             api_json(['success' => false, 'message' => 'El chat debe ser valido'], 422);
         }
+        $mensaje = api_input('mensaje', '');
+        $uploads = api_chat_store_uploads();
+        if (trim($mensaje) === '' && !$uploads) {
+            api_json(['success' => false, 'message' => 'Escribí una respuesta o adjuntá al menos un archivo.'], 422);
+        }
         $chatDAO->enviarMensaje([
             'id_chat' => $idChat,
             'id_usuario' => (int)$user['id_usuario'],
             'autor_tipo' => 'Administracion',
-            'mensaje' => api_required('mensaje')
+            'mensaje' => $mensaje,
+            'adjuntos' => $uploads
         ]);
         api_json(['success' => true]);
     } catch (Throwable $e) {
-        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+        api_chat_remove_uploads($uploads ?? []);
+        error_log('MetalGest chat upload failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudieron guardar los archivos. Intentá nuevamente.'], 500);
     }
 }
 

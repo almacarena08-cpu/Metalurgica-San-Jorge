@@ -1,10 +1,10 @@
 import {administracionPanel} from "./administracion.js?v=modules-flat-20261014-3";
 import {produccionPanel} from "./produccion.js?v=modules-flat-20261014-3";
 import {mantenimientoPanel} from "./mantenimiento.js?v=modules-flat-20261014-3";
-import {depositoPanel} from "./deposito.js?v=modules-flat-20261014-3";
-import {comprasPanel} from "./compras.js?v=modules-flat-20261014-3";
+import {depositoPanel} from "./deposito.js?v=stock-warning-20261014-1";
+import {comprasPanel} from "./compras.js?v=stock-warning-20261014-1";
 import {calidadPanel} from "./calidad.js?v=modules-flat-20261014-3";
-import {chatPanel} from "./chat.js?v=customer-chat-bubble-20261014-1";
+import {chatPanel} from "./chat.js?v=chat-attachments-20261014-1";
 
 const panelModules = [comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel];
 
@@ -25,6 +25,25 @@ class ApiService {
             credentials: "include",
             headers: {"Content-Type": "application/x-www-form-urlencoded;charset=UTF-8"},
             body: new URLSearchParams(data)
+        });
+        const contentType = response.headers.get("content-type") || "sin Content-Type";
+        const body = await response.text();
+        try {
+            const result = JSON.parse(body);
+            if (response.status === 401 && result.success === false) {
+                result.authRequired = true;
+            }
+            return result;
+        } catch (error) {
+            throw new Error(`La respuesta de ${response.url} fue HTTP ${response.status} ${response.statusText} sin JSON (${contentType}).`);
+        }
+    }
+
+    async postMultipart(action, formData) {
+        const response = await fetch(`${this.baseUrl}?action=${encodeURIComponent(action)}`, {
+            method: "POST",
+            credentials: "include",
+            body: formData
         });
         const contentType = response.headers.get("content-type") || "sin Content-Type";
         const body = await response.text();
@@ -75,7 +94,7 @@ class App {
         try {
             const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=customer-chat-bubble-20261014-1`);
+                const response = await fetch(`html/${moduleName}.html?v=chat-attachments-20261014-1`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));
@@ -113,6 +132,9 @@ class App {
                 <aside class="sidebar">
                     <div class="brand">METALURGICA<br>SAN JORGE</div>
                     <nav class="nav">${modules.map(module => `<button data-module="${module.id}">${module.label}</button>`).join("")}</nav>
+                    ${modules.some(module => module.id === "compras")
+                        ? '<section class="sidebar-stock-alerts" data-stock-alerts hidden aria-label="Alertas de inventario"><button class="sidebar-stock-warning" type="button" data-stock-warning><span data-stock-warning-details></span></button></section>'
+                        : ""}
                     ${this.session.user.tipo === "cliente"
                         ? '<button class="btn" data-client-site>Volver al sitio</button>'
                         : '<button class="btn" data-logout>Salir</button>'}
@@ -135,6 +157,11 @@ class App {
         const clientSiteButton = this.root.querySelector("[data-client-site]");
         if (clientSiteButton) clientSiteButton.addEventListener("click", () => this.returnToSite());
         this.root.querySelectorAll("[data-module]").forEach(button => button.addEventListener("click", () => this.openModule(button.dataset.module)));
+        const stockWarningButton = this.root.querySelector("[data-stock-warning]");
+        if (stockWarningButton) {
+            stockWarningButton.addEventListener("click", () => this.openModule("compras"));
+            this.refreshStockWarnings();
+        }
         const initialModule = (this.session.user.rol || "").toLowerCase() === "gerencia"
             ? "administracion"
             : modules[0].id;

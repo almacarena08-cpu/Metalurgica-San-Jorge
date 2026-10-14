@@ -7,6 +7,7 @@ export const depositoPanel = {
             inventoryTable: this.simpleTable(materiales, ["id_material", "nombre", "tipo", "unidad", "stock", "stock_minimo", "stock_maximo"]),
             movementsTable: this.simpleTable(movimientos, ["id_movimiento", "material", "tipo", "cantidad", "motivo", "fecha"])
         }));
+        this.refreshStockWarnings(materiales);
         this.bindPostForm("#movimientoForm", "deposito_movimiento_create", () => this.depositoView());
     }
 

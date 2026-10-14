@@ -87,6 +87,20 @@ CREATE TABLE `chat_mensaje_web` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Estructura de tabla para la tabla `chat_adjunto`
+--
+
+CREATE TABLE `chat_adjunto` (
+  `id_adjunto` int(11) NOT NULL,
+  `id_mensaje` int(11) NOT NULL,
+  `nombre_original` varchar(255) NOT NULL,
+  `clave_archivo` varchar(60) NOT NULL,
+  `tipo_mime` varchar(100) NOT NULL,
+  `tamano` int(10) UNSIGNED NOT NULL,
+  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
 -- Volcado de datos para la tabla `chat_mensaje_web`
 --
 
@@ -853,6 +867,14 @@ ALTER TABLE `chat_mensaje_web`
   ADD KEY `id_usuario` (`id_usuario`);
 
 --
+-- Indices de la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  ADD PRIMARY KEY (`id_adjunto`),
+  ADD UNIQUE KEY `clave_archivo` (`clave_archivo`),
+  ADD KEY `id_mensaje` (`id_mensaje`);
+
+--
 -- Indices de la tabla `cliente`
 --
 ALTER TABLE `cliente`
@@ -1018,6 +1040,12 @@ ALTER TABLE `chat_mensaje_web`
   MODIFY `id_mensaje` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT de la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  MODIFY `id_adjunto` int(11) NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `cliente`
 --
 ALTER TABLE `cliente`
@@ -1135,6 +1163,12 @@ ALTER TABLE `chat_mensaje`
 ALTER TABLE `chat_mensaje_web`
   ADD CONSTRAINT `chat_mensaje_web_ibfk_1` FOREIGN KEY (`id_chat`) REFERENCES `chat_conversacion` (`id_chat`),
   ADD CONSTRAINT `chat_mensaje_web_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`);
+
+--
+-- Filtros para la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  ADD CONSTRAINT `chat_adjunto_ibfk_1` FOREIGN KEY (`id_mensaje`) REFERENCES `chat_mensaje_web` (`id_mensaje`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `compra`

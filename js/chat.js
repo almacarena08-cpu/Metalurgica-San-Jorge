@@ -50,6 +50,15 @@ export const chatPanel = {
             composeHint: isClient ? "Nuestro equipo va a responderte por este chat." : "Tu respuesta se enviará al cliente de esta conversación.",
             send_disabled: !isClient && !selectedChat ? "disabled" : ""
         }));
+        const fileInput = this.root.querySelector("#chatFiles");
+        fileInput.addEventListener("change", () => this.renderChatFileList());
+        if (this.pendingChatFiles?.length) {
+            const transfer = new DataTransfer();
+            this.pendingChatFiles.forEach(file => transfer.items.add(file));
+            fileInput.files = transfer.files;
+            this.pendingChatFiles = null;
+            this.renderChatFileList();
+        }
         this.root.querySelectorAll("[data-chat]").forEach(button => {
             button.addEventListener("click", async () => {
                 this.activeChat = button.dataset.chat;
@@ -97,9 +106,17 @@ export const chatPanel = {
         const role = (this.session.user.rol || this.session.user.tipo || "").toLowerCase();
         thread.innerHTML = (await Promise.all(messages.map(message => {
             const mine = role === "cliente" ? message.autor_tipo === "Cliente" : message.autor_tipo === "Administracion";
+            const attachments = (message.adjuntos || []).map(attachment => {
+                const url = `${this.api.baseUrl}?action=chat_attachment&id_adjunto=${encodeURIComponent(attachment.id_adjunto)}`;
+                return `<a class="chat-attachment-link" href="${this.escape(url)}" download>
+                    <span class="chat-attachment-file-icon" aria-hidden="true">↓</span>
+                    <span><strong>${this.escape(attachment.nombre_original)}</strong><small>${this.formatChatFileSize(attachment.tamano)}</small></span>
+                </a>`;
+            }).join("");
             return this.moduleTemplate("chat", "chat-message", {
                 messageSide: mine ? "mine" : "theirs",
                 messageText: this.escape(message.mensaje),
+                attachments: attachments ? `<div class="chat-message-attachments">${attachments}</div>` : "",
                 author: this.escape(message.autor_nombre || message.autor_tipo),
                 date: this.escape(message.fecha)
             });
@@ -110,28 +127,85 @@ export const chatPanel = {
     async sendChat(event, isClient) {
         event.preventDefault();
         const form = event.currentTarget;
-        const data = Object.fromEntries(new FormData(form));
-        const payload = {
-            id_chat: this.activeChat || "",
-            id_usuario: isClient ? "" : this.session.user.id_usuario,
-            id_cliente: this.session.user.id_cliente || "",
-            autor_tipo: isClient ? "Cliente" : "Administracion",
-            asunto: data.asunto || "Consulta a administracion",
-            mensaje: data.mensaje
-        };
-        const result = await this.api.post(isClient ? "chat_send" : "chat_reply", payload);
-        if (!result.success) {
-            if (result.authRequired) {
-                this.pendingChatDraft = {asunto: data.asunto || "", mensaje: data.mensaje};
-                this.promptChatLogin();
-                return;
-            }
-            form.parentElement.querySelector(".message").textContent = result.message || "No se pudo enviar.";
+        const formData = new FormData(form);
+        const message = String(formData.get("mensaje") || "").trim();
+        const files = Array.from(form.querySelector("#chatFiles").files);
+        const messageBox = form.parentElement.querySelector(".message");
+        if (!message && files.length === 0) {
+            messageBox.textContent = "Escribí un mensaje o adjuntá al menos un archivo.";
             return;
         }
-        this.activeChat = result.id_chat || this.activeChat;
-        form.reset();
-        await this.chatView();
+        if (files.length > 5) {
+            messageBox.textContent = "Podés adjuntar hasta 5 archivos por mensaje.";
+            return;
+        }
+        if (files.some(file => file.size > 10 * 1024 * 1024)) {
+            messageBox.textContent = "Cada archivo debe pesar como máximo 10 MB.";
+            return;
+        }
+        if (files.reduce((total, file) => total + file.size, 0) > 25 * 1024 * 1024) {
+            messageBox.textContent = "El total de archivos por mensaje no puede superar 25 MB.";
+            return;
+        }
+        formData.set("id_chat", this.activeChat || "");
+        formData.set("id_usuario", isClient ? "" : this.session.user.id_usuario);
+        formData.set("id_cliente", this.session.user.id_cliente || "");
+        formData.set("autor_tipo", isClient ? "Cliente" : "Administracion");
+        formData.set("asunto", formData.get("asunto") || "Consulta a administracion");
+        try {
+            const result = await this.api.postMultipart(isClient ? "chat_send" : "chat_reply", formData);
+            if (!result.success) {
+                if (result.authRequired) {
+                    this.pendingChatDraft = {asunto: formData.get("asunto") || "", mensaje: message};
+                    this.pendingChatFiles = files;
+                    this.promptChatLogin();
+                    return;
+                }
+                messageBox.textContent = result.message || "No se pudo enviar.";
+                return;
+            }
+            this.activeChat = result.id_chat || this.activeChat;
+            this.pendingChatFiles = null;
+            await this.chatView();
+        } catch (error) {
+            console.error("No se pudo enviar el mensaje del chat:", error);
+            messageBox.textContent = error.message || "No se pudo enviar el mensaje.";
+        }
+    },
+
+    renderChatFileList() {
+        const input = this.root.querySelector("#chatFiles");
+        const list = this.root.querySelector("[data-chat-attachments]");
+        if (!input || !list) return;
+        list.replaceChildren();
+        const files = Array.from(input.files);
+        list.hidden = files.length === 0;
+        files.forEach((file, index) => {
+            const item = document.createElement("span");
+            item.className = "chat-selected-file";
+            const name = document.createElement("span");
+            name.textContent = `${file.name} · ${this.formatChatFileSize(file.size)}`;
+            const remove = document.createElement("button");
+            remove.type = "button";
+            remove.className = "chat-remove-file";
+            remove.setAttribute("aria-label", `Quitar ${file.name}`);
+            remove.textContent = "×";
+            remove.addEventListener("click", () => {
+                const transfer = new DataTransfer();
+                files.forEach((selected, selectedIndex) => {
+                    if (selectedIndex !== index) transfer.items.add(selected);
+                });
+                input.files = transfer.files;
+                this.renderChatFileList();
+            });
+            item.append(name, remove);
+            list.append(item);
+        });
+    },
+
+    formatChatFileSize(size) {
+        if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+        return `${(size / (1024 * 1024)).toFixed(1)} MB`;
     },
 
     promptChatLogin() {

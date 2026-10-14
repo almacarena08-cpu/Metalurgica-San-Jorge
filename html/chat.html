@@ -29,9 +29,20 @@
             <form id="chatForm" class="chat-compose">
                 {{subjectField}}
                 <label class="chat-message-label" for="chatMessage">{{messageLabel}}</label>
-                <textarea id="chatMessage" name="mensaje" placeholder="{{messagePlaceholder}}" rows="3" autocomplete="off" required {{message_disabled}}></textarea>
+                <textarea id="chatMessage" name="mensaje" placeholder="{{messagePlaceholder}}" rows="3" autocomplete="off" {{message_disabled}}></textarea>
+                <div class="chat-attachments" data-chat-attachments hidden aria-live="polite"></div>
                 <div class="chat-compose-footer">
-                    <span class="chat-compose-hint">{{composeHint}}</span>
+                    <div class="chat-compose-tools">
+                        <input class="chat-file-input" id="chatFiles" name="adjuntos[]" type="file" multiple accept=".pdf,.jpg,.jpeg,.png,.webp,.dxf,.dwg,application/pdf,image/jpeg,image/png,image/webp" {{message_disabled}}>
+                        <label class="chat-attach-button" for="chatFiles" aria-label="Adjuntar planos o archivos" title="Adjuntar PDF, imágenes, DXF o DWG">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
+                                <path d="m8.5 12.5 6.9-6.9a3 3 0 0 1 4.2 4.2l-8.8 8.8a5 5 0 0 1-7.1-7.1l8.5-8.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path>
+                            </svg>
+                            <span>Adjuntar plano</span>
+                        </label>
+                        <span class="chat-file-help">PDF · JPG · PNG · DXF · DWG · máx. 10 MB</span>
+                        <span class="chat-compose-hint">{{composeHint}}</span>
+                    </div>
                     <button class="chat-send-button" type="submit" {{send_disabled}}><span>Enviar mensaje</span><span class="chat-send-icon" aria-hidden="true">↗</span></button>
                 </div>
             </form>
@@ -71,6 +82,7 @@
     <div class="bubble-row {{messageSide}}">
         <div class="bubble">
             <span>{{messageText}}</span>
+            {{attachments}}
             <small>{{author}} · {{date}}</small>
         </div>
     </div>

@@ -58,7 +58,44 @@ class ChatDAO extends BaseDAO {
              ORDER BY cm.fecha ASC, cm.id_mensaje ASC'
         );
         $stmt->execute([':id_chat' => $idChat]);
-        return $stmt->fetchAll();
+        $mensajes = $stmt->fetchAll();
+        if (!$mensajes) {
+            return [];
+        }
+        $ids = array_map(static function ($mensaje) {
+            return (int)$mensaje['id_mensaje'];
+        }, $mensajes);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $adjuntos = $this->db()->prepare(
+            "SELECT id_adjunto, id_mensaje, nombre_original, tipo_mime, tamano
+             FROM chat_adjunto
+             WHERE id_mensaje IN ($placeholders)
+             ORDER BY id_adjunto"
+        );
+        $adjuntos->execute($ids);
+        $adjuntosPorMensaje = [];
+        foreach ($adjuntos->fetchAll() as $adjunto) {
+            $adjuntosPorMensaje[(int)$adjunto['id_mensaje']][] = $adjunto;
+        }
+        foreach ($mensajes as &$mensaje) {
+            $mensaje['adjuntos'] = $adjuntosPorMensaje[(int)$mensaje['id_mensaje']] ?? [];
+        }
+        unset($mensaje);
+        return $mensajes;
+    }
+
+    public function obtenerAdjunto(int $idAdjunto) {
+        $stmt = $this->db()->prepare(
+            'SELECT a.id_adjunto, a.id_mensaje, a.nombre_original, a.clave_archivo, a.tipo_mime, a.tamano,
+                    c.id_chat, c.id_cliente
+             FROM chat_adjunto a
+             INNER JOIN chat_mensaje_web m ON m.id_mensaje = a.id_mensaje
+             INNER JOIN chat_conversacion c ON c.id_chat = m.id_chat
+             WHERE a.id_adjunto = :id_adjunto
+             LIMIT 1'
+        );
+        $stmt->execute([':id_adjunto' => $idAdjunto]);
+        return $stmt->fetch();
     }
 
     public function perteneceACliente(int $idChat, int $idCliente) {
@@ -84,7 +121,8 @@ class ChatDAO extends BaseDAO {
                 ':asunto' => $datos['asunto'] ?? 'Consulta a administracion'
             ]);
             $idChat = (int)$pdo->lastInsertId();
-            $this->insertarMensaje($idChat, null, 'Cliente', $datos['mensaje'], $pdo);
+            $idMensaje = $this->insertarMensaje($idChat, null, 'Cliente', $datos['mensaje'], $pdo);
+            $this->insertarAdjuntos($idMensaje, $datos['adjuntos'] ?? [], $pdo);
             $pdo->commit();
             return $idChat;
         } catch (Throwable $e) {
@@ -99,7 +137,8 @@ class ChatDAO extends BaseDAO {
         try {
             $idChat = (int)$datos['id_chat'];
             $idUsuario = $datos['autor_tipo'] === 'Cliente' ? null : (int)$datos['id_usuario'];
-            $this->insertarMensaje($idChat, $idUsuario, $datos['autor_tipo'], $datos['mensaje'], $pdo);
+            $idMensaje = $this->insertarMensaje($idChat, $idUsuario, $datos['autor_tipo'], $datos['mensaje'], $pdo);
+            $this->insertarAdjuntos($idMensaje, $datos['adjuntos'] ?? [], $pdo);
             $estado = $datos['autor_tipo'] === 'Administracion' ? 'Respondido' : 'Abierto';
             $stmt = $pdo->prepare(
                 'UPDATE chat_conversacion
@@ -126,5 +165,25 @@ class ChatDAO extends BaseDAO {
             ':autor_tipo' => $autorTipo,
             ':mensaje' => $mensaje
         ]);
+        return (int)$pdo->lastInsertId();
+    }
+
+    private function insertarAdjuntos(int $idMensaje, array $adjuntos, PDO $pdo) {
+        if (!$adjuntos) {
+            return;
+        }
+        $stmt = $pdo->prepare(
+            'INSERT INTO chat_adjunto (id_mensaje, nombre_original, clave_archivo, tipo_mime, tamano)
+             VALUES (:id_mensaje, :nombre_original, :clave_archivo, :tipo_mime, :tamano)'
+        );
+        foreach ($adjuntos as $adjunto) {
+            $stmt->execute([
+                ':id_mensaje' => $idMensaje,
+                ':nombre_original' => $adjunto['nombre_original'],
+                ':clave_archivo' => $adjunto['clave_archivo'],
+                ':tipo_mime' => $adjunto['tipo_mime'],
+                ':tamano' => $adjunto['tamano']
+            ]);
+        }
     }
 }

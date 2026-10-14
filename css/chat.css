@@ -435,6 +435,60 @@
     font-size: 9px;
 }
 
+.chat-message-attachments {
+    display: grid;
+    gap: 7px;
+    min-width: min(260px, 100%);
+    margin-top: 10px;
+}
+
+.chat-attachment-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    background: rgba(0, 0, 0, .16);
+    color: inherit;
+    text-decoration: none;
+}
+
+.chat-attachment-link:hover {
+    border-color: rgba(255, 145, 91, .55);
+}
+
+.chat-attachment-file-icon {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid rgba(255, 145, 91, .3);
+    color: #ff9b67;
+    font-size: 15px;
+}
+
+.chat-attachment-link > span:last-child {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+}
+
+.chat-attachment-link strong {
+    overflow: hidden;
+    max-width: 230px;
+    color: #f3efeb;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-attachment-link small {
+    margin: 0;
+    color: #a9a19b;
+    font-size: 9px;
+}
+
 .chat-compose {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -520,6 +574,106 @@
     gap: 12px;
     padding-top: 9px;
     border-top: 1px solid var(--chat-border);
+}
+
+.chat-compose-tools {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 9px;
+    min-width: 0;
+}
+
+.chat-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+
+.chat-attach-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 32px;
+    padding: 0 9px;
+    border: 1px solid #3a3e41;
+    border-radius: 4px;
+    background: #202326;
+    color: #e5e1dd;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    transition: border-color .18s ease, color .18s ease;
+}
+
+.chat-attach-button:hover {
+    border-color: #a65c32;
+    color: #ffab78;
+}
+
+.chat-file-input:focus-visible + .chat-attach-button {
+    outline: 2px solid #ff995b;
+    outline-offset: 2px;
+}
+
+.chat-attach-button svg {
+    width: 15px;
+    height: 15px;
+}
+
+.chat-file-help {
+    color: #73797d;
+    font-size: 9px;
+}
+
+.chat-attachments {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 4px;
+}
+
+.chat-compose:has(input[name="asunto"]) > .chat-attachments {
+    grid-column: 1 / -1;
+}
+
+.chat-attachments[hidden] {
+    display: none;
+}
+
+.chat-selected-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 100%;
+    padding: 4px 6px 4px 8px;
+    border: 1px solid #3c4144;
+    background: #222628;
+    color: #d4d8da;
+    font-size: 9px;
+}
+
+.chat-selected-file > span {
+    overflow: hidden;
+    max-width: 280px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.chat-remove-file {
+    display: grid;
+    width: 19px;
+    height: 19px;
+    flex: 0 0 auto;
+    place-items: center;
+    background: transparent;
+    color: #ff9b67;
+    font-size: 16px;
 }
 
 .chat-compose-hint {
@@ -794,6 +948,14 @@
     .chat-compose-footer {
         align-items: flex-end;
         gap: 8px;
+    }
+
+    .chat-compose-tools {
+        gap: 6px;
+    }
+
+    .chat-file-help {
+        display: none;
     }
 
     .chat-compose-hint {
