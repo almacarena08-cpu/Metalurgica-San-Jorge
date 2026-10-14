@@ -1,0 +1,8 @@
+#content[data-module="compras"] #proveedorForm,
+#content[data-module="compras"] #compraForm {
+    align-items: end;
+}
+
+#content[data-module="compras"] #compraForm .btn {
+    align-self: end;
+}

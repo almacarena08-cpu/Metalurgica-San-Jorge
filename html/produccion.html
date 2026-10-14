@@ -1,0 +1,25 @@
+<template data-view="produccion">
+    <section class="section-panel">
+        <h3>Registrar avance</h3>
+        <form id="produccionForm" class="form-grid">
+            <label class="field full">Orden<select name="id_orden">{{orders}}</select></label>
+            <label>Cantidad producida<input name="cantidad_producida" type="number" min="0" value="0"></label>
+            <label>Avance %<input name="avance" type="number" min="0" max="100" value="0"></label>
+            <label class="field full">Observaciones<textarea name="observaciones"></textarea></label>
+            <button class="btn primary">Registrar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <h3>Aviso a mantenimiento</h3>
+        <form id="fallaForm" class="form-grid">
+            <label>Maquina<select name="id_maquina">{{machines}}</select></label>
+            <label>Tipo<select name="tipo"><option>Correctivo</option><option>Preventivo</option></select></label>
+            <label class="field full">Problema<textarea name="problema" required></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Reportar falla</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{productionTable}}</section>
+</template>

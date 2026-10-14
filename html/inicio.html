@@ -1,0 +1,224 @@
+<template data-view="landing">
+    <main class="landing-site">
+        <header class="public-nav">
+            <a class="brand-lockup" href="#inicio" aria-label="Metalúrgica San Jorge, inicio">
+                <span class="brand-emblem">SJ</span>
+                <span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span>
+            </a>
+            <div class="public-menu" id="publicMenu">
+                <nav aria-label="Navegación principal">
+                    <a href="#planta">Instalaciones</a>
+                    <a href="#servicios">Servicios</a>
+                    <a href="#empresa">Empresa</a>
+                    <a href="#beneficios">Beneficios</a>
+                    <a href="#contacto">Contacto</a>
+                </nav>
+                <div class="public-menu-actions">{{menuActions}}</div>
+            </div>
+            <div class="public-controls">
+                <div class="public-actions">{{publicActions}}</div>
+                <button class="menu-toggle" type="button" aria-label="Abrir menú" aria-controls="publicMenu" aria-expanded="false" data-menu-toggle>
+                    <span></span><span></span><span></span>
+                </button>
+            </div>
+        </header>
+        <section class="public-hero" id="inicio">
+            <div class="hero-content">
+                <span class="eyebrow">Fabricación · Mecanizado · Producción</span>
+                <h1>Metalúrgica San Jorge<br><span>Fabricación industrial.</span></h1>
+                <p>Fabricación y mecanizado de piezas, mantenimiento industrial y seguimiento de cada trabajo desde el pedido hasta la entrega.</p>
+                <div class="hero-actions">
+                    <a class="btn primary" href="#contacto">Solicitar asesoramiento <span aria-hidden="true">&rarr;</span></a>
+                    {{heroAccess}}
+                </div>
+                <div class="hero-index"><span>01</span><i></i> INDUSTRIA EN MOVIMIENTO</div>
+            </div>
+            <div class="hero-side-note" aria-hidden="true"><span>MSJ</span><i></i> INDUSTRIA EN MOVIMIENTO</div>
+        </section>
+        <section class="quote-band">
+            <div><span class="eyebrow">Metalúrgica San Jorge</span><h2>Capacidad industrial y seguimiento de cada trabajo.</h2></div>
+            {{quoteAccess}}
+        </section>
+        <section class="public-band gallery-band" id="planta">
+            <div class="section-heading"><span class="eyebrow">Instalaciones y procesos</span><h2>Experiencia aplicada a cada proyecto.</h2></div>
+            <div class="gallery-grid">
+                <figure class="gallery-card gallery-card-featured">
+                    <img src="https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?auto=format&fit=crop&w=1400&q=85" alt="Operario realizando trabajos de soldadura en un taller" loading="lazy" decoding="async">
+                    <figcaption><span>01 / FABRICACIÓN</span><strong>Precisión desde el taller</strong></figcaption>
+                </figure>
+                <figure class="gallery-card">
+                    <img src="https://images.unsplash.com/photo-1581092160562-40aa08e78837?auto=format&fit=crop&w=1100&q=85" alt="Maquinaria instalada en una planta industrial" loading="lazy" decoding="async">
+                    <figcaption><span>02 / PRODUCCIÓN</span><strong>Equipos en acción</strong></figcaption>
+                </figure>
+                <figure class="gallery-card">
+                    <img src="https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=1100&q=85" alt="Plano digital de un proceso de fabricación" loading="lazy" decoding="async">
+                    <figcaption><span>03 / PROCESOS</span><strong>Una operación conectada</strong></figcaption>
+                </figure>
+            </div>
+        </section>
+        <section class="public-band services-band" id="servicios">
+            <div class="section-heading"><span class="eyebrow">Servicios industriales</span><h2>Soluciones para acompañar la producción.</h2></div>
+            <div class="service-grid">
+                <article><span class="service-number">01 / FABRICACIÓN</span><strong>Mecanizado y fabricación.</strong><span>Piezas y trabajos metalúrgicos desarrollados según los requerimientos de cada proyecto.</span></article>
+                <article><span class="service-number">02 / MANTENIMIENTO</span><strong>Continuidad operativa.</strong><span>Atención de necesidades de mantenimiento para acompañar el trabajo diario de planta.</span></article>
+                <article><span class="service-number">03 / GESTIÓN</span><strong>Seguimiento de producción.</strong><span>Órdenes, avances y controles centralizados en el portal MetalGest.</span></article>
+            </div>
+        </section>
+        <section class="public-band company-band split" id="empresa">
+            <div class="company-copy">
+                <span class="eyebrow">Una operación conectada</span>
+                <h2>Del pedido a la entrega.<br><span>Cada etapa en seguimiento.</span></h2>
+                <p>MetalGest conecta administración, producción y calidad para que cada equipo trabaje con información actualizada sobre el avance de las órdenes.</p>
+                {{companyAccess}}
+            </div>
+            <div class="process-panel">
+                <span class="process-label">UN FLUJO, DE PRINCIPIO A FIN</span>
+                <div class="process-list">
+                    <span><b>01</b> Pedido y evaluación</span>
+                    <span><b>02</b> Orden de trabajo</span>
+                    <span><b>03</b> Producción y seguimiento</span>
+                    <span><b>04</b> Calidad y entrega</span>
+                </div>
+            </div>
+        </section>
+        <section class="benefits-band public-band" id="beneficios">
+            <div class="section-heading"><span class="eyebrow">Control operativo</span><h2>Información consistente para trabajar mejor.</h2></div>
+            <div class="benefit-grid">
+                <article><span class="benefit-mark">01</span><h3>Coordinación</h3><p>Administración, producción y calidad trabajan sobre un flujo compartido.</p></article>
+                <article><span class="benefit-mark">02</span><h3>Trazabilidad</h3><p>El estado y avance de las órdenes se mantienen actualizados para consulta.</p></article>
+                <article><span class="benefit-mark">03</span><h3>Control operativo</h3><p>Acceso a las herramientas correspondientes a cada sector y responsabilidad.</p></article>
+            </div>
+        </section>
+        <section class="contact-band" id="contacto">
+            <div><span class="eyebrow">Atención comercial</span><h2>Cuéntenos sobre su proyecto.</h2><p>Iniciá sesión para abrir una consulta y mantener el seguimiento desde el chat.</p></div>
+            <div class="contact-actions">
+                <button class="btn primary" data-consultation>Iniciar consulta <span aria-hidden="true">&rarr;</span></button>
+                {{contactAccess}}
+            </div>
+        </section>
+        <footer class="public-footer">
+            <a class="brand-lockup" href="#inicio"><span class="brand-emblem">SJ</span><span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span></a>
+            <span>MetalGest · Gestión industrial</span>
+        </footer>
+    </main>
+    <div class="auth-modal hidden" id="authModal">
+        <div class="auth-shell" role="dialog" aria-modal="true" aria-label="Acceso a MetalGest">
+            <aside class="auth-visual">
+                <a class="brand-lockup" href="#inicio" aria-label="Metalúrgica San Jorge, inicio">
+                    <span class="brand-emblem">SJ</span>
+                    <span class="brand-mark">METALÚRGICA<strong>SAN JORGE</strong></span>
+                </a>
+                <div class="auth-visual-copy">
+                    <span class="auth-kicker">PORTAL OPERATIVO</span>
+                    <h1>La producción,<br><span>bajo control.</span></h1>
+                    <p>Pedidos, órdenes de trabajo y seguimiento operativo en un mismo espacio.</p>
+                    <div class="auth-steps" aria-label="Funciones del portal">
+                        <span><b>01</b> Acceso a órdenes de trabajo</span>
+                        <span><b>02</b> Seguimiento de producción</span>
+                        <span><b>03</b> Coordinación entre áreas</span>
+                    </div>
+                </div>
+                <div class="auth-visual-meta"><span>GESTIÓN INDUSTRIAL</span><span>METALGEST</span></div>
+            </aside>
+            <section class="auth-main">
+                <button class="close-btn" data-close type="button" aria-label="Cerrar acceso">×</button>
+                <div class="auth-content-wrap">
+                    <div class="auth-main-heading">
+                        <span>PORTAL SAN JORGE</span>
+                        <span class="auth-status"><i></i> ACCESO SEGURO</span>
+                    </div>
+                    <div class="tabs" role="tablist" aria-label="Tipo de acceso">
+                        <button class="tab active" data-tab="login" type="button" role="tab" aria-selected="true" aria-controls="authContent">Ingresar</button>
+                        <button class="tab" data-tab="register" type="button" role="tab" aria-selected="false" aria-controls="authContent" tabindex="-1">Registrarse</button>
+                    </div>
+                    <div id="authContent"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+</template>
+<template data-view="login">
+    <h2>Iniciar sesión</h2>
+    <p class="muted">Ingresá con tu usuario o correo electrónico y contraseña.</p>
+    <form id="loginForm" class="form-grid">
+        <label class="field full">Usuario o correo electrónico<input name="identificador" autocomplete="username" required></label>
+        <label class="field full">Contraseña<input name="contrasena" type="password" autocomplete="current-password" required></label>
+        <button class="btn primary field full">Ingresar</button>
+    </form>
+    <button class="text-link" type="button" data-client-forgot>¿Necesitás recuperar la contraseña de una cuenta con correo?</button>
+    <div class="message"></div>
+</template>
+<template data-view="password-request">
+    <h2>Recuperar contraseña</h2>
+    <p class="muted">En el correo podés tocar “Crear contraseña nueva” para abrir el formulario, o usar el código de seis dígitos para cambiarla acá.</p>
+    <form id="clientPasswordRequestForm" class="form-grid">
+        <label class="field full">Correo<input name="email" type="email" autocomplete="email" required></label>
+        <button class="btn primary field full">Enviar código</button>
+    </form>
+    <button class="text-link" type="button" data-client-login-back>Volver al inicio de sesión</button>
+    <div class="message"></div>
+</template>
+<template data-view="password-link">
+    <h2>Crear contraseña nueva</h2>
+    <p class="muted">Ingresá el código recibido por correo y elegí tu nueva contraseña. El enlace y el código vencen en 10 minutos.</p>
+    <form id="clientPasswordLinkForm" class="form-grid">
+        <label class="field full">Código de seis dígitos<input name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+        <label class="field full">Contraseña nueva<input name="contrasena" type="password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número" autocomplete="new-password" required></label>
+        <label class="field full">Repetir contraseña<input name="confirmar" type="password" minlength="8" autocomplete="new-password" required></label>
+        <button class="btn primary field full">Guardar contraseña</button>
+    </form>
+    <div class="message"></div>
+</template>
+<template data-view="password-reset">
+    <h2>Cambiar contraseña</h2>
+    <p class="muted">Ingresá el código recibido por correo y elegí una contraseña nueva. Si no llega, confirmá que escribiste exactamente el correo con que registraste la cuenta y revisá Spam y Promociones. Podés solicitar otro código si venció.</p>
+    <form id="clientPasswordResetForm" class="form-grid">
+        <label class="field full">Correo<input name="email" type="email" value="{{email}}" readonly required></label>
+        <label class="field full">Código de seis dígitos<input name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+        <label class="field full">Contraseña nueva<input name="contrasena" type="password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número" autocomplete="new-password" required></label>
+        <label class="field full">Repetir contraseña<input name="confirmar" type="password" minlength="8" autocomplete="new-password" required></label>
+        <button class="btn primary field full">Guardar contraseña</button>
+    </form>
+    <button class="text-link" type="button" data-resend-code data-purpose="recuperar">Reenviar código</button>
+    <div class="message">{{message}}</div>
+</template>
+<template data-view="register">
+    <h2>Registrar cliente</h2>
+    <p class="muted">Completá los datos de la empresa.</p>
+    <form id="registerForm" class="form-grid">
+        <label class="field full">Empresa<input name="razon_social" maxlength="100" required></label>
+        <label>CUIT<input name="cuit"></label>
+        <label>Email<input name="email" type="email" autocomplete="email" required></label>
+        <label class="field full">Direccion<input name="direccion"></label>
+        <label class="field full">Contraseña<input name="contrasena" type="password" minlength="8" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{8,}" title="Mínimo 8 caracteres, una mayúscula, una minúscula y un número" autocomplete="new-password" required></label>
+        <label class="field full">Repetir contraseña<input name="confirmar" type="password" minlength="8" autocomplete="new-password" required></label>
+        <p class="muted field full">La contraseña debe tener 8 caracteres como mínimo, una mayúscula, una minúscula y un número. Te enviaremos un código por correo.</p>
+        <button class="btn primary field full">Registrar cliente</button>
+    </form>
+    <div class="message"></div>
+</template>
+<template data-view="verification">
+    <h2>Verificar correo</h2>
+    <p class="muted">Ingresá el código de seis dígitos que enviamos a tu correo.</p>
+    <form id="clientVerificationForm" class="form-grid">
+        <label class="field full">Correo<input name="email" type="email" value="{{email}}" readonly required></label>
+        <label class="field full">Código<input name="codigo" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>
+        <button class="btn primary field full">Verificar correo</button>
+    </form>
+    <button class="text-link" type="button" data-resend-code data-purpose="registro">Reenviar código</button>
+    <div class="message">{{message}}</div>
+</template>
+<template data-view="client-account-dialog">
+    <dialog class="client-account-dialog" aria-labelledby="clientAccountTitle">
+        <h2 id="clientAccountTitle">{{actionTitle}}</h2>
+        <p>{{actionDescription}}</p>
+        <form data-client-account-confirm>
+            <label class="field">Contraseña de la cuenta<input name="contrasena" type="password" autocomplete="current-password" required></label>
+            <div class="client-account-dialog-actions">
+                <button class="btn" type="button" data-account-cancel>Cancelar</button>
+                <button class="btn {{buttonClass}}" type="submit">{{submitLabel}}</button>
+            </div>
+            <div class="message" aria-live="polite"></div>
+        </form>
+    </dialog>
+</template>

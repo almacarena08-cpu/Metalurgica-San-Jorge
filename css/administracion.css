@@ -1,0 +1,16 @@
+#content[data-module="administracion"] .admin-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 18px;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn {
+    min-height: 38px;
+}
+
+@media (max-width: 620px) {
+    #content[data-module="administracion"] .admin-subnav .btn {
+        flex: 1 1 calc(50% - 8px);
+    }
+}

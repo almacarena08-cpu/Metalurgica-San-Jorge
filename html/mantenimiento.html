@@ -1,0 +1,25 @@
+<template data-view="mantenimiento">
+    <section class="section-panel">
+        <h3>Preventivo</h3>
+        <form id="preventivoForm" class="form-grid">
+            <label>Maquina<select name="id_maquina">{{machines}}</select></label>
+            <label>Fecha<input name="fecha" type="date"></label>
+            <label class="field full">Tarea / problema<textarea name="problema" required></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Crear preventivo</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <h3>Actualizar mantenimiento</h3>
+        <form id="mantenimientoForm" class="form-grid">
+            <label>ID mantenimiento<input name="id_mantenimiento" type="number" required></label>
+            <label>Estado<select name="estado"><option>Pendiente</option><option>En proceso</option><option>Resuelta</option></select></label>
+            <label class="field full">Reparacion<textarea name="reparacion" required></textarea></label>
+            <label class="field full">Repuestos<input name="repuestos"></label>
+            <button class="btn primary">Actualizar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{maintenanceTable}}</section>
+</template>

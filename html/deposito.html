@@ -1,0 +1,16 @@
+<template data-view="deposito">
+    <section class="section-panel">
+        <h3>Movimiento de stock</h3>
+        <form id="movimientoForm" class="form-grid">
+            <label>Material<select name="id_material">{{materials}}</select></label>
+            <label>Tipo<select name="tipo"><option>Ingreso</option><option>Salida</option></select></label>
+            <label>Cantidad<input name="cantidad" type="number" min="0.01" step="0.01"></label>
+            <label>Motivo<input name="motivo"></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Registrar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel"><h3>Inventario</h3>{{inventoryTable}}</section>
+    <section class="section-panel"><h3>Movimientos</h3>{{movementsTable}}</section>
+</template>

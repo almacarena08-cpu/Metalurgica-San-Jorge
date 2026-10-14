@@ -1,0 +1,28 @@
+<template data-view="compras">
+    <section class="section-panel">
+        <h3>Proveedor</h3>
+        <form id="proveedorForm" class="form-grid">
+            <label>Razon social<input name="razon_social" required></label>
+            <label>CUIT<input name="cuit"></label>
+            <label>Telefono<input name="telefono"></label>
+            <label>Email<input name="email"></label>
+            <button class="btn primary">Crear proveedor</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <h3>Orden de compra</h3>
+        <form id="compraForm" class="form-grid">
+            <label>Proveedor<select name="id_proveedor">{{suppliers}}</select></label>
+            <label>Material<select name="id_material">{{materials}}</select></label>
+            <label>Cantidad<input name="cantidad" type="number" min="0.01" step="0.01"></label>
+            <label>Precio<input name="precio" type="number" min="0" step="0.01"></label>
+            <label>Fecha<input name="fecha" type="date"></label>
+            <label>Estado<select name="estado"><option>Solicitada</option><option>Recibida</option><option>Cancelada</option></select></label>
+            <button class="btn primary">Crear compra</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel"><h3>Materiales</h3>{{materialsTable}}</section>
+    <section class="section-panel"><h3>Compras</h3>{{purchasesTable}}</section>
+</template>

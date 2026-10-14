@@ -1,0 +1,15 @@
+<template data-view="calidad">
+    <section class="section-panel">
+        <h3>Registrar control</h3>
+        <form id="calidadForm" class="form-grid">
+            <label>Orden<select name="id_orden">{{orders}}</select></label>
+            <label>Fecha<input name="fecha" type="date"></label>
+            <label>Resultado<select name="resultado"><option>Aprobado</option><option>Observado</option><option>Rechazado</option></select></label>
+            <label class="field full">Observaciones<textarea name="observaciones"></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Registrar control</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{qualityTable}}</section>
+</template>

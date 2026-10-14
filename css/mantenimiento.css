@@ -1,0 +1,4 @@
+#content[data-module="mantenimiento"] #preventivoForm,
+#content[data-module="mantenimiento"] #mantenimientoForm {
+    align-items: end;
+}

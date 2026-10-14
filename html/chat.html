@@ -1,0 +1,85 @@
+<template data-view="chat-error">
+    <section class="section-panel"><div class="message">{{error}}</div></section>
+</template>
+<template data-view="chat">
+    <section class="chat-layout">
+        <aside class="chat-list">
+            <div class="chat-list-head">
+                <div class="chat-brand">
+                    <span class="chat-brand-mark">SJ</span>
+                    <span><small>METALGEST</small><strong>Mensajes</strong></span>
+                </div>
+                {{newChatButton}}
+            </div>
+            <div class="chat-list-label"><span>CONVERSACIONES</span><span>{{chatCount}}</span></div>
+            <div class="chat-items">{{chatItems}}</div>
+            <div class="chat-list-footer"><span class="chat-live-dot"></span><span>Atención de Metalúrgica San Jorge</span></div>
+        </aside>
+        <section class="chat-window">
+            <header class="chat-toolbar">
+                <span class="chat-avatar chat-toolbar-avatar">{{contactInitials}}</span>
+                <span class="chat-toolbar-copy">
+                    <strong>{{contactName}}</strong>
+                    <small>{{contactSubtitle}}</small>
+                </span>
+                <span class="chat-status"><i></i>{{chatStatus}}</span>
+            </header>
+            <div class="chat-thread" id="chatThread"></div>
+            <form id="chatForm" class="chat-compose">
+                {{subjectField}}
+                <label class="chat-message-label" for="chatMessage">{{messageLabel}}</label>
+                <textarea id="chatMessage" name="mensaje" placeholder="{{messagePlaceholder}}" rows="3" autocomplete="off" required {{message_disabled}}></textarea>
+                <div class="chat-compose-footer">
+                    <span class="chat-compose-hint">{{composeHint}}</span>
+                    <button class="chat-send-button" type="submit" {{send_disabled}}><span>Enviar mensaje</span><span class="chat-send-icon" aria-hidden="true">↗</span></button>
+                </div>
+            </form>
+            <div class="message"></div>
+        </section>
+    </section>
+</template>
+<template data-view="chat-welcome-client">
+    <div class="chat-welcome">
+        <span class="chat-welcome-mark" aria-hidden="true">SJ</span>
+        <span class="chat-welcome-eyebrow">ATENCIÓN PERSONALIZADA</span>
+        <h3>¿En qué podemos ayudarte?</h3>
+        <p>Escribinos tu consulta. Nuestro equipo de Metalúrgica San Jorge te responderá por este mismo chat.</p>
+        <div class="chat-suggestions">
+            <button type="button" data-chat-suggestion="Consulta de presupuesto">Consultar presupuesto <span aria-hidden="true">↗</span></button>
+            <button type="button" data-chat-suggestion="Seguimiento de pedido">Seguimiento de pedido <span aria-hidden="true">↗</span></button>
+        </div>
+    </div>
+</template>
+<template data-view="chat-welcome-staff">
+    <div class="chat-welcome chat-welcome-empty">
+        <span class="chat-welcome-mark" aria-hidden="true">SJ</span>
+        <span class="chat-welcome-eyebrow">CENTRO DE MENSAJES</span>
+        <h3>Seleccioná una conversación</h3>
+        <p>Elegí un chat de la lista para consultar el historial y responder al cliente.</p>
+    </div>
+</template>
+<template data-view="chat-empty-list">
+    <div class="chat-list-empty">
+        <span class="chat-empty-icon" aria-hidden="true">✦</span>
+        <strong>Sin conversaciones</strong>
+        <span>Cuando inicies una consulta, aparecerá acá.</span>
+    </div>
+</template>
+<template data-view="chat-item">
+    <button class="chat-item {{activeClass}}" data-chat="{{chatId}}">
+        <span class="chat-avatar">{{initials}}</span>
+        <span class="chat-item-copy">
+            <span class="chat-item-title">{{title}}</span>
+            <span class="chat-item-preview">{{preview}}</span>
+        </span>
+        <span class="chat-item-state {{stateClass}}" title="{{state}}"></span>
+    </button>
+</template>
+<template data-view="chat-message">
+    <div class="bubble-row {{messageSide}}">
+        <div class="bubble">
+            <span>{{messageText}}</span>
+            <small>{{author}} · {{date}}</small>
+        </div>
+    </div>
+</template>

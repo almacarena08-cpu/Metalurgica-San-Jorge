@@ -1,0 +1,9 @@
+#content[data-module="produccion"] #produccionForm,
+#content[data-module="produccion"] #fallaForm {
+    align-items: end;
+}
+
+#content[data-module="produccion"] #produccionForm .btn,
+#content[data-module="produccion"] #fallaForm .btn {
+    align-self: end;
+}

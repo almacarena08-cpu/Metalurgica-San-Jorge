@@ -1,0 +1,73 @@
+<template data-view="dashboard">
+    {{adminNavigation}}
+    <section class="cards">
+        <div class="card"><strong>{{pedidosCount}}</strong><span class="muted">Pedidos</span></div>
+        <div class="card"><strong>{{ordenesCount}}</strong><span class="muted">Ordenes</span></div>
+        <div class="card"><strong>{{chatsCount}}</strong><span class="muted">Chats abiertos</span></div>
+        <div class="card"><strong>{{today}}</strong><span class="muted">Fecha de trabajo</span></div>
+    </section>
+    <section class="section-panel"><h3>Actividad reciente</h3>{{recentOrders}}</section>
+</template>
+<template data-view="pedidos">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <h3>Nuevo pedido</h3>
+        <form id="pedidoForm" class="form-grid">
+            <label>Cliente<select name="id_cliente">{{clients}}</select></label>
+            <label>Material<select name="material">{{materials}}</select></label>
+            <label class="field full">Descripcion<input name="descripcion" required></label>
+            <label>Cantidad<input name="cantidad" type="number" min="1" value="1"></label>
+            <label>Entrega<input name="fecha_entrega" type="date"></label>
+            <button class="btn primary">Crear pedido</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{orders}}</section>
+</template>
+<template data-view="ordenes">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <h3>Generar orden de trabajo</h3>
+        <form id="ordenForm" class="form-grid">
+            <label class="field full">Pedido<select name="id_pedido">{{ordersForSelect}}</select></label>
+            <label>Inicio<input name="fecha_inicio" type="date"></label>
+            <label>Fecha prevista<input name="fecha_prevista" type="date"></label>
+            <label>Prioridad<select name="prioridad"><option>Media</option><option>Alta</option><option>Baja</option></select></label>
+            <label class="field full">Observaciones<textarea name="observaciones"></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Generar orden</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <h3>Actualizar estado</h3>
+        <form id="estadoOrdenForm" class="toolbar">
+            <label>ID orden<input name="id_orden" type="number" required></label>
+            <label>Estado<select name="estado"><option>Pendiente</option><option>En produccion</option><option>Pausada</option><option>Finalizada</option></select></label>
+            <label>Observacion<input name="observaciones"></label>
+            <button class="btn primary">Actualizar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{ordersTable}}</section>
+</template>
+<template data-view="clientes">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <h3>Modulo clientes</h3>
+        <form id="clienteForm" class="form-grid">
+            <label>ID para editar<input name="id_cliente" type="number" placeholder="Solo si editas"></label>
+            <label>Razon social<input name="razon_social" required></label>
+            <label>CUIT<input name="cuit"></label>
+            <label>Email<input name="email" type="email"></label>
+            <label>Direccion<input name="direccion"></label>
+            <button class="btn primary">Guardar cliente</button>
+        </form>
+        <form id="deleteClienteForm" class="toolbar">
+            <label>ID cliente a eliminar<input name="id_cliente" type="number" required></label>
+            <button class="btn warn">Eliminar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{clientsTable}}</section>
+</template>
