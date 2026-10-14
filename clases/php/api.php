@@ -284,7 +284,7 @@ if ($action === 'cliente_login') {
     );
     $stmt->execute([':email' => $email]);
     $cliente = $stmt->fetch();
-    if (!$cliente || !$cliente['contrasena'] || !password_verify($contrasena, $cliente['contrasena'])) {
+    if (!$cliente) {
         api_json(['success' => false, 'message' => 'Correo o contraseña incorrectos.'], 401);
     }
     if ((int)$cliente['eliminado'] === 1) {
@@ -292,6 +292,9 @@ if ($action === 'cliente_login') {
     }
     if ((int)$cliente['activo'] !== 1) {
         api_json(['success' => false, 'message' => 'Esta cuenta está desactivada.'], 403);
+    }
+    if (!$cliente['contrasena'] || !password_verify($contrasena, $cliente['contrasena'])) {
+        api_json(['success' => false, 'message' => 'Correo o contraseña incorrectos.'], 401);
     }
     session_regenerate_id(true);
     $_SESSION['metalgest_user'] = [
@@ -328,7 +331,12 @@ if ($action === 'cliente_account_action') {
         api_json(['success' => false, 'message' => 'No se pudo confirmar la contraseña.'], 401);
     }
     if ($accion === 'desactivar') {
-        $update = $pdo->prepare('UPDATE cliente SET activo = 0 WHERE id_cliente = :id_cliente');
+        $update = $pdo->prepare(
+            'UPDATE cliente
+             SET activo = 0, token_verificacion = NULL, token_verificacion_vence = NULL,
+                 token_proposito = NULL, token_cambio_contrasena = NULL, token_cambio_contrasena_vence = NULL
+             WHERE id_cliente = :id_cliente'
+        );
         $update->execute([':id_cliente' => $idCliente]);
         api_clear_session();
         api_json(['success' => true, 'message' => 'Cuenta desactivada.']);

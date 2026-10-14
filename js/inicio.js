@@ -587,7 +587,9 @@ class AuthModule {
         const deleting = action === "eliminar";
         this.root.insertAdjacentHTML("beforeend", this.moduleTemplate("inicio", "client-account-dialog", {
             actionTitle: deleting ? "Eliminar cuenta" : "Desactivar cuenta",
-            actionDescription: deleting ? "Se quitará el acceso. Se conserva el historial de pedidos y chats." : "Se desactivará el acceso a esta cuenta.",
+            actionDescription: deleting
+                ? "Se quitará el acceso. Se conserva el historial de pedidos y chats."
+                : "La cuenta y tus credenciales se conservarán, pero no podrás iniciar sesión mientras esté desactivada. Contactá a la empresa para volver a habilitar el acceso.",
             buttonClass: deleting ? "warn" : "primary",
             submitLabel: deleting ? "Eliminar acceso" : "Desactivar cuenta"
         }));

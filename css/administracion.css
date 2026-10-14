@@ -2,15 +2,169 @@
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 0 0 18px;
+    margin: 0 0 22px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #292d31;
 }
 
 #content[data-module="administracion"] .admin-subnav .btn {
-    min-height: 38px;
+    min-height: 37px;
+    padding: 8px 15px;
+    border: 1px solid #30363a;
+    border-radius: 4px;
+    background: #15191b;
+    color: #b9c0c4;
+    font-size: 11px;
+    letter-spacing: .025em;
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn:hover {
+    border-color: #7a462c;
+    color: #fff;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn.primary {
+    border-color: #d95e2a;
+    background: #d95e2a;
+    color: #fff;
+}
+
+#content[data-module="administracion"] .admin-overview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 17px;
+    padding: 23px 25px;
+    border: 1px solid #292d31;
+    border-left: 3px solid #e7652b;
+    background: linear-gradient(105deg, #171a1c, #111315 70%);
+}
+
+#content[data-module="administracion"] .admin-kicker {
+    color: #e98251;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+}
+
+#content[data-module="administracion"] .admin-overview h3,
+#content[data-module="administracion"] .admin-section-heading h3 {
+    margin: 5px 0 0;
+    color: #f4f4f2;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+#content[data-module="administracion"] .admin-overview p {
+    margin: 6px 0 0;
+    color: #a1a7aa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#content[data-module="administracion"] .admin-overview-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex: 0 0 auto;
+    padding: 9px 12px;
+    border: 1px solid #30363a;
+    background: #101315;
+    color: #d7dadd;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#content[data-module="administracion"] .admin-overview-date span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #70b987;
+    box-shadow: 0 0 0 3px rgba(112, 185, 135, .12);
+}
+
+#content[data-module="administracion"] .admin-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 17px;
+}
+
+#content[data-module="administracion"] .admin-metric {
+    display: grid;
+    min-height: 132px;
+    align-content: start;
+    gap: 7px;
+    padding: 17px 19px;
+    border: 1px solid #292d31;
+    background: #141719;
+}
+
+#content[data-module="administracion"] .admin-metric-label {
+    color: #9da4a8;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .09em;
+}
+
+#content[data-module="administracion"] .admin-metric strong {
+    color: #f5f5f3;
+    font-size: 31px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+#content[data-module="administracion"] .admin-metric-note {
+    color: #858d91;
+    font-size: 10px;
+}
+
+#content[data-module="administracion"] .admin-activity {
+    padding: 19px;
+}
+
+#content[data-module="administracion"] .admin-section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 15px;
+}
+
+#content[data-module="administracion"] .admin-section-heading h3 {
+    font-size: 17px;
+}
+
+#content[data-module="administracion"] .admin-section-caption {
+    color: #858d91;
+    font-size: 10px;
 }
 
 @media (max-width: 620px) {
     #content[data-module="administracion"] .admin-subnav .btn {
         flex: 1 1 calc(50% - 8px);
+    }
+
+    #content[data-module="administracion"] .admin-overview {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+        padding: 18px;
+    }
+
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    #content[data-module="administracion"] .admin-metric {
+        min-height: 110px;
+    }
+
+    #content[data-module="administracion"] .admin-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
     }
 }

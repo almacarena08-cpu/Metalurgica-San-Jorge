@@ -210,6 +210,20 @@ textarea {
     grid-template-columns: 230px minmax(0, 1fr);
 }
 
+.app-shell:not(.client-chat-shell) {
+    background: #0b0d0f;
+    color: #f1f3f5;
+}
+
+.app-shell:not(.client-chat-shell) > .sidebar {
+    background: #090b0d;
+    border-right-color: #272b2f;
+}
+
+.app-shell:not(.client-chat-shell) > .main {
+    background: #0b0d0f;
+}
+
 .sidebar {
     background: #111417;
     border-right: 1px solid var(--line);
@@ -238,6 +252,10 @@ textarea {
     font-weight: 800;
 }
 
+.app-shell:not(.client-chat-shell) .nav button:not(.active):hover {
+    background: #1a1d20;
+}
+
 .main {
     padding: 24px;
     overflow: auto;
@@ -252,6 +270,53 @@ textarea {
     background: var(--panel);
     padding: 14px 16px;
     margin-bottom: 18px;
+}
+
+.app-shell:not(.client-chat-shell) .topbar {
+    border-color: #292d31;
+    background: #141719;
+}
+
+.app-shell:not(.client-chat-shell) .section-panel,
+.app-shell:not(.client-chat-shell) .card {
+    border-color: #292d31;
+    background: #141719;
+}
+
+.app-shell:not(.client-chat-shell) input,
+.app-shell:not(.client-chat-shell) textarea,
+.app-shell:not(.client-chat-shell) select {
+    border-color: #343a3f;
+    background: #101315;
+    color: #f1f3f5;
+}
+
+.app-shell:not(.client-chat-shell) input:focus,
+.app-shell:not(.client-chat-shell) textarea:focus,
+.app-shell:not(.client-chat-shell) select:focus {
+    border-color: #e7652b;
+    outline: 2px solid rgba(231, 101, 43, .18);
+}
+
+.app-shell:not(.client-chat-shell) .table-wrap {
+    border-color: #292d31;
+}
+
+.app-shell:not(.client-chat-shell) table {
+    background: #141719;
+}
+
+.app-shell:not(.client-chat-shell) th {
+    background: #1d2124;
+}
+
+.app-shell:not(.client-chat-shell) th,
+.app-shell:not(.client-chat-shell) td {
+    border-bottom-color: #292d31;
+}
+
+.app-shell:not(.client-chat-shell) tr:hover td {
+    background: #1b1f22;
 }
 
 .topbar h2 {

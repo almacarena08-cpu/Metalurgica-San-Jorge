@@ -1,12 +1,37 @@
 <template data-view="dashboard">
     {{adminNavigation}}
-    <section class="cards">
-        <div class="card"><strong>{{pedidosCount}}</strong><span class="muted">Pedidos</span></div>
-        <div class="card"><strong>{{ordenesCount}}</strong><span class="muted">Ordenes</span></div>
-        <div class="card"><strong>{{chatsCount}}</strong><span class="muted">Chats abiertos</span></div>
-        <div class="card"><strong>{{today}}</strong><span class="muted">Fecha de trabajo</span></div>
+    <section class="admin-overview">
+        <div class="admin-overview-copy">
+            <span class="admin-kicker">CENTRO DE CONTROL</span>
+            <h3>Resumen operativo</h3>
+            <p>Seguimiento de pedidos, producción y atención comercial en un solo lugar.</p>
+        </div>
+        <span class="admin-overview-date"><span></span> {{today}}</span>
     </section>
-    <section class="section-panel"><h3>Actividad reciente</h3>{{recentOrders}}</section>
+    <section class="admin-metrics" aria-label="Indicadores operativos">
+        <article class="admin-metric">
+            <span class="admin-metric-label">PEDIDOS REGISTRADOS</span>
+            <strong>{{pedidosCount}}</strong>
+            <span class="admin-metric-note">Solicitudes de clientes</span>
+        </article>
+        <article class="admin-metric">
+            <span class="admin-metric-label">ÓRDENES DE TRABAJO</span>
+            <strong>{{ordenesCount}}</strong>
+            <span class="admin-metric-note">Órdenes en el sistema</span>
+        </article>
+        <article class="admin-metric">
+            <span class="admin-metric-label">CHATS ABIERTOS</span>
+            <strong>{{chatsCount}}</strong>
+            <span class="admin-metric-note">Consultas por atender</span>
+        </article>
+    </section>
+    <section class="section-panel admin-activity">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">SEGUIMIENTO</span><h3>Actividad reciente</h3></div>
+            <span class="admin-section-caption">Últimos pedidos registrados</span>
+        </div>
+        {{recentOrders}}
+    </section>
 </template>
 <template data-view="pedidos">
     {{adminNavigation}}
