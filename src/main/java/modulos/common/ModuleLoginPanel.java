@@ -80,7 +80,7 @@ public class ModuleLoginPanel extends JPanel {
         }
         try {
             Map<String, String> datos = new LinkedHashMap<>();
-            datos.put("nombre", nombreIngresado);
+            datos.put("usuario", nombreIngresado);
             datos.put("contrasena", clave);
             String cuerpo = ApiClient.post("login", datos);
             if (cuerpo == null || !cuerpo.trim().startsWith("{")) {
@@ -97,7 +97,8 @@ public class ModuleLoginPanel extends JPanel {
                     parseInt(usuario.get("id_usuario")),
                     usuario.getOrDefault("nombre", nombreIngresado),
                     usuario.getOrDefault("apellido", ""),
-                    usuario.getOrDefault("rol", "")));
+                    usuario.getOrDefault("rol", ""),
+                    usuario.getOrDefault("usuario", nombreIngresado)));
         } catch (IOException error) {
             estado.setText("No se pudo conectar con la API.");
         }

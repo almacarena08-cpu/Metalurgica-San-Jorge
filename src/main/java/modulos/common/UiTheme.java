@@ -124,7 +124,13 @@ public final class UiTheme {
             item.setFocusPainted(false);
             item.setBorderPainted(false);
             item.setOpaque(true);
-            boolean active = entry.equals(selected) || ("Inicio".equals(entry) && "Inicio".equals(selected));
+            boolean active = entry.equals(selected)
+                    || ("Administracion".equals(entry) && "Inicio".equals(selected))
+                    || ("Produccion".equals(entry) && "Inicio".equals(selected))
+                    || ("Mantenimiento".equals(entry) && "Inicio".equals(selected))
+                    || ("Deposito".equals(entry) && "Inicio".equals(selected))
+                    || ("Compras".equals(entry) && "Inicio".equals(selected))
+                    || ("Calidad".equals(entry) && "Inicio".equals(selected));
             item.setBackground(active ? BLUE : NAVY);
             item.setForeground(Color.WHITE);
             item.setFont(new Font("SansSerif", active ? Font.BOLD : Font.PLAIN, 11));
@@ -183,7 +189,13 @@ public final class UiTheme {
                     }
                     String menuEntry = "Ordenes de trabajo".equals(entry) ? "Ordenes" : entry;
                     for (java.awt.Component item : menu.getComponents()) {
-                        if (item instanceof JButton && menuEntry.equals(((JButton) item).getText())) {
+                        if (item instanceof JButton && (menuEntry.equals(((JButton) item).getText())
+                                || ("Inicio".equals(entry) && (((JButton) item).getText().equals("Administracion")
+                                || ((JButton) item).getText().equals("Produccion")
+                                || ((JButton) item).getText().equals("Mantenimiento")
+                                || ((JButton) item).getText().equals("Deposito")
+                                || ((JButton) item).getText().equals("Compras")
+                                || ((JButton) item).getText().equals("Calidad"))))) {
                             selectSidebarItem(sidebar, (JButton) item);
                             return;
                         }

@@ -69,6 +69,254 @@ if ($action === 'health') {
     api_json(['success' => true, 'app' => 'MetalGest']);
 }
 
+if ($action === 'chat_login') {
+    try {
+        $nombreLogin = api_required('usuario');
+        $contrasenaLogin = api_required('contrasena');
+        api_ensure_role('Cliente');
+        $usuariosBase = [
+            ['Gerencia', 'San Jorge', 'gerencia', 'Gerencia'],
+            ['Administracion', 'San Jorge', 'admin', 'Administracion'],
+            ['Produccion', 'San Jorge', 'produccion', 'Produccion'],
+            ['Mantenimiento', 'San Jorge', 'mantenimiento', 'Mantenimiento'],
+            ['Deposito', 'San Jorge', 'deposito', 'Deposito'],
+            ['Compras', 'San Jorge', 'compras', 'Compras'],
+            ['Calidad', 'San Jorge', 'calidad', 'Calidad']
+        ];
+        $crearUsuarioBase = api_db()->prepare(
+            'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol)
+             SELECT :nombre, :apellido, :usuario, "1234", id_rol
+             FROM rol WHERE nombre = :rol
+             ON DUPLICATE KEY UPDATE
+                id_usuario = id_usuario'
+        );
+        foreach ($usuariosBase as $usuarioBase) {
+            $crearUsuarioBase->execute([
+                ':nombre' => $usuarioBase[0], ':apellido' => $usuarioBase[1],
+                ':usuario' => $usuarioBase[2], ':rol' => $usuarioBase[3]
+            ]);
+        }
+        $stmt = api_db()->prepare(
+            'SELECT u.id_usuario, u.nombre, u.apellido, r.nombre AS rol
+             FROM usuario u
+             INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE (u.usuario = :usuario OR u.nombre = :nombre OR CONCAT(u.nombre, " ", u.apellido) = :nombre_completo)
+                 AND u.contrasena = :contrasena
+             LIMIT 1'
+        );
+        $stmt->execute([
+            ':usuario' => $nombreLogin,
+            ':nombre' => $nombreLogin,
+            ':nombre_completo' => $nombreLogin,
+            ':contrasena' => $contrasenaLogin
+        ]);
+        $user = $stmt->fetch();
+        if (!$user || !in_array(strtolower($user['rol']), ['administracion', 'gerencia'], true)) {
+            api_json(['success' => false, 'message' => 'Credenciales incorrectas o sin acceso a Administración.'], 401);
+        }
+        $_SESSION['metalgest_chat_user'] = [
+            'id_usuario' => (int)$user['id_usuario'],
+            'rol' => $user['rol']
+        ];
+        api_json(['success' => true, 'usuario' => $user]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => 'No se pudo iniciar la sesión del chat.'], 500);
+    }
+}
+
+function api_chat_upload_directory() {
+    return __DIR__ . DIRECTORY_SEPARATOR . 'private' . DIRECTORY_SEPARATOR . 'chat_uploads';
+}
+
+function api_chat_find_file($key) {
+    $directories = [
+        api_chat_upload_directory(),
+        dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'web' . DIRECTORY_SEPARATOR . 'Metalurgica-San-Jorge'
+            . DIRECTORY_SEPARATOR . 'clases' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'private'
+            . DIRECTORY_SEPARATOR . 'chat_uploads'
+    ];
+    foreach ($directories as $directory) {
+        $realDirectory = realpath($directory);
+        $file = $realDirectory ? realpath($realDirectory . DIRECTORY_SEPARATOR . basename($key)) : false;
+        if ($file && dirname($file) === $realDirectory && is_file($file)) return $file;
+    }
+    return false;
+}
+
+function api_chat_store_uploads() {
+    if (empty($_FILES['adjuntos'])) {
+        return [];
+    }
+    $files = $_FILES['adjuntos'];
+    $names = is_array($files['name']) ? $files['name'] : [$files['name']];
+    $temporaryPaths = is_array($files['tmp_name']) ? $files['tmp_name'] : [$files['tmp_name']];
+    $errors = is_array($files['error']) ? $files['error'] : [$files['error']];
+    $sizes = is_array($files['size']) ? $files['size'] : [$files['size']];
+    if (count($names) > 5) {
+        throw new RuntimeException('Podés adjuntar hasta 5 archivos por mensaje.');
+    }
+    $allowed = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'dxf', 'dwg'];
+    $directory = api_chat_upload_directory();
+    if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
+        throw new RuntimeException('No se pudo preparar el almacenamiento de archivos.');
+    }
+    $stored = [];
+    foreach ($names as $index => $name) {
+        if ((int)$errors[$index] !== UPLOAD_ERR_OK) {
+            throw new RuntimeException('No se pudo subir uno de los archivos.');
+        }
+        $size = (int)$sizes[$index];
+        $extension = strtolower(pathinfo((string)$name, PATHINFO_EXTENSION));
+        if ($size <= 0 || $size > 10 * 1024 * 1024 || !in_array($extension, $allowed, true)
+                || !is_uploaded_file($temporaryPaths[$index])) {
+            throw new RuntimeException('Adjuntá PDF, JPG, PNG, WebP, DXF o DWG de hasta 10 MB.');
+        }
+        $key = bin2hex(random_bytes(24)) . '.' . $extension;
+        if (!move_uploaded_file($temporaryPaths[$index], $directory . DIRECTORY_SEPARATOR . $key)) {
+            throw new RuntimeException('No se pudo guardar uno de los archivos.');
+        }
+        $stored[] = [
+            'nombre_original' => basename(str_replace('\\', '/', (string)$name)),
+            'clave_archivo' => $key,
+            'tipo_mime' => (new finfo(FILEINFO_MIME_TYPE))->file($directory . DIRECTORY_SEPARATOR . $key),
+            'tamano' => $size
+        ];
+    }
+    return $stored;
+}
+
+function api_chat_remove_uploads(array $uploads) {
+    foreach ($uploads as $upload) {
+        $path = api_chat_upload_directory() . DIRECTORY_SEPARATOR . basename($upload['clave_archivo'] ?? '');
+        if (is_file($path)) unlink($path);
+    }
+}
+
+if ($action === 'chat_login_app') {
+    try {
+        $idUsuario = api_int('id_usuario');
+        $rol = api_input('rol', '');
+        if ($idUsuario <= 0 || !in_array(strtolower($rol), ['administracion', 'gerencia'], true)) {
+            api_json(['success' => false, 'message' => 'El usuario no tiene acceso al chat.'], 403);
+        }
+        $stmt = api_db()->prepare(
+            'SELECT u.id_usuario, r.nombre AS rol
+             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = :id_usuario
+               AND LOWER(r.nombre) IN ("administracion", "gerencia")
+             LIMIT 1'
+        );
+        $stmt->execute([':id_usuario' => $idUsuario]);
+        $user = $stmt->fetch();
+        if (!$user || strcasecmp($user['rol'], $rol) !== 0) {
+            api_json(['success' => false, 'message' => 'El usuario no tiene acceso al chat.'], 403);
+        }
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => 'No se pudo validar el acceso al chat.'], 500);
+    }
+}
+
+if ($action === 'chat_logout') {
+    unset($_SESSION['metalgest_chat_user']);
+    api_json(['success' => true]);
+}
+
+if ($action === 'chat_auth_check') {
+    $user = $_SESSION['metalgest_chat_user'] ?? null;
+    if (!$user && api_int('id_usuario') > 0) {
+        $stmt = api_db()->prepare(
+            'SELECT u.id_usuario, r.nombre AS rol
+             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia")
+             LIMIT 1'
+        );
+        $stmt->execute([':id_usuario' => api_int('id_usuario')]);
+        $verifiedUser = $stmt->fetch();
+        if ($verifiedUser) $user = ['id_usuario' => (int)$verifiedUser['id_usuario'], 'rol' => $verifiedUser['rol']];
+    }
+    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administracion', 'gerencia'], true)) {
+        api_json(['success' => false, 'message' => 'Iniciá sesión para acceder al chat.'], 401);
+    }
+    api_json(['success' => true, 'usuario' => $user]);
+}
+
+if (in_array($action, ['chat_list', 'chat_messages', 'chat_attachments_list', 'chat_reply'], true)) {
+    $user = $_SESSION['metalgest_chat_user'] ?? null;
+    if (!$user && api_int('id_usuario') > 0) {
+        $stmt = api_db()->prepare(
+            'SELECT u.id_usuario, r.nombre AS rol
+             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia")
+             LIMIT 1'
+        );
+        $stmt->execute([':id_usuario' => api_int('id_usuario')]);
+        $verifiedUser = $stmt->fetch();
+        if ($verifiedUser) {
+            $user = ['id_usuario' => (int)$verifiedUser['id_usuario'], 'rol' => $verifiedUser['rol']];
+        }
+    }
+    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administracion', 'gerencia'], true)) {
+        api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta autorizada para acceder al chat.'], 401);
+    }
+    if ($action === 'chat_list') {
+        api_json($chatDAO->listar());
+    }
+    if ($action === 'chat_messages') {
+        $idChat = api_int('id_chat');
+        if ($idChat <= 0 || !$chatDAO->existe($idChat)) {
+            api_json(['success' => false, 'message' => 'La conversación no existe.'], 404);
+        }
+        api_json($chatDAO->obtenerMensajes($idChat));
+    }
+    if ($action === 'chat_attachments_list') {
+        $idChat = api_int('id_chat');
+        if ($idChat <= 0 || !$chatDAO->existe($idChat)) {
+            api_json(['success' => false, 'message' => 'La conversación no existe.'], 404);
+        }
+        api_json($chatDAO->listarAdjuntos($idChat));
+    }
+    try {
+        $idChat = api_int('id_chat');
+        if ($idChat <= 0 || !$chatDAO->existe($idChat)) {
+            api_json(['success' => false, 'message' => 'La conversación no existe.'], 404);
+        }
+        $mensaje = api_input('mensaje', '');
+        $uploads = api_chat_store_uploads();
+        if ($mensaje === '' && !$uploads) {
+            api_json(['success' => false, 'message' => 'Escribí un mensaje o adjuntá un archivo.'], 422);
+        }
+        $chatDAO->enviarRespuesta($idChat, (int)$user['id_usuario'], $mensaje, $uploads);
+        api_json(['success' => true]);
+    } catch (Throwable $e) {
+        api_chat_remove_uploads($uploads ?? []);
+        api_json(['success' => false, 'message' => 'No se pudo enviar la respuesta.'], 500);
+    }
+}
+
+if ($action === 'chat_attachment') {
+    $idUsuario = isset($_GET['id_usuario']) ? (int)$_GET['id_usuario'] : 0;
+    $stmt = api_db()->prepare(
+        'SELECT u.id_usuario FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+         WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia") LIMIT 1'
+    );
+    $stmt->execute([':id_usuario' => $idUsuario]);
+    if (!$stmt->fetch()) {
+        api_json(['success' => false, 'message' => 'No tenés acceso a este archivo.'], 403);
+    }
+    $idAdjunto = isset($_GET['id_adjunto']) ? (int)$_GET['id_adjunto'] : 0;
+    $adjunto = $idAdjunto > 0 ? $chatDAO->obtenerAdjunto($idAdjunto) : false;
+    $file = $adjunto ? api_chat_find_file($adjunto['clave_archivo']) : false;
+    if (!$adjunto || !$file) {
+        api_json(['success' => false, 'message' => 'El archivo no está disponible.'], 404);
+    }
+    header('Content-Type: ' . $adjunto['tipo_mime']);
+    header('Content-Length: ' . filesize($file));
+    header('Content-Disposition: attachment; filename*=UTF-8\'\'' . rawurlencode($adjunto['nombre_original']));
+    readfile($file);
+    exit;
+}
+
 if ($action === 'preferences_get') {
     $idUsuario = api_int('id_usuario');
     if ($idUsuario <= 0) {
@@ -101,7 +349,10 @@ if ($action === 'preferences_save') {
 }
 
 if ($action === 'login') {
-    $nombreLogin = api_required('nombre');
+    $nombreLogin = api_input('usuario');
+    if ($nombreLogin === null || $nombreLogin === '') {
+        $nombreLogin = api_required('nombre');
+    }
     $contrasenaLogin = api_required('contrasena');
     api_ensure_role('Cliente');
     $usuariosBase = [
@@ -118,10 +369,7 @@ if ($action === 'login') {
          SELECT :nombre, :apellido, :usuario, "1234", id_rol
          FROM rol WHERE nombre = :rol
          ON DUPLICATE KEY UPDATE
-            nombre = VALUES(nombre),
-            apellido = VALUES(apellido),
-            contrasena = VALUES(contrasena),
-            id_rol = VALUES(id_rol)'
+            id_usuario = id_usuario'
     );
     foreach ($usuariosBase as $usuarioBase) {
         $crearUsuarioBase->execute([

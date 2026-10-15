@@ -5,12 +5,18 @@ public class EmployeeSession {
     private final String nombre;
     private final String apellido;
     private final String rol;
+    private final String usuario;
 
     public EmployeeSession(int id, String nombre, String apellido, String rol) {
+        this(id, nombre, apellido, rol, "");
+    }
+
+    public EmployeeSession(int id, String nombre, String apellido, String rol, String usuario) {
         this.id = id;
         this.nombre = nombre;
         this.apellido = apellido;
         this.rol = rol;
+        this.usuario = usuario == null ? "" : usuario;
     }
 
     public int getId() {
@@ -23,5 +29,9 @@ public class EmployeeSession {
 
     public String getRol() {
         return rol;
+    }
+
+    public String getUsuario() {
+        return usuario;
     }
 }

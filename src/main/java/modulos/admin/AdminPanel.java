@@ -18,15 +18,28 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JPasswordField;
+import javax.swing.JFileChooser;
+import javax.swing.ListSelectionModel;
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.SwingUtilities;
 import javax.swing.JProgressBar;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.GridLayout;
+import java.awt.FlowLayout;
+import java.awt.Color;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Container;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
+import java.io.File;
+import java.nio.file.Files;
+import java.awt.Desktop;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -58,9 +71,9 @@ public class AdminPanel {
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
-        pages.add(crearPanelChat(), "chat");
+        pages.add(crearPanelChat(session), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", session.getNombreCompleto(), entry -> {
-            if ("Inicio".equals(entry)) {
+            if ("Inicio".equals(entry) || "Administracion".equals(entry)) {
                 layout.show(pages, "resumen");
             } else if ("Pedidos".equals(entry)) {
                 layout.show(pages, "pedidos");
@@ -92,9 +105,9 @@ public class AdminPanel {
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
-        pages.add(crearPanelChat(), "chat");
+        pages.add(crearPanelChat(null), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", employeeName, entry -> {
-            if ("Inicio".equals(entry)) {
+            if ("Inicio".equals(entry) || "Administracion".equals(entry)) {
                 layout.show(pages, "resumen");
             } else if ("Pedidos".equals(entry)) {
                 layout.show(pages, "pedidos");
@@ -466,82 +479,447 @@ public class AdminPanel {
         return panel;
     }
 
-    private static JPanel crearPanelChat() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        panel.setBackground(UiTheme.BACKGROUND);
+    private static JPanel crearPanelChat(EmployeeSession session) {
+        JPanel container = new JPanel(new BorderLayout());
+        container.setBackground(UiTheme.BACKGROUND);
+        if (!chatWebConfigurar()) {
+            JPanel unavailable = new JPanel(new BorderLayout(8, 8));
+            unavailable.setBackground(UiTheme.WHITE);
+            unavailable.setBorder(BorderFactory.createEmptyBorder(28, 30, 28, 30));
+            JLabel message = new JLabel("<html><b>Chat web no configurado</b><br>Definí -Dmetalgest.web.api.url con la dirección del API del sitio web para conectar la bandeja con los mensajes de los clientes.</html>");
+            message.setForeground(UiTheme.INK);
+            unavailable.add(message, BorderLayout.CENTER);
+            container.add(unavailable, BorderLayout.NORTH);
+            return container;
+        }
 
-        DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"ID Chat", "Cliente", "Email", "Ultimo mensaje", "Estado", "Actualizado"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
+        CardLayout cards = new CardLayout();
+        JPanel views = new JPanel(cards);
+        views.setOpaque(false);
+        Runnable[] abrirBandeja = {() -> {
+            views.removeAll();
+            JPanel inbox = crearBandejaChat();
+            views.add(inbox, "bandeja");
+            cards.show(views, "bandeja");
+            views.revalidate();
+            views.repaint();
+        }};
+        views.add(session == null
+                ? crearIngresoChat(null, () -> abrirBandeja[0].run())
+                : crearCargandoChat(), "acceso");
+        cards.show(views, "acceso");
+        if (session != null) {
+            SwingUtilities.invokeLater(() -> {
+                String rol = session.getRol();
+                boolean autorizado = "Administracion".equalsIgnoreCase(rol) || "Gerencia".equalsIgnoreCase(rol);
+                if (autorizado && activarSesionChat(session)) {
+                    abrirBandeja[0].run();
+                } else {
+                    JLabel issue = new JLabel(autorizado
+                            ? "No se pudo conectar con el chat. Volvé a seleccionar Chat para reintentar."
+                            : "El chat está disponible para Administración y Gerencia.");
+                    issue.setForeground(UiTheme.MUTED);
+                    JPanel feedback = new JPanel(new GridBagLayout());
+                    feedback.setOpaque(false);
+                    feedback.add(issue, new GridBagConstraints());
+                    views.removeAll();
+                    views.add(feedback, "acceso");
+                    cards.show(views, "acceso");
+                    views.revalidate();
+                    views.repaint();
+                }
+            });
+        }
+        container.add(views, BorderLayout.CENTER);
+        return container;
+    }
+
+    private static JPanel crearCargandoChat() {
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setOpaque(false);
+        JLabel message = new JLabel("Conectando con el chat de Administración...");
+        message.setForeground(UiTheme.MUTED);
+        panel.add(message, new GridBagConstraints());
+        return panel;
+    }
+
+    private static boolean activarSesionChat(EmployeeSession session) {
+        try {
+            return administracionDao.iniciarSesionChat(session.getId(), session.getRol()).isSuccess();
+        } catch (IOException error) {
+            return false;
+        }
+    }
+
+    private static JPanel crearIngresoChat(EmployeeSession session, Runnable onLogin) {
+        JPanel outer = new JPanel(new GridBagLayout());
+        outer.setOpaque(false);
+        if (session != null) {
+            JLabel message = new JLabel("Conectando con el chat de Administración...");
+            message.setForeground(UiTheme.MUTED);
+            outer.add(message, new GridBagConstraints());
+            SwingUtilities.invokeLater(() -> {
+                if (activarSesionChat(session)) onLogin.run();
+            });
+            return outer;
+        }
+        JPanel card = new JPanel(new GridBagLayout());
+        card.setBackground(UiTheme.WHITE);
+        card.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(UiTheme.LINE), BorderFactory.createEmptyBorder(22, 26, 22, 26)));
+        GridBagConstraints c = new GridBagConstraints();
+        c.gridx = 0;
+        c.fill = GridBagConstraints.HORIZONTAL;
+        c.weightx = 1;
+        c.insets = new java.awt.Insets(6, 0, 6, 0);
+        JLabel title = new JLabel("Chat de Administración");
+        title.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 20));
+        title.setForeground(UiTheme.INK);
+        chatAdd(card, title, c, 0);
+        JLabel explanation = new JLabel(session == null
+                ? "Ingresá con una cuenta de Administración o Gerencia autorizada en el sitio web."
+                : "Se usa la misma sesión de Administración con la que ingresaste a MetalGest.");
+        explanation.setForeground(UiTheme.MUTED);
+        chatAdd(card, explanation, c, 1);
+        JTextField usuario = new JTextField(session == null ? "" : session.getUsuario(), 22);
+        JPasswordField clave = new JPasswordField(22);
+        UiTheme.styleInput(usuario);
+        UiTheme.styleInput(clave);
+        if (session == null) {
+            chatAdd(card, new JLabel("Usuario"), c, 2);
+            chatAdd(card, usuario, c, 3);
+            chatAdd(card, new JLabel("Contraseña"), c, 4);
+            chatAdd(card, clave, c, 5);
+        }
+        JLabel estado = new JLabel(" ");
+        estado.setForeground(new Color(220, 90, 60));
+        chatAdd(card, estado, c, 6);
+        JButton ingresar = new JButton("Ingresar al chat");
+        UiTheme.styleButton(ingresar, true);
+        if (session == null) {
+            chatAdd(card, ingresar, c, 7);
+        }
+        ingresar.addActionListener(event -> {
+            try {
+                ApiResult result = session == null
+                        ? administracionDao.iniciarSesionChat(usuario.getText().trim(), new String(clave.getPassword()))
+                        : administracionDao.iniciarSesionChat(session.getId(), session.getRol());
+                if (result.isSuccess()) {
+                    onLogin.run();
+                } else {
+                    estado.setText("No se pudo iniciar sesión. Revisá tus datos o el acceso a Administración.");
+                }
+            } catch (IOException error) {
+                estado.setText("No se pudo conectar con el sitio web.");
+            }
+        });
+        clave.addActionListener(event -> ingresar.doClick());
+        if (session != null) {
+            SwingUtilities.invokeLater(ingresar::doClick);
+        }
+        outer.add(card, new GridBagConstraints());
+        return outer;
+    }
+
+    private static JPanel crearBandejaChat() {
+        JPanel panel = new JPanel(new BorderLayout(0, 0));
+        panel.setBackground(UiTheme.WHITE);
+        panel.setBorder(BorderFactory.createLineBorder(UiTheme.LINE));
+        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Cliente", "Email", "Último mensaje", "Estado"}, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable chats = new JTable(model);
+        UiTheme.styleTable(chats);
+        chats.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        chats.getColumnModel().getColumn(0).setMinWidth(0);
+        chats.getColumnModel().getColumn(0).setMaxWidth(0);
+        chats.getColumnModel().getColumn(0).setPreferredWidth(0);
+        chats.getColumnModel().getColumn(1).setPreferredWidth(130);
+        chats.getColumnModel().getColumn(2).setPreferredWidth(145);
+        chats.getColumnModel().getColumn(3).setPreferredWidth(190);
+        chats.getColumnModel().getColumn(4).setPreferredWidth(80);
+        JPanel list = new JPanel(new BorderLayout(0, 8));
+        list.setPreferredSize(new java.awt.Dimension(410, 0));
+        list.setBackground(UiTheme.WHITE);
+        list.setBorder(BorderFactory.createEmptyBorder(14, 14, 14, 0));
+        JPanel listHeader = new JPanel(new BorderLayout());
+        listHeader.setOpaque(false);
+        JLabel listTitle = new JLabel("CONVERSACIONES");
+        listTitle.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 11));
+        listTitle.setForeground(UiTheme.ORANGE);
+        JButton refresh = new JButton("Actualizar");
+        JButton logout = new JButton("Salir del chat");
+        UiTheme.styleButton(refresh, false);
+        UiTheme.styleButton(logout, false);
+        listHeader.add(listTitle, BorderLayout.WEST);
+        listHeader.add(logout, BorderLayout.EAST);
+        list.add(listHeader, BorderLayout.NORTH);
+        list.add(UiTheme.tableScroll(chats), BorderLayout.CENTER);
+        JPanel conversation = new JPanel(new BorderLayout(0, 0));
+        conversation.setBackground(UiTheme.BACKGROUND);
+        conversation.setBorder(BorderFactory.createEmptyBorder(0, 14, 14, 14));
+        JPanel toolbar = new JPanel(new BorderLayout(8, 0));
+        toolbar.setBackground(UiTheme.WHITE);
+        toolbar.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 8));
+        JLabel contact = new JLabel("Elegí una conversación");
+        contact.setForeground(UiTheme.INK);
+        contact.setFont(new java.awt.Font("SansSerif", java.awt.Font.BOLD, 13));
+        toolbar.add(contact, BorderLayout.CENTER);
+        JPanel tools = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        tools.setOpaque(false);
+        tools.add(refresh);
+        toolbar.add(tools, BorderLayout.EAST);
+        conversation.add(toolbar, BorderLayout.NORTH);
+        JPanel messages = new JPanel();
+        messages.setLayout(new BoxLayout(messages, BoxLayout.Y_AXIS));
+        messages.setBackground(new Color(22, 25, 27));
+        JScrollPane messageScroll = new JScrollPane(messages);
+        messageScroll.setBorder(BorderFactory.createEmptyBorder());
+        messageScroll.getViewport().setBackground(messages.getBackground());
+        conversation.add(messageScroll, BorderLayout.CENTER);
+        JTextArea composer = new JTextArea(3, 30);
+        composer.setLineWrap(true);
+        composer.setWrapStyleWord(true);
+        UiTheme.styleInput(composer);
+        JButton send = new JButton("Enviar  ➤");
+        JButton attach = new JButton("Adjuntar");
+        UiTheme.styleButton(send, true);
+        UiTheme.styleButton(attach, false);
+        send.setEnabled(false);
+        JPanel compose = new JPanel(new BorderLayout(8, 0));
+        compose.setBackground(UiTheme.WHITE);
+        compose.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        compose.add(new JScrollPane(composer), BorderLayout.CENTER);
+        JPanel composeActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        composeActions.setOpaque(false);
+        composeActions.add(attach);
+        composeActions.add(send);
+        compose.add(composeActions, BorderLayout.EAST);
+        conversation.add(compose, BorderLayout.SOUTH);
+        panel.add(list, BorderLayout.WEST);
+        panel.add(conversation, BorderLayout.CENTER);
+        final String[] selectedChat = {""};
+        final String[] selectedClient = {""};
+        final String[] chatSource = {"web"};
+        final List<File> selectedFiles = new java.util.ArrayList<>();
+        final JLabel fileHint = new JLabel(" ");
+        fileHint.setForeground(UiTheme.MUTED);
+        compose.add(fileHint, BorderLayout.NORTH);
+        Runnable loadChats = () -> {
+            model.setRowCount(0);
+            try {
+                List<Map<String, String>> chatRows = administracionDao.listarChatsWeb();
+                chatSource[0] = !chatRows.isEmpty() && "local".equals(chatRows.get(0).get("_chat_source")) ? "local" : "web";
+                for (Map<String, String> row : chatRows) {
+                    model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado")});
+                }
+                if (!selectedChat[0].isEmpty()) {
+                    for (int i = 0; i < model.getRowCount(); i++) {
+                        if (selectedChat[0].equals(String.valueOf(model.getValueAt(i, 0)))) {
+                            chats.setRowSelectionInterval(i, i);
+                            break;
+                        }
+                    }
+                }
+                if (selectedChat[0].isEmpty() && model.getRowCount() > 0) {
+                    chats.setRowSelectionInterval(0, 0);
+                }
+            } catch (IOException error) {
+                messages.removeAll();
+                JLabel issue = new JLabel("No se pudieron cargar las conversaciones: " + error.getMessage());
+                issue.setForeground(new Color(255, 130, 90));
+                messages.add(issue);
+                messages.revalidate();
+                messages.repaint();
             }
         };
-        JTable tabla = new JTable(modelo);
-        UiTheme.styleTable(tabla);
-        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
-
-        JPanel respuestaPanel = new JPanel(new BorderLayout(8, 8));
-        respuestaPanel.setBackground(UiTheme.WHITE);
-        respuestaPanel.setBorder(javax.swing.BorderFactory.createCompoundBorder(
-                javax.swing.BorderFactory.createLineBorder(UiTheme.LINE),
-                javax.swing.BorderFactory.createEmptyBorder(12, 12, 12, 12)));
-
-        JTextArea detalle = new JTextArea(6, 40);
-        JTextArea respuesta = new JTextArea(4, 40);
-        detalle.setEditable(false);
-        UiTheme.styleInput(detalle);
-        UiTheme.styleInput(respuesta);
-        respuestaPanel.add(new JScrollPane(detalle), BorderLayout.NORTH);
-        respuestaPanel.add(new JScrollPane(respuesta), BorderLayout.CENTER);
-
-        JPanel acciones = new JPanel();
-        acciones.setOpaque(false);
-        JButton enviar = new JButton("Responder");
-        JButton recargar = new JButton("Recargar");
-        UiTheme.styleButton(enviar, true);
-        UiTheme.styleButton(recargar, false);
-        acciones.add(enviar);
-        acciones.add(recargar);
-        respuestaPanel.add(acciones, BorderLayout.SOUTH);
-        panel.add(respuestaPanel, BorderLayout.SOUTH);
-
-        recargarChat(modelo);
-
-        tabla.getSelectionModel().addListSelectionListener(event -> {
-            int row = tabla.getSelectedRow();
-            if (row >= 0) {
-                detalle.setText("Cliente: " + modelo.getValueAt(row, 1)
-                        + "\nEmail: " + modelo.getValueAt(row, 2)
-                        + "\nActualizado: " + modelo.getValueAt(row, 5)
-                        + "\n\nMensaje:\n" + modelo.getValueAt(row, 3));
-                respuesta.setText("");
+        Runnable loadMessages = () -> {
+            messages.removeAll();
+            if (selectedChat[0].isEmpty()) {
+                JLabel empty = new JLabel("Seleccioná una conversación para ver los mensajes.");
+                empty.setForeground(UiTheme.MUTED);
+                empty.setBorder(BorderFactory.createEmptyBorder(25, 20, 10, 10));
+                messages.add(empty);
+                send.setEnabled(false);
+            } else {
+                send.setEnabled(true);
+                try {
+                    List<Map<String, String>> chatMessages = administracionDao.listarMensajesChat(Integer.parseInt(selectedChat[0]), chatSource[0]);
+                    Map<String, List<Map<String, String>>> attachments = new LinkedHashMap<>();
+                    for (Map<String, String> attachment : administracionDao.listarAdjuntosChat(Integer.parseInt(selectedChat[0]))) {
+                        attachments.computeIfAbsent(attachment.get("id_mensaje"), ignored -> new java.util.ArrayList<>()).add(attachment);
+                    }
+                    for (Map<String, String> row : chatMessages) {
+                        boolean mine = "Administracion".equalsIgnoreCase(row.get("autor_tipo"));
+                        JPanel line = new JPanel(new FlowLayout(mine ? FlowLayout.RIGHT : FlowLayout.LEFT, 8, 3));
+                        line.setOpaque(false);
+                        JPanel bubble = new JPanel(new BorderLayout(0, 5));
+                        bubble.setBackground(mine ? new Color(128, 58, 24) : new Color(41, 45, 48));
+                        bubble.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(mine ? UiTheme.ORANGE : UiTheme.LINE), BorderFactory.createEmptyBorder(9, 12, 7, 12)));
+                        JTextArea text = new JTextArea(row.getOrDefault("mensaje", ""));
+                        text.setEditable(false);
+                        text.setLineWrap(true);
+                        text.setWrapStyleWord(true);
+                        text.setOpaque(false);
+                        text.setForeground(UiTheme.INK);
+                        text.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 12));
+                        text.setColumns(30);
+                        bubble.add(text, BorderLayout.CENTER);
+                        JLabel meta = new JLabel(row.getOrDefault("autor_nombre", "") + "  ·  " + row.getOrDefault("fecha", ""));
+                        meta.setForeground(UiTheme.MUTED);
+                        meta.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 9));
+                        bubble.add(meta, BorderLayout.SOUTH);
+                        List<Map<String, String>> messageAttachments = attachments.get(row.get("id_mensaje"));
+                        if (messageAttachments != null) {
+                            JPanel attachmentList = new JPanel(new GridLayout(0, 1, 0, 4));
+                            attachmentList.setOpaque(false);
+                            for (Map<String, String> attachment : messageAttachments) {
+                                JButton download = new JButton("↓  " + attachment.getOrDefault("nombre_original", "Archivo"));
+                                UiTheme.styleButton(download, false);
+                                download.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 10));
+                                download.addActionListener(event -> descargarAdjunto(panel, attachment));
+                                attachmentList.add(download);
+                            }
+                            bubble.add(attachmentList, BorderLayout.NORTH);
+                        }
+                        line.add(bubble);
+                        line.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                        messages.add(line);
+                    }
+                } catch (IOException | NumberFormatException error) {
+                    JLabel issue = new JLabel("No se pudieron cargar los mensajes: " + error.getMessage());
+                    issue.setForeground(UiTheme.MUTED);
+                    messages.add(issue);
+                }
+            }
+            messages.revalidate();
+            messages.repaint();
+            SwingUtilities.invokeLater(() -> messageScroll.getVerticalScrollBar().setValue(messageScroll.getVerticalScrollBar().getMaximum()));
+        };
+        chats.getSelectionModel().addListSelectionListener(event -> {
+            if (event.getValueIsAdjusting() || chats.getSelectedRow() < 0) return;
+            int row = chats.convertRowIndexToModel(chats.getSelectedRow());
+            selectedChat[0] = String.valueOf(model.getValueAt(row, 0));
+            selectedClient[0] = String.valueOf(model.getValueAt(row, 1));
+            contact.setText(selectedClient[0] + "  ·  " + model.getValueAt(row, 2) + "  ·  " + model.getValueAt(row, 4));
+            loadMessages.run();
+        });
+        refresh.addActionListener(event -> {
+            String keep = selectedChat[0];
+            loadChats.run();
+            if (!keep.isEmpty()) {
+                for (int i = 0; i < model.getRowCount(); i++) {
+                    if (keep.equals(String.valueOf(model.getValueAt(i, 0)))) {
+                        chats.setRowSelectionInterval(i, i);
+                        break;
+                    }
+                }
             }
         });
-
-        recargar.addActionListener(event -> recargarChat(modelo));
-        enviar.addActionListener(event -> {
-            int row = tabla.getSelectedRow();
-            if (row < 0) {
-                mostrarAviso("Selecciona un mensaje para responder.");
-                return;
-            }
-            if (respuesta.getText().trim().isEmpty()) {
-                mostrarAviso("Escribe una respuesta para el cliente.");
-                return;
-            }
+        send.addActionListener(event -> {
+            String value = composer.getText().trim();
+            if (selectedChat[0].isEmpty() || (value.isEmpty() && selectedFiles.isEmpty())) return;
             Map<String, String> data = new LinkedHashMap<>();
-            data.put("id_chat", modelo.getValueAt(row, 0).toString());
-            data.put("mensaje", respuesta.getText().trim());
-            data.put("id_usuario", String.valueOf(usuarioId));
-            if (postOk("chat_reply", data, "Respuesta enviada al chat del cliente.")) {
-                respuesta.setText("");
-                detalle.setText("");
-                recargarChat(modelo);
+            data.put("id_chat", selectedChat[0]);
+            data.put("mensaje", value);
+            try {
+                ApiResult result = administracionDao.responderChat(data, selectedFiles);
+                if (result.isSuccess()) {
+                    composer.setText("");
+                    selectedFiles.clear();
+                    fileHint.setText(" ");
+                    loadMessages.run();
+                    loadChats.run();
+                    for (int i = 0; i < model.getRowCount(); i++) {
+                        if (selectedChat[0].equals(String.valueOf(model.getValueAt(i, 0)))) chats.setRowSelectionInterval(i, i);
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(panel, "No se pudo enviar la respuesta. Revisá la sesión del chat.", "Chat", JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (IOException error) {
+                JOptionPane.showMessageDialog(panel, "No se pudo conectar con el sitio web.", "Chat", JOptionPane.ERROR_MESSAGE);
             }
         });
-
+        composer.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent event) {
+                if (event.getKeyCode() == java.awt.event.KeyEvent.VK_ENTER && !event.isShiftDown()) {
+                    event.consume();
+                    send.doClick();
+                }
+            }
+        });
+        attach.addActionListener(event -> {
+            JFileChooser chooser = new JFileChooser();
+            chooser.setMultiSelectionEnabled(true);
+            chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                    "Archivos permitidos (PDF, imágenes, DXF, DWG)", "pdf", "jpg", "jpeg", "png", "webp", "dxf", "dwg"));
+            if (chooser.showOpenDialog(panel) != JFileChooser.APPROVE_OPTION) return;
+            selectedFiles.clear();
+            for (File file : chooser.getSelectedFiles()) {
+                if (file.length() > 10L * 1024 * 1024) {
+                    JOptionPane.showMessageDialog(panel, file.getName() + " supera el límite de 10 MB.", "Adjuntos", JOptionPane.WARNING_MESSAGE);
+                    continue;
+                }
+                selectedFiles.add(file);
+            }
+            if (selectedFiles.size() > 5) selectedFiles.subList(5, selectedFiles.size()).clear();
+            fileHint.setText(selectedFiles.isEmpty() ? " " : selectedFiles.size() + " archivo(s) listo(s) para enviar");
+        });
+        logout.addActionListener(event -> {
+            try { administracionDao.cerrarSesionChat(); } catch (IOException ignored) { }
+            Container ancestor = panel.getParent();
+            while (ancestor != null && !(ancestor.getLayout() instanceof CardLayout)) ancestor = ancestor.getParent();
+            if (ancestor instanceof JPanel) {
+                JPanel views = (JPanel) ancestor;
+                CardLayout cardLayout = (CardLayout) views.getLayout();
+                views.removeAll();
+                views.add(crearIngresoChat(null, () -> {
+                    views.removeAll();
+                    views.add(crearBandejaChat(), "bandeja");
+                    cardLayout.show(views, "bandeja");
+                    views.revalidate();
+                    views.repaint();
+                }), "acceso");
+                cardLayout.show(views, "acceso");
+                views.revalidate();
+                views.repaint();
+            }
+        });
+        loadChats.run();
+        loadMessages.run();
         return panel;
+    }
+
+    private static void chatAdd(JPanel panel, java.awt.Component component, GridBagConstraints base, int row) {
+        GridBagConstraints c = (GridBagConstraints) base.clone();
+        c.gridy = row;
+        panel.add(component, c);
+    }
+
+    private static void descargarAdjunto(JPanel parent, Map<String, String> attachment) {
+        JFileChooser chooser = new JFileChooser();
+        chooser.setSelectedFile(new File(attachment.getOrDefault("nombre_original", "adjunto")));
+        if (chooser.showSaveDialog(parent) != JFileChooser.APPROVE_OPTION) return;
+        try {
+            File destination = chooser.getSelectedFile();
+            Files.write(destination.toPath(), administracionDao.descargarAdjunto(Integer.parseInt(attachment.get("id_adjunto"))));
+            if (Desktop.isDesktopSupported()) Desktop.getDesktop().open(destination);
+        } catch (Exception error) {
+            JOptionPane.showMessageDialog(parent, "No se pudo descargar el archivo: " + error.getMessage(), "Adjuntos", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private static boolean chatWebConfigurar() {
+        try {
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) java.net.URI.create(
+                    administracionDao.getChatWebApi() + "?action=health").toURL().openConnection();
+            connection.setConnectTimeout(1500);
+            connection.setReadTimeout(1500);
+            try (java.io.InputStream stream = connection.getInputStream()) {
+                return connection.getResponseCode() >= 200 && connection.getResponseCode() < 400;
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     private static void recargarPedidos(DefaultTableModel modelo) {

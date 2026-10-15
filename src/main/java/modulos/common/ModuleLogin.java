@@ -39,7 +39,7 @@ public final class ModuleLogin {
 
         try {
             Map<String, String> datos = new LinkedHashMap<>();
-            datos.put("nombre", nombre.getText().trim());
+            datos.put("usuario", nombre.getText().trim());
             datos.put("contrasena", new String(contrasena.getPassword()));
             if (expectedRole != null && !expectedRole.isEmpty()) {
                 datos.put("rol", expectedRole);
@@ -55,7 +55,8 @@ public final class ModuleLogin {
                     parseInt(usuario.get("id_usuario")),
                     usuario.getOrDefault("nombre", nombre.getText().trim()),
                     usuario.getOrDefault("apellido", ""),
-                    usuario.getOrDefault("rol", expectedRole == null ? "" : expectedRole));
+                    usuario.getOrDefault("rol", expectedRole == null ? "" : expectedRole),
+                    usuario.getOrDefault("usuario", nombre.getText().trim()));
         } catch (IOException e) {
             JOptionPane.showMessageDialog(null, "No se pudo conectar con la API: " + e.getMessage(), "Conexion", JOptionPane.ERROR_MESSAGE);
             return null;

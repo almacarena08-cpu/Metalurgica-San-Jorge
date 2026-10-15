@@ -80,7 +80,7 @@ INSERT INTO `chat_mensaje` (`id_mensaje`, `nombre`, `email`, `mensaje`, `origen`
 CREATE TABLE `chat_mensaje_web` (
   `id_mensaje` int(11) NOT NULL,
   `id_chat` int(11) NOT NULL,
-  `id_usuario` int(11) NOT NULL,
+  `id_usuario` int(11) DEFAULT NULL,
   `autor_tipo` varchar(30) NOT NULL,
   `mensaje` text NOT NULL,
   `fecha` datetime NOT NULL

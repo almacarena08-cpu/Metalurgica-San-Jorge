@@ -89,3 +89,7 @@ El login solicita usuario y contrasena. Segun el rol del usuario, la aplicacion 
 | Calidad | `calidad` | `1234` |
 
 Luego del acceso, la cabecera muestra `Hola, Nombre!`.
+
+## Chat de Administración
+
+El chat usa por defecto la misma API que el resto de la aplicación (configurada con `metalgest.api.url`). Si el sitio web está publicado en otra ruta, iniciar Java con `-Dmetalgest.web.api.url=http://localhost/ruta-del-sitio/clases/php/api.php`. Para entrar al chat se usa una cuenta de Administración o Gerencia. Si la base se creó desde el SQL de esta aplicación, aplicar una vez `sql/alter_chat_mensajes_cliente.sql` para permitir mensajes de clientes sin usuario interno asociado.
