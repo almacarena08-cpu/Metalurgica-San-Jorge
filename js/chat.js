@@ -1,5 +1,6 @@
 export const chatPanel = {
     async chatView(startNew = false) {
+        this.stopChatTimer();
         const isClient = (this.session.user.rol || this.session.user.tipo || "").toLowerCase() === "cliente";
         const chats = await this.api.post("chat_list", isClient ? {id_cliente: this.session.user.id_cliente} : {});
         if (!Array.isArray(chats)) {
@@ -7,12 +8,11 @@ export const chatPanel = {
                 this.promptChatLogin();
                 return;
             }
-            this.content(await this.moduleTemplate("chat", "chat-error", {
-                error: this.escape(chats.message || "Iniciá sesión para acceder al chat.")
-            }));
+            this.content(`<section class="section-panel"><div class="message">${this.escape(chats.message || "Iniciá sesión para acceder al chat.")}</div></section>`);
             return;
         }
-        this.activeChat = startNew ? null : (this.activeChat || chats[0]?.id_chat || null);
+        const activeChatExists = chats.some(chat => String(chat.id_chat) === String(this.activeChat));
+        this.activeChat = startNew ? null : (activeChatExists ? this.activeChat : (isClient ? chats[0]?.id_chat || null : null));
         const selectedChat = chats.find(chat => String(chat.id_chat) === String(this.activeChat));
         const contactName = selectedChat
             ? (isClient ? "Administración San Jorge" : selectedChat.nombre)
@@ -20,29 +20,59 @@ export const chatPanel = {
         const contactSubtitle = selectedChat
             ? (isClient ? selectedChat.asunto : `${selectedChat.email || "Cliente"} · ${selectedChat.asunto}`)
             : (isClient ? "Te respondemos por este medio" : "Seleccioná una conversación para responder");
+        const orderControls = !isClient && selectedChat
+            ? (selectedChat.id_pedido
+                ? `<button class="chat-order-badge" type="button" data-chat-order-view>Pedido #${this.escape(selectedChat.id_pedido)}</button>`
+                : '<button class="chat-order-open" type="button" data-chat-order-open>Registrar pedido</button>')
+            : "";
+        const orderDialog = !isClient && selectedChat && !selectedChat.id_pedido
+            ? `<dialog class="chat-order-dialog" id="chatOrderDialog">
+                <form id="chatOrderForm" class="chat-order-form">
+                    <button class="chat-order-close" type="button" data-chat-order-close aria-label="Cerrar">×</button>
+                    <span class="chat-welcome-eyebrow">CONFIRMACIÓN COMERCIAL</span>
+                    <h3>Registrar pedido</h3>
+                    <p>Confirmá los datos acordados en la conversación. El cliente verá el pedido y su seguimiento en su cuenta.</p>
+                    <input type="hidden" name="id_chat" value="${this.escape(selectedChat.id_chat)}">
+                    <label>Descripción<input name="descripcion" value="${this.escape(selectedChat.asunto)}" required maxlength="500"></label>
+                    <div class="chat-order-fields"><label>Cantidad<input name="cantidad" type="number" min="1" value="1" required></label><label>Material<input name="material" required maxlength="100"></label></div>
+                    <label>Fecha estimada de entrega<input name="fecha_entrega" type="date"></label>
+                    <div class="message" aria-live="polite"></div>
+                    <div class="chat-order-actions"><button class="chat-order-cancel" type="button" data-chat-order-close>Volver al chat</button><button class="chat-order-submit" type="submit">Confirmar pedido</button></div>
+                </form>
+            </dialog>`
+            : "";
         const chatItems = chats.length
             ? (await Promise.all(chats.map(chat => {
                 const title = isClient ? "Administración San Jorge" : chat.nombre;
-                return this.moduleTemplate("chat", "chat-item", {
-                    activeClass: String(chat.id_chat) === String(this.activeChat) ? "active" : "",
-                    chatId: this.escape(chat.id_chat),
-                    initials: this.escape(String(title || "SJ").trim().slice(0, 2).toUpperCase()),
-                    title: this.escape(title),
-                    preview: this.escape(chat.ultimo_mensaje || chat.asunto),
-                    stateClass: chat.estado === "Abierto" ? "is-open" : "",
-                    state: this.escape(chat.estado)
-                });
+                const activeClass = String(chat.id_chat) === String(this.activeChat) ? "active" : "";
+                const initials = this.escape(String(title || "SJ").trim().slice(0, 2).toUpperCase());
+                const preview = this.escape(chat.ultimo_mensaje || chat.asunto);
+                const metadata = this.escape(isClient ? chat.asunto : [chat.asunto, chat.email].filter(Boolean).join(" · "));
+                const searchText = this.escape([title, chat.email, chat.asunto, chat.ultimo_mensaje, chat.estado].filter(Boolean).join(" "));
+                const stateClass = chat.estado === "Abierto" ? "is-open" : "";
+                return `<button class="chat-item ${activeClass}" data-chat="${this.escape(chat.id_chat)}" data-chat-search-text="${searchText}">
+                    <span class="chat-avatar">${initials}</span>
+                    <span class="chat-item-copy"><span class="chat-item-title">${this.escape(title)}</span><span class="chat-item-preview">${preview}</span><span class="chat-item-meta">${metadata}</span></span>
+                    <span class="chat-item-state ${stateClass}" title="${this.escape(chat.estado)}"></span>
+                </button>`;
             }))).join("")
-            : await this.moduleTemplate("chat", "chat-empty-list");
+            : '<div class="chat-list-empty"><strong>Sin conversaciones</strong><span>Cuando inicies una consulta, aparecerá acá.</span></div>';
         this.content(await this.moduleTemplate("chat", "chat", {
-            clientSiteButton: isClient ? '<button class="chat-back-button" type="button" data-client-site>Volver al sitio</button>' : "",
+            layoutClass: !isClient && !selectedChat ? "is-staff-inbox" : "",
+            chatBrandSubtitle: isClient ? "METALGEST" : "ATENCIÓN A CLIENTES",
+            chatBrandTitle: isClient ? "Mensajes" : "Bandeja de entrada",
+            conversationLabel: isClient ? "CONVERSACIONES" : "CLIENTES QUE ESCRIBIERON",
+            clientSiteButton: isClient ? '<button class="chat-back-button" type="button" data-client-site>Volver al inicio</button>' : "",
             newChatButton: isClient ? '<button class="chat-new-button" data-new-chat aria-label="Iniciar nueva consulta" title="Iniciar nueva consulta"><span aria-hidden="true">+</span><span>Nueva</span></button>' : "",
             chatCount: chats.length,
+            chatSearch: chats.length ? '<div class="chat-list-search"><label><span>Buscar conversaciones</span><input type="search" data-chat-search placeholder="Nombre, asunto o mensaje..." autocomplete="off"></label><span class="chat-list-search-count" data-chat-search-count aria-live="polite"></span></div>' : "",
             chatItems,
             contactInitials: this.escape(String(contactName || "SJ").trim().slice(0, 2).toUpperCase()),
             contactName: this.escape(contactName),
             contactSubtitle: this.escape(contactSubtitle),
             chatStatus: selectedChat ? this.escape(selectedChat.estado) : (isClient ? "En línea" : "Chat interno"),
+            orderControls,
+            orderDialog,
             subjectField: isClient && !this.activeChat ? '<label class="chat-subject-label" for="chatSubject">ASUNTO DE LA CONSULTA</label><input id="chatSubject" name="asunto" placeholder="Por ejemplo: consulta de presupuesto">' : "",
             messageLabel: isClient ? "TU MENSAJE" : "RESPUESTA",
             messagePlaceholder: isClient ? "Escribí tu consulta con el mayor detalle posible..." : "Escribí una respuesta...",
@@ -52,6 +82,38 @@ export const chatPanel = {
         }));
         const fileInput = this.root.querySelector("#chatFiles");
         fileInput.addEventListener("change", () => this.renderChatFileList());
+        const chatMenu = this.root.querySelector("[data-chat-menu]");
+        if (chatMenu) {
+            chatMenu.addEventListener("click", () => {
+                const layout = this.root.querySelector(".chat-layout");
+                const isOpen = layout.classList.toggle("is-list-open");
+                chatMenu.setAttribute("aria-expanded", String(isOpen));
+                const listName = isClient ? "conversaciones" : "lista de clientes";
+                chatMenu.setAttribute("aria-label", isOpen ? `Cerrar ${listName}` : `Ver ${listName}`);
+            });
+            this.root.querySelector(".chat-layout").addEventListener("click", event => {
+                const layout = event.currentTarget;
+                if (!layout.classList.contains("is-list-open") || event.target !== layout) return;
+                layout.classList.remove("is-list-open");
+                chatMenu.setAttribute("aria-expanded", "false");
+                chatMenu.setAttribute("aria-label", isClient ? "Ver conversaciones" : "Ver lista de clientes");
+            });
+        }
+        const messageInput = this.root.querySelector("#chatMessage");
+        if (messageInput) {
+            const resizeMessage = () => {
+                messageInput.style.height = "auto";
+                messageInput.style.height = `${Math.min(messageInput.scrollHeight, 180)}px`;
+            };
+            messageInput.addEventListener("input", resizeMessage);
+            messageInput.addEventListener("keydown", event => {
+                if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+                event.preventDefault();
+                if (messageInput.value.trim() || this.root.querySelector("#chatFiles").files.length) {
+                    this.root.querySelector("#chatForm").requestSubmit();
+                }
+            });
+        }
         if (this.pendingChatFiles?.length) {
             const transfer = new DataTransfer();
             this.pendingChatFiles.forEach(file => transfer.items.add(file));
@@ -65,6 +127,64 @@ export const chatPanel = {
                 await this.chatView();
             });
         });
+        const orderDialogElement = this.root.querySelector("#chatOrderDialog");
+        this.root.querySelectorAll("[data-chat-order-open]").forEach(button => button.addEventListener("click", () => orderDialogElement?.showModal()));
+        this.root.querySelectorAll("[data-chat-order-close]").forEach(button => button.addEventListener("click", () => orderDialogElement?.close()));
+        const orderForm = this.root.querySelector("#chatOrderForm");
+        if (orderForm) {
+            orderForm.addEventListener("submit", async event => {
+                event.preventDefault();
+                const submit = orderForm.querySelector('[type="submit"]');
+                const message = orderForm.querySelector(".message");
+                submit.disabled = true;
+                submit.textContent = "Registrando…";
+                message.textContent = "";
+                try {
+                    const result = await this.api.post("pedido_create_from_chat", Object.fromEntries(new FormData(orderForm)));
+                    if (!result.success) {
+                        message.textContent = result.message || "No se pudo registrar el pedido.";
+                        return;
+                    }
+                    orderDialogElement.close();
+                    await this.chatView();
+                } catch (error) {
+                    message.textContent = error.message || "No se pudo conectar con el servidor.";
+                } finally {
+                    if (submit.isConnected) {
+                        submit.disabled = false;
+                        submit.textContent = "Confirmar pedido";
+                    }
+                }
+            });
+        }
+        this.root.querySelector("[data-chat-order-view]")?.addEventListener("click", async () => {
+            await this.openModule("administracion");
+            this.root.querySelector('[data-admin-view="pedidos"]')?.click();
+        });
+        const chatSearch = this.root.querySelector("[data-chat-search]");
+        if (chatSearch) {
+            const chatSearchCount = this.root.querySelector("[data-chat-search-count]");
+            const chatItemsContainer = this.root.querySelector(".chat-items");
+            const noResults = document.createElement("div");
+            noResults.className = "chat-list-empty chat-search-empty";
+            noResults.hidden = true;
+            noResults.innerHTML = "<strong>No se encontraron conversaciones</strong><span>Probá con otro nombre, asunto o mensaje.</span>";
+            chatItemsContainer.append(noResults);
+            chatSearch.addEventListener("input", () => {
+                const query = this.normalizeSearchText(chatSearch.value.trim());
+                let visibleCount = 0;
+                this.root.querySelectorAll(".chat-item").forEach(item => {
+                    const matches = !query || this.normalizeSearchText(item.dataset.chatSearchText).includes(query);
+                    item.hidden = !matches;
+                    if (matches) visibleCount += 1;
+                });
+                chatSearchCount.textContent = query
+                    ? `${visibleCount} de ${chats.length} conversaciones`
+                    : `${chats.length} ${chats.length === 1 ? "conversación" : "conversaciones"}`;
+                noResults.hidden = visibleCount !== 0;
+            });
+            chatSearchCount.textContent = `${chats.length} ${chats.length === 1 ? "conversación" : "conversaciones"}`;
+        }
         const clientSiteButton = this.root.querySelector(".chat-toolbar [data-client-site]");
         if (clientSiteButton) clientSiteButton.addEventListener("click", () => this.renderLanding());
         const newChat = this.root.querySelector("[data-new-chat]");
@@ -79,10 +199,24 @@ export const chatPanel = {
             const form = this.root.querySelector("#chatForm");
             if (form.elements.asunto) form.elements.asunto.value = this.pendingChatDraft.asunto;
             form.elements.mensaje.value = this.pendingChatDraft.mensaje;
-            form.parentElement.querySelector(".message").textContent = "Tu mensaje quedó guardado. Presioná Enviar para mandarlo ahora.";
+            form.parentElement.querySelector(".message").textContent = "Conservé tu borrador. Presioná Enviar para mandarlo ahora.";
             this.pendingChatDraft = null;
         }
         await this.loadMessages();
+        if (isClient && this.activeChat) {
+            this.updateChatPresence().catch(error => console.error("No se pudo actualizar la presencia del chat:", error));
+            this.presenceTimer = setInterval(() => {
+                this.updateChatPresence().catch(error => console.error("No se pudo actualizar la presencia del chat:", error));
+            }, 15000);
+        }
+        this.root.querySelectorAll("[data-chat-suggestion]").forEach(button => {
+            button.addEventListener("click", () => {
+                const input = this.root.querySelector("#chatMessage");
+                input.value = button.dataset.chatSuggestion;
+                input.dispatchEvent(new Event("input", {bubbles: true}));
+                input.focus();
+            });
+        });
         this.chatTimer = setInterval(() => this.loadMessages(), 5000);
     },
 
@@ -91,7 +225,19 @@ export const chatPanel = {
         if (!thread) return;
         if (!this.activeChat) {
             const isClient = (this.session.user.rol || this.session.user.tipo || "").toLowerCase() === "cliente";
-            thread.innerHTML = await this.moduleTemplate("chat", isClient ? "chat-welcome-client" : "chat-welcome-staff");
+            thread.innerHTML = isClient
+                ? `<div class="chat-welcome">
+                    <span class="chat-welcome-mark" aria-hidden="true">SJ</span>
+                    <span class="chat-welcome-eyebrow">ATENCIÓN PERSONALIZADA</span>
+                    <h3>¿En qué podemos ayudarte?</h3>
+                    <p>Escribinos tu consulta. El equipo de Metalúrgica San Jorge te responderá por este medio.</p>
+                    <div class="chat-suggestions" aria-label="Consultas frecuentes">
+                        <button type="button" data-chat-suggestion="Quisiera solicitar un presupuesto.">Solicitar un presupuesto</button>
+                        <button type="button" data-chat-suggestion="Quisiera consultar el estado de mi pedido.">Consultar un pedido</button>
+                        <button type="button" data-chat-suggestion="Necesito hablar con administración.">Hablar con administración</button>
+                    </div>
+                </div>`
+                : '<div class="chat-welcome chat-welcome-empty"><span class="chat-welcome-mark" aria-hidden="true">SJ</span><span class="chat-welcome-eyebrow">BANDEJA DE CLIENTES</span><h3>Elegí una conversación</h3><p>Seleccioná un cliente de la lista para ver sus mensajes y responder.</p></div>';
             return;
         }
         const messages = await this.api.post("chat_messages", {id_chat: this.activeChat});
@@ -113,15 +259,19 @@ export const chatPanel = {
                     <span><strong>${this.escape(attachment.nombre_original)}</strong><small>${this.formatChatFileSize(attachment.tamano)}</small></span>
                 </a>`;
             }).join("");
-            return this.moduleTemplate("chat", "chat-message", {
-                messageSide: mine ? "mine" : "theirs",
-                messageText: this.escape(message.mensaje),
-                attachments: attachments ? `<div class="chat-message-attachments">${attachments}</div>` : "",
-                author: this.escape(message.autor_nombre || message.autor_tipo),
-                date: this.escape(message.fecha)
-            });
+            return `<div class="bubble-row ${mine ? "mine" : "theirs"}"><div class="bubble">
+                <span>${this.escape(message.mensaje)}</span>
+                ${attachments ? `<div class="chat-message-attachments">${attachments}</div>` : ""}
+                <small>${this.escape(message.autor_nombre || message.autor_tipo)} · ${this.escape(message.fecha)}</small>
+            </div></div>`;
         }))).join("");
         thread.scrollTop = thread.scrollHeight;
+    },
+
+    async updateChatPresence() {
+        if (document.visibilityState === "hidden" || !this.activeChat) return;
+        const result = await this.api.post("chat_presence", {id_chat: this.activeChat});
+        if (result.authRequired) this.promptChatLogin();
     },
 
     async sendChat(event, isClient) {
@@ -167,6 +317,16 @@ export const chatPanel = {
             this.activeChat = result.id_chat || this.activeChat;
             this.pendingChatFiles = null;
             await this.chatView();
+            const feedback = this.root.querySelector(".chat-window > .message");
+            if (feedback) {
+                feedback.textContent = isClient
+                    ? "Mensaje enviado."
+                    : result.cliente_en_linea
+                        ? "Respuesta enviada."
+                        : result.notificacion_enviada
+                            ? "Respuesta enviada y aviso por correo enviado al cliente."
+                            : "Respuesta guardada, pero no se pudo enviar el aviso por correo.";
+            }
         } catch (error) {
             console.error("No se pudo enviar el mensaje del chat:", error);
             messageBox.textContent = error.message || "No se pudo enviar el mensaje.";
@@ -209,17 +369,33 @@ export const chatPanel = {
     },
 
     promptChatLogin() {
+        this.stopChatTimer();
         this.openChatAfterClientLogin = true;
-        this.renderLanding();
+        let modal = this.root.querySelector("#authModal");
+        if (!modal) {
+            const landing = this.moduleTemplates.get("inicio")?.querySelector('template[data-view="landing"]');
+            const authModal = landing?.content.querySelector("#authModal");
+            if (!authModal) throw new Error("No se pudo abrir el acceso sin salir del chat.");
+            modal = authModal.cloneNode(true);
+            this.root.append(modal);
+            modal.querySelector("[data-close]").addEventListener("click", () => this.closeAuth());
+            modal.querySelectorAll("[data-tab]").forEach(tab =>
+                tab.addEventListener("click", () => this.openAuth(tab.dataset.tab))
+            );
+        }
         this.openAuth("login");
         const message = this.root.querySelector("#authContent .message");
-        if (message) message.textContent = "La sesión del chat venció o no está activa. Ingresá de nuevo para enviar el mensaje.";
+        if (message) message.textContent = "La sesión venció. Iniciá sesión para enviar tu mensaje; conservé el texto y los archivos adjuntos.";
     },
 
     stopChatTimer() {
         if (this.chatTimer) {
             clearInterval(this.chatTimer);
             this.chatTimer = null;
+        }
+        if (this.presenceTimer) {
+            clearInterval(this.presenceTimer);
+            this.presenceTimer = null;
         }
     }
 };

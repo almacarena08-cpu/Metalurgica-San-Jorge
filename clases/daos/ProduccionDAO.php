@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/BaseDAO.php';
+require_once __DIR__ . '/PedidoSeguimientoDAO.php';
 
 class ProduccionDAO extends BaseDAO {
     public function listar() {
@@ -55,6 +56,17 @@ class ProduccionDAO extends BaseDAO {
             );
             $updPedido->execute([':estado' => $estado, ':id_orden' => $idOrden]);
             $idProduccion = (int)$pdo->lastInsertId();
+            $estadoPedido = $avance >= 100 ? 'Pedido finalizado' : ($avance > 0 ? 'En producción' : 'Pedido en proceso');
+            $descripcion = 'Avance de producción registrado: ' . $avance . '%; cantidad producida: ' . (int)$datos['cantidad_producida'] . '.';
+            if (!empty($datos['observaciones'])) $descripcion .= ' ' . $datos['observaciones'];
+            (new PedidoSeguimientoDAO())->registrarDesdeOrdenEnTransaccion(
+                $pdo,
+                $idOrden,
+                $estadoPedido,
+                $descripcion,
+                'Producción',
+                (int)($datos['id_usuario'] ?? 0)
+            );
             $pdo->commit();
             return $idProduccion;
         } catch (Throwable $e) {

@@ -2,21 +2,25 @@
     <section class="section-panel"><div class="message">{{error}}</div></section>
 </template>
 <template data-view="chat">
-    <section class="chat-layout">
+    <section class="chat-layout {{layoutClass}}">
         <aside class="chat-list">
             <div class="chat-list-head">
                 <div class="chat-brand">
                     <span class="chat-brand-mark">SJ</span>
-                    <span><small>METALGEST</small><strong>Mensajes</strong></span>
+                    <span><small>{{chatBrandSubtitle}}</small><strong>{{chatBrandTitle}}</strong></span>
                 </div>
                 {{newChatButton}}
             </div>
-            <div class="chat-list-label"><span>CONVERSACIONES</span><span>{{chatCount}}</span></div>
+            <div class="chat-list-label"><span>{{conversationLabel}}</span><span>{{chatCount}}</span></div>
+            {{chatSearch}}
             <div class="chat-items">{{chatItems}}</div>
             <div class="chat-list-footer"><span class="chat-live-dot"></span><span>Atención de Metalúrgica San Jorge</span></div>
         </aside>
         <section class="chat-window">
             <header class="chat-toolbar">
+                <button class="chat-menu-toggle" type="button" data-chat-menu aria-label="Abrir conversaciones" aria-expanded="false" title="Conversaciones">
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
                 {{clientSiteButton}}
                 <span class="chat-avatar chat-toolbar-avatar">{{contactInitials}}</span>
                 <span class="chat-toolbar-copy">
@@ -24,12 +28,13 @@
                     <small>{{contactSubtitle}}</small>
                 </span>
                 <span class="chat-status"><i></i>{{chatStatus}}</span>
+                {{orderControls}}
             </header>
+            {{orderDialog}}
             <div class="chat-thread" id="chatThread"></div>
             <form id="chatForm" class="chat-compose">
                 {{subjectField}}
-                <label class="chat-message-label" for="chatMessage">{{messageLabel}}</label>
-                <textarea id="chatMessage" name="mensaje" placeholder="{{messagePlaceholder}}" rows="3" autocomplete="off" {{message_disabled}}></textarea>
+                <textarea id="chatMessage" name="mensaje" aria-label="{{messageLabel}}" placeholder="{{messagePlaceholder}}" rows="1" autocomplete="off" {{message_disabled}}></textarea>
                 <div class="chat-attachments" data-chat-attachments hidden aria-live="polite"></div>
                 <div class="chat-compose-footer">
                     <div class="chat-compose-tools">
@@ -43,7 +48,7 @@
                         <span class="chat-file-help">PDF · JPG · PNG · DXF · DWG · máx. 10 MB</span>
                         <span class="chat-compose-hint">{{composeHint}}</span>
                     </div>
-                    <button class="chat-send-button" type="submit" {{send_disabled}}><span>Enviar mensaje</span><span class="chat-send-icon" aria-hidden="true">↗</span></button>
+                    <button class="chat-send-button" type="submit" aria-label="Enviar mensaje" title="Enviar mensaje" {{send_disabled}}><span class="chat-send-icon" aria-hidden="true">↑</span></button>
                 </div>
             </form>
             <div class="message"></div>
@@ -69,11 +74,12 @@
     </div>
 </template>
 <template data-view="chat-item">
-    <button class="chat-item {{activeClass}}" data-chat="{{chatId}}">
+    <button class="chat-item {{activeClass}}" data-chat="{{chatId}}" data-chat-search-text="{{searchText}}">
         <span class="chat-avatar">{{initials}}</span>
         <span class="chat-item-copy">
             <span class="chat-item-title">{{title}}</span>
             <span class="chat-item-preview">{{preview}}</span>
+            <span class="chat-item-meta">{{metadata}}</span>
         </span>
         <span class="chat-item-state {{stateClass}}" title="{{state}}"></span>
     </button>

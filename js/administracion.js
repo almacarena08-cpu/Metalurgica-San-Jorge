@@ -1,22 +1,40 @@
 export const administracionPanel = {
     async dashboardView() {
+        clearInterval(this.dashboardTimer);
+        this.dashboardTimer = null;
         const role = (this.session.user.rol || this.session.user.tipo || "").toLowerCase();
-        const canViewChat = ["cliente", "gerencia", "administracion"].includes(role);
         const [pedidos, ordenes, chat] = await Promise.all([
             this.api.get("pedidos_list"),
             this.api.get("ordenes_list"),
-            canViewChat ? this.api.post("chat_list") : Promise.resolve([])
+            ["cliente", "gerencia", "administracion"].includes(role)
+                ? this.api.post("chat_list")
+                : Promise.resolve([])
         ]);
+        if (this.current !== "administracion") return;
         const openChats = Array.isArray(chat) ? chat.filter(item => item.estado === "Abierto").length : 0;
         this.content(await this.moduleTemplate("administracion", "dashboard", {
             adminNavigation: this.administrationNavigation("dashboard"),
+            employeeName: this.escape(this.session.user.nombre || this.session.user.razon_social || "equipo"),
             pedidosCount: pedidos.length,
             ordenesCount: ordenes.length,
             chatsCount: openChats,
-            today: new Date().toLocaleDateString("es-AR"),
+            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires"}),
+            pedidosChart: this.moduleMonthlyChart(pedidos, "fecha", null, "Pedidos registrados por mes"),
+            ordenesChart: this.moduleStatusDonutChart(ordenes, "estado", "Órdenes de trabajo"),
             recentOrders: this.simpleTable(pedidos.slice(0, 6), ["id_pedido", "razon_social", "descripcion", "estado"])
         }));
         this.bindAdministrationNavigation();
+        this.dashboardTimer = setInterval(() => {
+            if (this.current !== "administracion" || !this.root.querySelector("#content .admin-overview")) return;
+            this.dashboardView().catch(error => {
+                console.error("No se pudo actualizar el dashboard automáticamente:", error);
+                const status = this.root.querySelector("[data-dashboard-sync]");
+                if (status) {
+                    status.textContent = "No se pudo actualizar. Se reintentará en un minuto.";
+                    status.classList.add("is-error");
+                }
+            });
+        }, 60000);
     },
 
     async pedidosView() {
@@ -86,5 +104,4 @@ export const administracionPanel = {
             });
         });
     }
-
 };

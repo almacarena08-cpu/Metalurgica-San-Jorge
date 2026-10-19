@@ -1,8 +1,35 @@
 <template data-view="mantenimiento">
-    <section class="section-panel">
-        <h3>Preventivo</h3>
+    <section class="module-overview">
+        <div>
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="module-kicker">OPERACIÓN · EQUIPOS</span>
+            <h3>Centro de mantenimiento</h3>
+            <p>Organizá tareas preventivas y acompañá cada intervención hasta su resolución.</p>
+        </div>
+        <span class="module-date"><span></span>{{today}}</span>
+    </section>
+    <section class="module-metrics" aria-label="Indicadores de mantenimiento">
+        <article class="module-metric"><span>INTERVENCIONES</span><strong>{{maintenanceCount}}</strong><small>Registros de mantenimiento</small></article>
+        <article class="module-metric"><span>PENDIENTES / EN CURSO</span><strong>{{openMaintenance}}</strong><small>Requieren seguimiento</small></article>
+        <article class="module-metric"><span>MÁQUINAS</span><strong>{{machineCount}}</strong><small>Equipos en el registro</small></article>
+    </section>
+    <nav class="module-index" aria-label="Secciones de mantenimiento">
+        <span class="module-index-title">Secciones</span>
+        <button type="button" class="active" data-module-index="estado" aria-pressed="true">Estado de intervenciones</button>
+        <button type="button" data-module-index="preventivo" aria-pressed="false">Nuevo preventivo</button>
+        <button type="button" data-module-index="actualizar" aria-pressed="false">Actualizar intervención</button>
+        <button type="button" data-module-index="historial" aria-pressed="false">Historial</button>
+    </nav>
+    <div data-module-panel="estado" class="module-index-section">
+    <section class="section-panel module-chart-card">
+        <div class="module-panel-heading"><div><span class="module-kicker">ESTADO DE EQUIPOS</span><h3>Intervenciones por estado</h3></div></div>
+        {{maintenanceChart}}
+    </section>
+    </div>
+    <section data-module-panel="preventivo" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">PLANIFICACIÓN</span><h3>Nuevo mantenimiento preventivo</h3></div><span class="module-panel-note">Programá una tarea para un equipo</span></div>
         <form id="preventivoForm" class="form-grid">
-            <label>Maquina<select name="id_maquina">{{machines}}</select></label>
+            <label>Máquina<select name="id_maquina">{{machines}}</select></label>
             <label>Fecha<input name="fecha" type="date"></label>
             <label class="field full">Tarea / problema<textarea name="problema" required></textarea></label>
             <input type="hidden" name="id_usuario" value="{{userId}}">
@@ -10,16 +37,16 @@
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel">
-        <h3>Actualizar mantenimiento</h3>
+    <section data-module-panel="actualizar" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">SEGUIMIENTO</span><h3>Actualizar intervención</h3></div><span class="module-panel-note">Completá el estado y el trabajo realizado</span></div>
         <form id="mantenimientoForm" class="form-grid">
             <label>ID mantenimiento<input name="id_mantenimiento" type="number" required></label>
             <label>Estado<select name="estado"><option>Pendiente</option><option>En proceso</option><option>Resuelta</option></select></label>
-            <label class="field full">Reparacion<textarea name="reparacion" required></textarea></label>
+            <label class="field full">Reparación<textarea name="reparacion" required></textarea></label>
             <label class="field full">Repuestos<input name="repuestos"></label>
             <button class="btn primary">Actualizar</button>
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel">{{maintenanceTable}}</section>
+    <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">HISTORIAL</span><h3>Intervenciones registradas</h3></div></div>{{maintenanceTable}}</section>
 </template>

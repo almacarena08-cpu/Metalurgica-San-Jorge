@@ -1,12 +1,14 @@
-import {administracionPanel} from "./administracion.js?v=modules-flat-20261014-3";
-import {produccionPanel} from "./produccion.js?v=modules-flat-20261014-3";
-import {mantenimientoPanel} from "./mantenimiento.js?v=modules-flat-20261014-3";
-import {depositoPanel} from "./deposito.js?v=stock-warning-20261014-1";
-import {comprasPanel} from "./compras.js?v=stock-warning-20261014-1";
-import {calidadPanel} from "./calidad.js?v=modules-flat-20261014-3";
-import {chatPanel} from "./chat.js?v=chat-attachments-20261014-1";
+import {administracionPanel} from "./administracion.js?v=pedido-chat-flow-20261019-2";
+import {produccionPanel} from "./produccion.js?v=pedido-chat-flow-20261019-2";
+import {mantenimientoPanel} from "./mantenimiento.js?v=pedido-chat-flow-20261019-2";
+import {depositoPanel} from "./deposito.js?v=pedido-chat-flow-20261019-2";
+import {comprasPanel} from "./compras.js?v=pedido-chat-flow-20261019-2";
+import {calidadPanel} from "./calidad.js?v=module-index-20261017-3";
+import {chatPanel} from "./chat.js?v=pedido-chat-flow-20261019-2";
+import {chartsPanel} from "./charts.js?v=module-index-20261017-3";
+import {seguimientoPanel} from "./seguimiento.js?v=pedido-chat-flow-20261019-2";
 
-const panelModules = [comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel];
+const panelModules = [chartsPanel, comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel, seguimientoPanel];
 
 class ApiService {
     constructor(baseUrl) {
@@ -84,6 +86,9 @@ class App {
         this.current = "administracion";
         this.activeChat = null;
         this.chatTimer = null;
+        this.presenceTimer = null;
+        this.dashboardTimer = null;
+        this.trackingTimer = null;
         this.openChatAfterClientLogin = false;
         this.pendingChatDraft = null;
         this.previousBodyOverflow = null;
@@ -92,9 +97,9 @@ class App {
 
     async start() {
         try {
-            const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat"];
+            const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat", "seguimiento"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=chat-attachments-20261014-1`);
+                const response = await fetch(`html/${moduleName}.html?v=pedido-chat-flow-20261019-2`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));
@@ -119,8 +124,7 @@ class App {
             this.verifyClientEmail(verificationToken);
             return;
         }
-        if (this.session.user?.tipo === "cliente") this.renderLanding();
-        else this.session.user ? this.renderShell() : this.renderLanding();
+        this.session.user ? this.renderShell() : this.renderLanding();
     }
 
 
@@ -179,7 +183,7 @@ class App {
             {id: "produccion", label: "Producción"},
             {id: "chat", label: "Chat"}
         ];
-        if (role === "cliente") return [{id: "chat", label: "Chat"}];
+        if (role === "cliente") return [{id: "chat", label: "Mensajes"}, {id: "seguimiento", label: "Mis pedidos"}];
         if (role === "gerencia") return all;
         if (role === "administracion") return all.filter(m => ["administracion", "chat"].includes(m.id));
         if (["produccion", "mantenimiento", "deposito", "compras", "calidad"].includes(role)) {
@@ -190,7 +194,12 @@ class App {
 
     async openModule(id) {
         this.stopChatTimer();
+        clearInterval(this.dashboardTimer);
+        clearInterval(this.trackingTimer);
+        this.dashboardTimer = null;
+        this.trackingTimer = null;
         this.current = id;
+        this.root.querySelector(".app-shell")?.classList.toggle("is-chat-shell", id === "chat");
         this.root.querySelector("#content").dataset.module = id;
         this.root.querySelectorAll("[data-module]").forEach(button => button.classList.toggle("active", button.dataset.module === id));
         const label = this.modulesForRole().find(module => module.id === id)?.label || "Inicio";
@@ -202,9 +211,15 @@ class App {
             deposito: () => this.depositoView(),
             compras: () => this.comprasView(),
             calidad: () => this.calidadView(),
-            chat: () => this.chatView()
+            chat: () => this.chatView(),
+            seguimiento: () => this.seguimientoView()
         };
-        await views[id]();
+        try {
+            await views[id]();
+        } catch (error) {
+            console.error(`No se pudo abrir el módulo ${id}:`, error);
+            this.content(`<section class="section-panel"><div class="message">${this.escape(error.message || "No se pudo cargar esta pantalla. Actualizá e intentá de nuevo.")}</div></section>`);
+        }
     }
 
     async logout() {
@@ -214,6 +229,10 @@ class App {
                 throw new Error(result.message || "No se pudo cerrar la sesión.");
             }
             this.stopChatTimer();
+            clearInterval(this.dashboardTimer);
+            clearInterval(this.trackingTimer);
+            this.dashboardTimer = null;
+            this.trackingTimer = null;
             this.session.clear();
             this.renderLanding();
         } catch (error) {
@@ -228,7 +247,36 @@ class App {
     }
 
     content(html) {
-        this.root.querySelector("#content").innerHTML = html;
+        const content = this.root.querySelector("#content");
+        content.innerHTML = html;
+        content.querySelectorAll("[data-table-search]").forEach(input => {
+            const container = input.closest("[data-searchable-table]");
+            if (!container) return;
+            const rows = [...container.querySelectorAll("tbody tr")];
+            const limit = Number(container.dataset.tableLimit) || 8;
+            const updateResults = () => {
+                const query = this.normalizeSearchText(input.value.trim());
+                const matchingRows = rows.filter(row =>
+                    !query || this.normalizeSearchText(row.textContent).includes(query)
+                );
+                const visibleRows = matchingRows.slice(0, limit);
+                const visibleSet = new Set(visibleRows);
+                rows.forEach(row => {
+                    row.hidden = !visibleSet.has(row);
+                });
+                const count = container.querySelector("[data-table-count]");
+                const empty = container.querySelector("[data-table-empty]");
+                const noun = matchingRows.length === 1
+                    ? container.dataset.tableSingular
+                    : container.dataset.tablePlural;
+                count.textContent = query
+                    ? `Mostrando ${visibleRows.length} de ${matchingRows.length} resultados`
+                    : `Mostrando ${visibleRows.length} de ${rows.length} ${noun}`;
+                empty.hidden = matchingRows.length !== 0;
+            };
+            input.addEventListener("input", updateResults);
+            updateResults();
+        });
     }
 
     moduleTemplate(moduleName, viewName, values = {}) {
@@ -267,14 +315,36 @@ class App {
 
     simpleTable(rows, keys) {
         if (!rows || rows.length === 0) return `<p class="muted">No hay registros para mostrar.</p>`;
-        return `
+        const table = `
             <div class="table-wrap">
                 <table>
                     <thead><tr>${keys.map(key => `<th>${this.label(key)}</th>`).join("")}</tr></thead>
                     <tbody>${rows.map(row => `<tr>${keys.map(key => `<td>${this.formatCell(key, row[key])}</td>`).join("")}</tr>`).join("")}</tbody>
                 </table>
+                <p class="table-no-results" data-table-empty hidden>No se encontraron registros con ese criterio.</p>
             </div>
         `;
+        return this.searchableTable(table, rows.length);
+    }
+
+    searchableTable(table, count, noun = "registros") {
+        const singular = noun === "materiales" ? "material" : noun.replace(/s$/, "");
+        return `
+            <div class="data-table" data-searchable-table data-table-limit="8" data-table-singular="${this.escape(singular)}" data-table-plural="${this.escape(noun)}">
+                <div class="table-search">
+                    <label class="table-search-label">
+                        <span>Buscar en este listado · máximo 8 resultados visibles</span>
+                        <input type="search" data-table-search placeholder="Buscar por cualquier dato..." autocomplete="off">
+                    </label>
+                    <span class="table-search-count" data-table-count aria-live="polite">Mostrando ${Math.min(count, 8)} de ${count} ${this.escape(count === 1 ? singular : noun)}</span>
+                </div>
+                ${table}
+            </div>
+        `;
+    }
+
+    normalizeSearchText(value) {
+        return String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es");
     }
 
     label(key) {
@@ -586,14 +656,9 @@ class AuthModule {
             }
             if (isClient) {
                 this.session.set(result.cliente);
-                const openChat = this.openChatAfterClientLogin;
                 this.openChatAfterClientLogin = false;
                 this.closeAuth();
-                if (openChat) {
-                    this.renderShell();
-                } else {
-                    this.renderLanding();
-                }
+                this.renderShell();
                 return;
             }
             this.openChatAfterClientLogin = false;

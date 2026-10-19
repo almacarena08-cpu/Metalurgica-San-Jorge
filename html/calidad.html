@@ -1,6 +1,32 @@
 <template data-view="calidad">
-    <section class="section-panel">
-        <h3>Registrar control</h3>
+    <section class="module-overview">
+        <div>
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="module-kicker">OPERACIÓN · CONTROL</span>
+            <h3>Centro de calidad</h3>
+            <p>Registrá inspecciones y consultá los resultados asociados a cada orden.</p>
+        </div>
+        <span class="module-date"><span></span>{{today}}</span>
+    </section>
+    <section class="module-metrics" aria-label="Indicadores de calidad">
+        <article class="module-metric"><span>CONTROLES REALIZADOS</span><strong>{{controlCount}}</strong><small>Inspecciones registradas</small></article>
+        <article class="module-metric"><span>APROBADOS</span><strong>{{approvedCount}}</strong><small>Con resultado aprobado</small></article>
+        <article class="module-metric"><span>PARA REVISAR</span><strong>{{reviewCount}}</strong><small>Observados o rechazados</small></article>
+    </section>
+    <nav class="module-index" aria-label="Secciones de calidad">
+        <span class="module-index-title">Secciones</span>
+        <button type="button" class="active" data-module-index="resultados" aria-pressed="true">Resultados</button>
+        <button type="button" data-module-index="registrar" aria-pressed="false">Registrar control</button>
+        <button type="button" data-module-index="historial" aria-pressed="false">Controles registrados</button>
+    </nav>
+    <div data-module-panel="resultados" class="module-index-section">
+    <section class="section-panel module-chart-card">
+        <div class="module-panel-heading"><div><span class="module-kicker">RESULTADOS DE INSPECCIÓN</span><h3>Controles por resultado</h3></div></div>
+        {{qualityChart}}
+    </section>
+    </div>
+    <section data-module-panel="registrar" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">NUEVA INSPECCIÓN</span><h3>Registrar control de calidad</h3></div><span class="module-panel-note">Dejá trazabilidad del resultado</span></div>
         <form id="calidadForm" class="form-grid">
             <label>Orden<select name="id_orden">{{orders}}</select></label>
             <label>Fecha<input name="fecha" type="date"></label>
@@ -11,5 +37,5 @@
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel">{{qualityTable}}</section>
+    <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">TRAZABILIDAD</span><h3>Controles registrados</h3></div></div>{{qualityTable}}</section>
 </template>

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/BaseDAO.php';
+require_once __DIR__ . '/PedidoSeguimientoDAO.php';
 
 class OrdenTrabajoDAO extends BaseDAO {
     public function listar() {
@@ -54,8 +55,14 @@ class OrdenTrabajoDAO extends BaseDAO {
                 ':id_usuario' => (int)($datos['id_usuario'] ?? 1)
             ]);
             $idOrden = (int)$pdo->lastInsertId();
-            $upd = $pdo->prepare('UPDATE pedido SET estado = :estado WHERE id_pedido = :id_pedido');
-            $upd->execute([':estado' => 'Con orden de trabajo', ':id_pedido' => $idPedido]);
+            (new PedidoSeguimientoDAO())->registrarEnTransaccion(
+                $pdo,
+                $idPedido,
+                'Pedido en proceso',
+                'Se generó la orden de trabajo #' . $idOrden . '.',
+                'Administración',
+                (int)($datos['id_usuario'] ?? 0)
+            );
             $pdo->commit();
             return $idOrden;
         } catch (Throwable $e) {
@@ -66,27 +73,44 @@ class OrdenTrabajoDAO extends BaseDAO {
 
     public function actualizarEstado(array $datos) {
         $pdo = $this->db();
-        $stmt = $pdo->prepare(
-            'UPDATE orden_trabajo
-             SET estado = :estado,
-                 observaciones = CONCAT(COALESCE(observaciones, ""), :salto, :observaciones),
-                 fecha_finalizacion = CASE WHEN :estado_fin = "Finalizada" THEN CURDATE() ELSE fecha_finalizacion END
-             WHERE id_orden = :id_orden'
-        );
-        $observaciones = $datos['observaciones'] ?? '';
-        $stmt->execute([
-            ':estado' => $datos['estado'],
-            ':estado_fin' => $datos['estado'],
-            ':salto' => $observaciones === '' ? '' : "\n",
-            ':observaciones' => $observaciones,
-            ':id_orden' => (int)$datos['id_orden']
-        ]);
-        $pedido = $pdo->prepare(
-            'UPDATE pedido p
-             INNER JOIN orden_trabajo ot ON ot.id_pedido = p.id_pedido
-             SET p.estado = :estado
-             WHERE ot.id_orden = :id_orden'
-        );
-        $pedido->execute([':estado' => $datos['estado'], ':id_orden' => (int)$datos['id_orden']]);
+        $pdo->beginTransaction();
+        try {
+            $idOrden = (int)$datos['id_orden'];
+            $query = $pdo->prepare('SELECT id_pedido FROM orden_trabajo WHERE id_orden = :id_orden FOR UPDATE');
+            $query->execute([':id_orden' => $idOrden]);
+            if (!$query->fetchColumn()) throw new InvalidArgumentException('La orden de trabajo no existe.');
+            $observaciones = $datos['observaciones'] ?? '';
+            $stmt = $pdo->prepare(
+                'UPDATE orden_trabajo
+                 SET estado = :estado,
+                     observaciones = CONCAT(COALESCE(observaciones, ""), :salto, :observaciones),
+                     fecha_finalizacion = CASE WHEN :estado_fin = "Finalizada" THEN CURDATE() ELSE fecha_finalizacion END
+                 WHERE id_orden = :id_orden'
+            );
+            $stmt->execute([
+                ':estado' => $datos['estado'],
+                ':estado_fin' => $datos['estado'],
+                ':salto' => $observaciones === '' ? '' : "\n",
+                ':observaciones' => $observaciones,
+                ':id_orden' => $idOrden
+            ]);
+            $pedido = $pdo->prepare(
+                'UPDATE pedido p INNER JOIN orden_trabajo ot ON ot.id_pedido = p.id_pedido
+                 SET p.estado = :estado WHERE ot.id_orden = :id_orden'
+            );
+            $pedido->execute([':estado' => $datos['estado'], ':id_orden' => $idOrden]);
+            (new PedidoSeguimientoDAO())->registrarDesdeOrdenEnTransaccion(
+                $pdo,
+                $idOrden,
+                $datos['seguimiento_estado'] ?? $datos['estado'],
+                $datos['seguimiento_descripcion'] ?? ('El estado del pedido fue actualizado a ' . $datos['estado'] . '.'),
+                $datos['area'] ?? 'Administración',
+                (int)($datos['id_usuario'] ?? 0)
+            );
+            $pdo->commit();
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
     }
 }

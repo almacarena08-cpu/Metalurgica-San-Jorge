@@ -143,7 +143,43 @@
     font-size: 10px;
 }
 
+#content[data-module="administracion"] .admin-dashboard-status {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: end;
+    gap: 7px;
+}
+
+#content[data-module="administracion"] [data-dashboard-sync] {
+    color: #7f898d;
+    font-size: 9px;
+    text-align: right;
+}
+
+#content[data-module="administracion"] [data-dashboard-sync].is-error {
+    color: #e68c81;
+}
+
+@media (max-width: 920px) {
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
 @media (max-width: 620px) {
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    #content[data-module="administracion"] .admin-dashboard-status {
+        justify-items: start;
+    }
+
+    #content[data-module="administracion"] [data-dashboard-sync] {
+        text-align: left;
+    }
+
     #content[data-module="administracion"] .admin-subnav .btn {
         flex: 1 1 calc(50% - 8px);
     }
@@ -167,4 +203,51 @@
         align-items: flex-start;
         flex-direction: column;
     }
+}
+
+#content[data-module="administracion"] .admin-overview {
+    min-height: 148px;
+    border-radius: 9px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+
+#content[data-module="administracion"] .admin-overview h3 {
+    margin-top: 8px;
+    font-size: clamp(21px, 2.2vw, 27px);
+    letter-spacing: -.04em;
+}
+
+#content[data-module="administracion"] .admin-overview p {
+    max-width: 620px;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+#content[data-module="administracion"] .admin-overview-date {
+    border-radius: 6px;
+    font-size: 10px;
+    text-transform: capitalize;
+}
+
+#content[data-module="administracion"] .admin-metric {
+    min-height: 126px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #171b1d, #121517);
+    box-shadow: 0 7px 20px rgba(0, 0, 0, .12);
+}
+
+#content[data-module="administracion"] .admin-metric-label {
+    letter-spacing: .1em;
+}
+
+#content[data-module="administracion"] .admin-metric strong {
+    font-size: 31px;
+    letter-spacing: -.045em;
+}
+
+#content[data-module="administracion"] .admin-activity {
+    padding: 20px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #161a1c, #111416);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
 }

@@ -1311,6 +1311,316 @@ tr.selected td {
     }
 }
 
+.module-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.module-chart-card {
+    min-width: 0;
+    margin: 0 0 15px;
+    padding: 20px;
+}
+
+.module-chart-grid .module-chart-card {
+    height: 100%;
+}
+
+.module-chart-wide {
+    grid-column: 1 / -1;
+}
+
+.module-chart-summary {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    margin: 0 0 2px 58px;
+}
+
+.module-chart-summary strong {
+    color: #f1f0ec;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -.04em;
+}
+
+.module-chart-summary span,
+.module-chart-empty {
+    color: #899297;
+    font-size: 10px;
+}
+
+.module-chart-trend,
+.module-chart-donut {
+    width: 100%;
+}
+
+.module-chart-trend svg,
+.module-chart-donut svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+}
+
+.module-chart-grid-line {
+    stroke: #2a3033;
+    stroke-width: 1;
+}
+
+.module-chart-axis-label {
+    fill: #879196;
+    font-family: inherit;
+    font-size: 10px;
+}
+
+.module-chart-area {
+    fill: url(#moduleChartFill);
+}
+
+.module-chart-line {
+    fill: none;
+    stroke: #ed7945;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+}
+
+.module-chart-line-marker {
+    fill: #171b1d;
+    stroke: #f28b57;
+    stroke-width: 3;
+    vector-effect: non-scaling-stroke;
+}
+
+.module-chart-donut-layout {
+    display: grid;
+    grid-template-columns: minmax(130px, .9fr) minmax(120px, 1fr);
+    align-items: center;
+    gap: 8px;
+    min-height: 206px;
+}
+
+.module-chart-donut {
+    width: min(100%, 205px);
+    margin: 0 auto;
+}
+
+.module-chart-donut-total {
+    fill: #f3f2ef;
+    font-family: inherit;
+    font-size: 25px;
+    font-weight: 800;
+}
+
+.module-chart-donut-caption {
+    fill: #929b9f;
+    font-family: inherit;
+    font-size: 9px;
+}
+
+.module-chart-legend,
+.module-chart-bars {
+    display: grid;
+    gap: 13px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.module-chart-legend li {
+    display: grid;
+    grid-template-columns: 8px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    color: #b6bdc0;
+    font-size: 10px;
+}
+
+.module-chart-legend li strong {
+    color: #e6e7e4;
+    font-size: 11px;
+}
+
+.module-chart-legend-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--legend-color);
+}
+
+.module-chart-bars {
+    gap: 19px;
+    padding: 10px 2px;
+}
+
+.module-chart-bar-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    color: #b9c0c2;
+    font-size: 10px;
+}
+
+.module-chart-bar-label strong {
+    color: #f0f1ed;
+    font-size: 11px;
+}
+
+.module-chart-bar-track {
+    position: relative;
+    height: 8px;
+    overflow: visible;
+    border-radius: 10px;
+    background: #292f32;
+}
+
+.module-chart-bar-track > span {
+    display: block;
+    width: var(--bar-width);
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--bar-color), color-mix(in srgb, var(--bar-color), white 20%));
+    box-shadow: 0 0 12px color-mix(in srgb, var(--bar-color), transparent 55%);
+}
+
+.module-chart-reference {
+    position: absolute;
+    top: -3px;
+    left: var(--reference-position);
+    width: 2px;
+    height: 14px;
+    background: #f2c96b;
+}
+
+.module-chart-empty {
+    display: grid;
+    min-height: 130px;
+    place-items: center;
+    margin: 0;
+    padding: 22px;
+    line-height: 1.6;
+    text-align: center;
+}
+
+.module-index {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    min-width: 0;
+    margin: 0 0 16px;
+    padding: 9px 10px;
+    overflow-x: auto;
+    border: 1px solid #2c3235;
+    border-radius: 8px;
+    background: rgba(15, 18, 20, .96);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .2);
+    scrollbar-width: thin;
+    scrollbar-color: #434b4f transparent;
+}
+
+.module-index button {
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 7px 11px;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    background: transparent;
+    color: #b5bdc0;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.module-index-title {
+    flex: 0 0 auto;
+    padding: 0 8px 0 4px;
+    color: #818b90;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+}
+
+.module-index button:hover,
+.module-index button:focus-visible {
+    border-color: #75442f;
+    background: #211b18;
+    color: #fff;
+    outline: none;
+}
+
+.module-index button.active[aria-pressed="true"] {
+    border-color: #d95e2a;
+    background: #d95e2a;
+    color: #fff;
+}
+
+.module-index button:focus-visible {
+    box-shadow: 0 0 0 2px rgba(237, 121, 69, .3);
+}
+
+.module-index + .module-overview {
+    margin-top: 0;
+}
+
+[data-module-panel][hidden] {
+    display: none !important;
+}
+
+.module-index-section {
+    scroll-margin-top: 76px;
+}
+
+.main {
+    scroll-behavior: smooth;
+}
+
+@media (max-width: 620px) {
+    .module-chart-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .module-chart-wide {
+        grid-column: auto;
+    }
+
+    .module-chart-card {
+        min-height: 0;
+        padding: 15px;
+    }
+
+    .module-chart-summary {
+        margin-left: 34px;
+    }
+
+    .module-chart-donut-layout {
+        grid-template-columns: minmax(110px, .85fr) minmax(110px, 1fr);
+        gap: 2px;
+    }
+
+    .module-index {
+        top: 0;
+        margin-right: -3px;
+        margin-left: -3px;
+        border-radius: 6px;
+    }
+
+    .module-index-section {
+        scroll-margin-top: 66px;
+    }
+}
+
 /* Tema final y adaptaciones del sitio público. */
 .landing-site {
     background: #f3f5f6;
@@ -2727,5 +3037,1444 @@ tr.selected td {
 
     .landing-site .client-profile-dropdown {
         top: calc(100% + 7px);
+    }
+}
+
+/* Interfaz de trabajo para los paneles internos. */
+.app-shell:not(.client-chat-shell) > .sidebar {
+    padding: 26px 16px 18px;
+    background: linear-gradient(180deg, #101416 0%, #0b0e10 100%);
+}
+
+.app-shell:not(.client-chat-shell) .brand {
+    padding: 5px 9px 19px;
+    border-bottom: 1px solid #242a2e;
+    color: #f5f5f2;
+    font-size: 13px;
+    letter-spacing: .12em;
+    line-height: 1.55;
+}
+
+.app-shell:not(.client-chat-shell) .nav {
+    gap: 5px;
+}
+
+.app-shell:not(.client-chat-shell) .nav button {
+    min-height: 43px;
+    padding: 11px 13px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    color: #aab1b5;
+    font-size: 12px;
+    font-weight: 700;
+    transition: background .18s ease, border-color .18s ease, color .18s ease;
+}
+
+.app-shell:not(.client-chat-shell) .nav button.active {
+    border-color: rgba(237, 105, 48, .3);
+    background: linear-gradient(100deg, rgba(222, 91, 38, .2), rgba(222, 91, 38, .06));
+    box-shadow: inset 2px 0 #ed6930;
+    color: #fff;
+}
+
+.app-shell:not(.client-chat-shell) .main {
+    min-width: 0;
+    padding: clamp(18px, 3vw, 38px);
+    background:
+        radial-gradient(ellipse at 88% 0%, rgba(192, 77, 33, .065), transparent 33%),
+        #0c0f11;
+}
+
+.app-shell:not(.client-chat-shell) .topbar {
+    min-height: 78px;
+    margin: 0 auto 22px;
+    padding: 15px 19px;
+    border: 1px solid #272d31;
+    border-left: 2px solid #e7652b;
+    border-radius: 8px;
+    background: rgba(19, 23, 25, .94);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .14);
+}
+
+.app-shell:not(.client-chat-shell) .topbar h2 {
+    margin-bottom: 4px;
+    color: #f6f5f2;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -.02em;
+}
+
+.app-shell:not(.client-chat-shell) .topbar .muted {
+    color: #8f999e;
+    font-size: 11px;
+}
+
+.app-shell:not(.client-chat-shell) .topbar > .btn,
+.app-shell:not(.client-chat-shell) .section-panel .btn {
+    border: 1px solid #353c40;
+    border-radius: 6px;
+    background: #1a1f22;
+    color: #e1e4e4;
+    font-size: 11px;
+    transition: border-color .18s ease, background .18s ease, transform .18s ease;
+}
+
+.app-shell:not(.client-chat-shell) .topbar > .btn:hover,
+.app-shell:not(.client-chat-shell) .section-panel .btn:hover {
+    border-color: #8b4b30;
+    background: #24282a;
+    transform: translateY(-1px);
+}
+
+.app-shell:not(.client-chat-shell) .section-panel .btn.primary,
+.app-shell:not(.client-chat-shell) .topbar > .btn.primary {
+    border-color: #db5e2b;
+    background: linear-gradient(135deg, #e96b35, #c84c20);
+    box-shadow: 0 5px 15px rgba(201, 76, 32, .14);
+    color: #fff;
+}
+
+.app-shell:not(.client-chat-shell) #content {
+    width: 100%;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+#content .module-overview,
+#content[data-module="administracion"] .admin-overview {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    min-height: 148px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    padding: 25px 28px;
+    border: 1px solid #2b3033;
+    border-left: 3px solid #e7652b;
+    border-radius: 9px;
+    background:
+        radial-gradient(ellipse at 90% 40%, rgba(227, 96, 45, .12), transparent 32%),
+        linear-gradient(115deg, #191d1f 0%, #121517 70%);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+
+#content .module-overview::after,
+#content[data-module="administracion"] .admin-overview::after {
+    position: absolute;
+    right: -36px;
+    bottom: -86px;
+    width: 210px;
+    height: 150px;
+    border: 1px solid rgba(238, 112, 57, .12);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+}
+
+#content .module-overview > div,
+#content[data-module="administracion"] .admin-overview-copy {
+    position: relative;
+    z-index: 1;
+}
+
+#content .module-kicker,
+#content[data-module="administracion"] .admin-kicker {
+    color: #e98758;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+}
+
+#content .module-overview h3 {
+    margin: 8px 0 0;
+    color: #f4f4f1;
+    font-size: clamp(21px, 2.2vw, 27px);
+    font-weight: 800;
+    letter-spacing: -.04em;
+}
+
+#content .module-overview p {
+    max-width: 620px;
+    margin: 7px 0 0;
+    color: #a1a9ad;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+#content .module-date,
+#content[data-module="administracion"] .admin-overview-date {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex: 0 0 auto;
+    padding: 10px 13px;
+    border: 1px solid #343a3e;
+    border-radius: 6px;
+    background: rgba(13, 16, 18, .72);
+    color: #d5d9d9;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+#content .module-date > span,
+#content[data-module="administracion"] .admin-overview-date > span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #73b788;
+    box-shadow: 0 0 0 4px rgba(115, 183, 136, .1);
+}
+
+#content .module-metrics,
+#content[data-module="administracion"] .admin-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 13px;
+    margin-bottom: 22px;
+}
+
+#content .module-metric,
+#content[data-module="administracion"] .admin-metric {
+    position: relative;
+    display: grid;
+    min-height: 126px;
+    align-content: start;
+    gap: 9px;
+    overflow: hidden;
+    padding: 19px 20px;
+    border: 1px solid #2b3033;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #171b1d, #121517);
+    box-shadow: 0 7px 20px rgba(0, 0, 0, .12);
+    transition: border-color .2s ease, transform .2s ease;
+}
+
+#content .module-metric:hover,
+#content[data-module="administracion"] .admin-metric:hover {
+    transform: translateY(-2px);
+    border-color: #494039;
+}
+
+#content .module-metric::before,
+#content[data-module="administracion"] .admin-metric::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 42px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #e7652b);
+    content: "";
+}
+
+#content .module-metric > span,
+#content[data-module="administracion"] .admin-metric-label {
+    color: #969fa3;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .1em;
+}
+
+#content .module-metric strong,
+#content[data-module="administracion"] .admin-metric strong {
+    color: #f7f6f2;
+    font-size: 31px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -.045em;
+}
+
+#content .module-metric small,
+#content[data-module="administracion"] .admin-metric-note {
+    color: #818b90;
+    font-size: 10px;
+}
+
+#content .section-panel {
+    margin-bottom: 15px;
+    padding: 20px;
+    border: 1px solid #292f32;
+    border-radius: 8px;
+    background: linear-gradient(145deg, rgba(22, 26, 28, .98), rgba(17, 20, 22, .98));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}
+
+#content .module-panel-heading,
+#content[data-module="administracion"] .admin-section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 0 17px;
+}
+
+#content .module-panel-heading h3,
+#content[data-module="administracion"] .admin-section-heading h3,
+#content .section-panel > h3 {
+    margin: 5px 0 0;
+    color: #f1f2ef;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -.025em;
+}
+
+#content .module-panel-note,
+#content[data-module="administracion"] .admin-section-caption {
+    color: #828c90;
+    font-size: 10px;
+    text-align: right;
+}
+
+#content .form-grid {
+    gap: 14px 16px;
+}
+
+#content .form-grid label,
+#content .toolbar label {
+    color: #aeb6b9;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#content .form-grid input,
+#content .form-grid textarea,
+#content .form-grid select,
+#content .toolbar input,
+#content .toolbar textarea,
+#content .toolbar select {
+    min-height: 40px;
+    border-radius: 5px;
+    background: #101416;
+    color: #e9ebea;
+    font-size: 12px;
+}
+
+#content .form-grid textarea {
+    min-height: 92px;
+}
+
+#content .form-grid .btn {
+    align-self: end;
+    min-height: 40px;
+    padding: 10px 16px;
+}
+
+#content .table-wrap {
+    overflow: auto;
+    border: 1px solid #2a3033;
+    border-radius: 6px;
+}
+
+#content table {
+    min-width: 700px;
+    background: transparent;
+}
+
+#content th {
+    padding: 12px 13px;
+    background: #1c2123;
+    color: #b8c0c2;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .075em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+#content td {
+    padding: 12px 13px;
+    color: #d1d6d6;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+#content tr:last-child td {
+    border-bottom: 0;
+}
+
+#content .message {
+    font-size: 11px;
+}
+
+@media (max-width: 920px) {
+    .app-shell:not(.client-chat-shell) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .app-shell:not(.client-chat-shell) > .sidebar {
+        position: relative;
+        top: auto;
+        z-index: 3;
+        gap: 10px;
+        padding: 12px 18px;
+        border-right: 0;
+        border-bottom: 1px solid #272d31;
+    }
+
+    .app-shell:not(.client-chat-shell) .brand {
+        padding: 2px 4px 8px;
+        border-bottom: 0;
+    }
+
+    .app-shell:not(.client-chat-shell) .nav {
+        display: flex;
+        overflow-x: auto;
+        gap: 6px;
+        padding-bottom: 2px;
+    }
+
+    .app-shell:not(.client-chat-shell) .nav button {
+        flex: 0 0 auto;
+        min-height: 37px;
+        padding: 8px 12px;
+        white-space: nowrap;
+    }
+
+    .app-shell:not(.client-chat-shell) > .sidebar > .btn {
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 620px) {
+    .app-shell:not(.client-chat-shell) .main {
+        padding: 15px 12px 28px;
+    }
+
+    .app-shell:not(.client-chat-shell) .topbar {
+        min-height: 68px;
+        padding: 12px;
+    }
+
+    .app-shell:not(.client-chat-shell) .topbar > .btn {
+        min-height: 36px;
+        padding: 8px 10px;
+    }
+
+    #content .module-overview,
+    #content[data-module="administracion"] .admin-overview {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 16px;
+        min-height: 0;
+        padding: 20px;
+    }
+
+    #content .module-metrics,
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: 1fr;
+        gap: 9px;
+        margin-bottom: 15px;
+    }
+
+    #content .module-metric,
+    #content[data-module="administracion"] .admin-metric {
+        min-height: 105px;
+        padding: 15px 17px;
+    }
+
+    #content .section-panel {
+        padding: 15px;
+    }
+
+    #content .module-panel-heading,
+    #content[data-module="administracion"] .admin-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+#content .data-table {
+    min-width: 0;
+}
+
+#content .table-search {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0 0 11px;
+}
+
+#content .table-search-label {
+    display: grid;
+    width: min(100%, 390px);
+    gap: 6px;
+    color: #9fa8ab;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+#content .table-search-label input {
+    min-height: 38px;
+    border-radius: 5px;
+    background: #101416;
+    font-size: 11px;
+}
+
+#content .table-search-count {
+    flex: 0 0 auto;
+    padding-bottom: 10px;
+    color: #838e92;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+#content .table-no-results {
+    margin: 0;
+    padding: 14px;
+    color: #929da1;
+    font-size: 11px;
+}
+
+#content .table-no-results[hidden] {
+    display: none;
+}
+
+#content .table-wrap tbody tr[hidden] {
+    display: none;
+}
+
+@media (max-width: 620px) {
+    #content .table-search {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    #content .table-search-label {
+        width: 100%;
+    }
+
+    #content .table-search-count {
+        padding-bottom: 0;
+    }
+
+    #content .module-panel-note,
+    #content[data-module="administracion"] .admin-section-caption {
+        text-align: left;
+    }
+}
+
+#content[data-module="compras"] {
+    --module-accent: #ed7945;
+    --module-accent-soft: rgba(237, 121, 69, .14);
+    --module-accent-line: rgba(237, 121, 69, .38);
+}
+
+#content[data-module="deposito"] {
+    --module-accent: #65a9e8;
+    --module-accent-soft: rgba(101, 169, 232, .13);
+    --module-accent-line: rgba(101, 169, 232, .34);
+}
+
+#content[data-module="produccion"] {
+    --module-accent: #72bd91;
+    --module-accent-soft: rgba(114, 189, 145, .13);
+    --module-accent-line: rgba(114, 189, 145, .34);
+}
+
+#content[data-module="mantenimiento"] {
+    --module-accent: #b597e5;
+    --module-accent-soft: rgba(181, 151, 229, .13);
+    --module-accent-line: rgba(181, 151, 229, .34);
+}
+
+#content[data-module="calidad"] {
+    --module-accent: #59c4bb;
+    --module-accent-soft: rgba(89, 196, 187, .13);
+    --module-accent-line: rgba(89, 196, 187, .34);
+}
+
+#content[data-module="compras"] .module-index,
+#content[data-module="deposito"] .module-index,
+#content[data-module="produccion"] .module-index,
+#content[data-module="mantenimiento"] .module-index,
+#content[data-module="calidad"] .module-index {
+    top: 9px;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 8px 10px;
+    border-color: rgba(115, 128, 134, .2);
+    border-radius: 10px;
+    background: rgba(17, 21, 23, .94);
+    box-shadow: 0 9px 28px rgba(0, 0, 0, .22), inset 0 1px rgba(255, 255, 255, .025);
+    backdrop-filter: blur(14px);
+}
+
+#content[data-module="compras"] .module-index-title,
+#content[data-module="deposito"] .module-index-title,
+#content[data-module="produccion"] .module-index-title,
+#content[data-module="mantenimiento"] .module-index-title,
+#content[data-module="calidad"] .module-index-title {
+    padding-right: 11px;
+    border-right: 1px solid #343b3f;
+    color: #8d999e;
+}
+
+#content[data-module="compras"] .module-index button,
+#content[data-module="deposito"] .module-index button,
+#content[data-module="produccion"] .module-index button,
+#content[data-module="mantenimiento"] .module-index button,
+#content[data-module="calidad"] .module-index button {
+    min-height: 35px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: #aeb8bc;
+    font-size: 11px;
+    transition: color .18s ease, background .18s ease, border-color .18s ease, transform .18s ease;
+}
+
+#content[data-module="compras"] .module-index button:hover,
+#content[data-module="deposito"] .module-index button:hover,
+#content[data-module="produccion"] .module-index button:hover,
+#content[data-module="mantenimiento"] .module-index button:hover,
+#content[data-module="calidad"] .module-index button:hover {
+    border-color: var(--module-accent-line);
+    background: var(--module-accent-soft);
+    color: #f4f5f3;
+}
+
+#content[data-module="compras"] .module-index button.active[aria-pressed="true"],
+#content[data-module="deposito"] .module-index button.active[aria-pressed="true"],
+#content[data-module="produccion"] .module-index button.active[aria-pressed="true"],
+#content[data-module="mantenimiento"] .module-index button.active[aria-pressed="true"],
+#content[data-module="calidad"] .module-index button.active[aria-pressed="true"] {
+    border-color: var(--module-accent-line);
+    background: var(--module-accent-soft);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+    color: var(--module-accent);
+}
+
+#content[data-module="compras"] .module-overview,
+#content[data-module="deposito"] .module-overview,
+#content[data-module="produccion"] .module-overview,
+#content[data-module="mantenimiento"] .module-overview,
+#content[data-module="calidad"] .module-overview {
+    min-height: 164px;
+    margin-bottom: 18px;
+    padding: clamp(23px, 3vw, 34px);
+    border-color: rgba(128, 141, 147, .18);
+    border-left: 3px solid var(--module-accent);
+    border-radius: 11px;
+    background:
+        radial-gradient(ellipse at 93% 20%, var(--module-accent-soft), transparent 34%),
+        linear-gradient(120deg, #1a2023 0%, #111618 72%);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .23), inset 0 1px rgba(255, 255, 255, .035);
+}
+
+#content[data-module="compras"] .module-overview::after,
+#content[data-module="deposito"] .module-overview::after,
+#content[data-module="produccion"] .module-overview::after,
+#content[data-module="mantenimiento"] .module-overview::after,
+#content[data-module="calidad"] .module-overview::after {
+    right: -24px;
+    bottom: -109px;
+    width: 260px;
+    height: 200px;
+    border-color: var(--module-accent-line);
+    box-shadow: 0 0 0 22px rgba(255, 255, 255, .012), 0 0 0 48px rgba(255, 255, 255, .009);
+}
+
+#content[data-module="compras"] .module-kicker,
+#content[data-module="deposito"] .module-kicker,
+#content[data-module="produccion"] .module-kicker,
+#content[data-module="mantenimiento"] .module-kicker,
+#content[data-module="calidad"] .module-kicker {
+    color: var(--module-accent);
+}
+
+#content[data-module="compras"] .module-overview h3,
+#content[data-module="deposito"] .module-overview h3,
+#content[data-module="produccion"] .module-overview h3,
+#content[data-module="mantenimiento"] .module-overview h3,
+#content[data-module="calidad"] .module-overview h3 {
+    font-size: clamp(24px, 2.7vw, 32px);
+    letter-spacing: -.05em;
+}
+
+#content[data-module="compras"] .module-metrics,
+#content[data-module="deposito"] .module-metrics,
+#content[data-module="produccion"] .module-metrics,
+#content[data-module="mantenimiento"] .module-metrics,
+#content[data-module="calidad"] .module-metrics {
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+#content[data-module="compras"] .module-metric,
+#content[data-module="deposito"] .module-metric,
+#content[data-module="produccion"] .module-metric,
+#content[data-module="mantenimiento"] .module-metric,
+#content[data-module="calidad"] .module-metric {
+    min-height: 137px;
+    gap: 11px;
+    padding: 20px 21px;
+    border-color: rgba(128, 141, 147, .18);
+    border-radius: 9px;
+    background:
+        radial-gradient(ellipse at 100% 0%, var(--module-accent-soft), transparent 54%),
+        linear-gradient(145deg, #191e20, #121618 75%);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .16), inset 0 1px rgba(255, 255, 255, .025);
+}
+
+#content[data-module="compras"] .module-metric::before,
+#content[data-module="deposito"] .module-metric::before,
+#content[data-module="produccion"] .module-metric::before,
+#content[data-module="mantenimiento"] .module-metric::before,
+#content[data-module="calidad"] .module-metric::before {
+    width: 55px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--module-accent), transparent);
+}
+
+#content[data-module="compras"] .module-metric:hover,
+#content[data-module="deposito"] .module-metric:hover,
+#content[data-module="produccion"] .module-metric:hover,
+#content[data-module="mantenimiento"] .module-metric:hover,
+#content[data-module="calidad"] .module-metric:hover {
+    border-color: var(--module-accent-line);
+    box-shadow: 0 13px 30px rgba(0, 0, 0, .22), 0 0 20px var(--module-accent-soft);
+}
+
+#content[data-module="compras"] .module-metric strong,
+#content[data-module="deposito"] .module-metric strong,
+#content[data-module="produccion"] .module-metric strong,
+#content[data-module="mantenimiento"] .module-metric strong,
+#content[data-module="calidad"] .module-metric strong {
+    font-size: clamp(33px, 3vw, 39px);
+}
+
+#content[data-module="compras"] .section-panel,
+#content[data-module="deposito"] .section-panel,
+#content[data-module="produccion"] .section-panel,
+#content[data-module="mantenimiento"] .section-panel,
+#content[data-module="calidad"] .section-panel {
+    position: relative;
+    margin-bottom: 17px;
+    padding: clamp(19px, 2.1vw, 25px);
+    border-color: rgba(128, 141, 147, .17);
+    border-radius: 10px;
+    background:
+        linear-gradient(145deg, rgba(25, 30, 32, .98), rgba(16, 20, 22, .99));
+    box-shadow: 0 11px 30px rgba(0, 0, 0, .17), inset 0 1px rgba(255, 255, 255, .025);
+}
+
+#content[data-module="compras"] .section-panel:hover,
+#content[data-module="deposito"] .section-panel:hover,
+#content[data-module="produccion"] .section-panel:hover,
+#content[data-module="mantenimiento"] .section-panel:hover,
+#content[data-module="calidad"] .section-panel:hover {
+    border-color: rgba(128, 141, 147, .27);
+}
+
+#content[data-module="compras"] .module-panel-heading,
+#content[data-module="deposito"] .module-panel-heading,
+#content[data-module="produccion"] .module-panel-heading,
+#content[data-module="mantenimiento"] .module-panel-heading,
+#content[data-module="calidad"] .module-panel-heading {
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 13px;
+    border-bottom: 1px solid rgba(128, 141, 147, .14);
+}
+
+#content[data-module="compras"] .module-panel-heading h3,
+#content[data-module="deposito"] .module-panel-heading h3,
+#content[data-module="produccion"] .module-panel-heading h3,
+#content[data-module="mantenimiento"] .module-panel-heading h3,
+#content[data-module="calidad"] .module-panel-heading h3 {
+    margin-top: 6px;
+    font-size: 17px;
+    letter-spacing: -.03em;
+}
+
+#content[data-module="compras"] .module-panel-note,
+#content[data-module="deposito"] .module-panel-note,
+#content[data-module="produccion"] .module-panel-note,
+#content[data-module="mantenimiento"] .module-panel-note,
+#content[data-module="calidad"] .module-panel-note {
+    max-width: 45%;
+    line-height: 1.6;
+}
+
+#content[data-module="compras"] .form-grid,
+#content[data-module="deposito"] .form-grid,
+#content[data-module="produccion"] .form-grid,
+#content[data-module="mantenimiento"] .form-grid,
+#content[data-module="calidad"] .form-grid {
+    gap: 16px;
+}
+
+#content[data-module="compras"] .form-grid label,
+#content[data-module="deposito"] .form-grid label,
+#content[data-module="produccion"] .form-grid label,
+#content[data-module="mantenimiento"] .form-grid label,
+#content[data-module="calidad"] .form-grid label {
+    gap: 8px;
+    color: #b2bbbe;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#content[data-module="compras"] .form-grid input,
+#content[data-module="compras"] .form-grid textarea,
+#content[data-module="compras"] .form-grid select,
+#content[data-module="deposito"] .form-grid input,
+#content[data-module="deposito"] .form-grid textarea,
+#content[data-module="deposito"] .form-grid select,
+#content[data-module="produccion"] .form-grid input,
+#content[data-module="produccion"] .form-grid textarea,
+#content[data-module="produccion"] .form-grid select,
+#content[data-module="mantenimiento"] .form-grid input,
+#content[data-module="mantenimiento"] .form-grid textarea,
+#content[data-module="mantenimiento"] .form-grid select,
+#content[data-module="calidad"] .form-grid input,
+#content[data-module="calidad"] .form-grid textarea,
+#content[data-module="calidad"] .form-grid select {
+    min-height: 43px;
+    padding: 11px 13px;
+    border-color: #343d41;
+    border-radius: 6px;
+    background: #101517;
+    color: #ecf0ef;
+    font-size: 12px;
+    transition: border-color .18s ease, box-shadow .18s ease, background .18s ease;
+}
+
+#content[data-module="compras"] .form-grid textarea,
+#content[data-module="deposito"] .form-grid textarea,
+#content[data-module="produccion"] .form-grid textarea,
+#content[data-module="mantenimiento"] .form-grid textarea,
+#content[data-module="calidad"] .form-grid textarea {
+    min-height: 104px;
+}
+
+#content[data-module="compras"] .form-grid input:focus,
+#content[data-module="compras"] .form-grid textarea:focus,
+#content[data-module="compras"] .form-grid select:focus,
+#content[data-module="deposito"] .form-grid input:focus,
+#content[data-module="deposito"] .form-grid textarea:focus,
+#content[data-module="deposito"] .form-grid select:focus,
+#content[data-module="produccion"] .form-grid input:focus,
+#content[data-module="produccion"] .form-grid textarea:focus,
+#content[data-module="produccion"] .form-grid select:focus,
+#content[data-module="mantenimiento"] .form-grid input:focus,
+#content[data-module="mantenimiento"] .form-grid textarea:focus,
+#content[data-module="mantenimiento"] .form-grid select:focus,
+#content[data-module="calidad"] .form-grid input:focus,
+#content[data-module="calidad"] .form-grid textarea:focus,
+#content[data-module="calidad"] .form-grid select:focus {
+    border-color: var(--module-accent-line);
+    background: #13191b;
+    box-shadow: 0 0 0 3px var(--module-accent-soft);
+    outline: none;
+}
+
+#content[data-module="compras"] .section-panel .btn.primary,
+#content[data-module="deposito"] .section-panel .btn.primary,
+#content[data-module="produccion"] .section-panel .btn.primary,
+#content[data-module="mantenimiento"] .section-panel .btn.primary,
+#content[data-module="calidad"] .section-panel .btn.primary {
+    min-height: 43px;
+    padding: 11px 17px;
+    border: 1px solid var(--module-accent-line);
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--module-accent), color-mix(in srgb, var(--module-accent), #101517 36%));
+    box-shadow: 0 7px 17px var(--module-accent-soft);
+    color: #0d1213;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+#content[data-module="compras"] .section-panel .btn.primary:hover,
+#content[data-module="deposito"] .section-panel .btn.primary:hover,
+#content[data-module="produccion"] .section-panel .btn.primary:hover,
+#content[data-module="mantenimiento"] .section-panel .btn.primary:hover,
+#content[data-module="calidad"] .section-panel .btn.primary:hover {
+    filter: brightness(1.1);
+}
+
+#content[data-module="compras"] .table-search,
+#content[data-module="deposito"] .table-search,
+#content[data-module="produccion"] .table-search,
+#content[data-module="mantenimiento"] .table-search,
+#content[data-module="calidad"] .table-search {
+    margin-bottom: 14px;
+}
+
+#content[data-module="compras"] .table-search-label,
+#content[data-module="deposito"] .table-search-label,
+#content[data-module="produccion"] .table-search-label,
+#content[data-module="mantenimiento"] .table-search-label,
+#content[data-module="calidad"] .table-search-label {
+    color: #aab4b8;
+    font-size: 10px;
+    letter-spacing: .015em;
+}
+
+#content[data-module="compras"] .table-search-label input,
+#content[data-module="deposito"] .table-search-label input,
+#content[data-module="produccion"] .table-search-label input,
+#content[data-module="mantenimiento"] .table-search-label input,
+#content[data-module="calidad"] .table-search-label input {
+    min-height: 42px;
+    padding: 11px 13px;
+    border-color: #343d41;
+    border-radius: 6px;
+    background: #101517;
+}
+
+#content[data-module="compras"] .table-search-label input:focus,
+#content[data-module="deposito"] .table-search-label input:focus,
+#content[data-module="produccion"] .table-search-label input:focus,
+#content[data-module="mantenimiento"] .table-search-label input:focus,
+#content[data-module="calidad"] .table-search-label input:focus {
+    border-color: var(--module-accent-line);
+    box-shadow: 0 0 0 3px var(--module-accent-soft);
+    outline: none;
+}
+
+#content[data-module="compras"] .table-wrap,
+#content[data-module="deposito"] .table-wrap,
+#content[data-module="produccion"] .table-wrap,
+#content[data-module="mantenimiento"] .table-wrap,
+#content[data-module="calidad"] .table-wrap {
+    overflow: auto;
+    border: 1px solid rgba(128, 141, 147, .16);
+    border-radius: 7px;
+    background: rgba(10, 13, 14, .35);
+}
+
+#content[data-module="compras"] .table-wrap th,
+#content[data-module="deposito"] .table-wrap th,
+#content[data-module="produccion"] .table-wrap th,
+#content[data-module="mantenimiento"] .table-wrap th,
+#content[data-module="calidad"] .table-wrap th {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(128, 141, 147, .2);
+    background: #171d1f;
+    color: #aab4b8;
+    font-size: 9px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+}
+
+#content[data-module="compras"] .table-wrap td,
+#content[data-module="deposito"] .table-wrap td,
+#content[data-module="produccion"] .table-wrap td,
+#content[data-module="mantenimiento"] .table-wrap td,
+#content[data-module="calidad"] .table-wrap td {
+    padding: 12px 14px;
+    border-bottom-color: rgba(128, 141, 147, .1);
+    color: #d1d7d8;
+    font-size: 11px;
+    line-height: 1.55;
+}
+
+#content[data-module="compras"] .table-wrap tbody tr:nth-child(even),
+#content[data-module="deposito"] .table-wrap tbody tr:nth-child(even),
+#content[data-module="produccion"] .table-wrap tbody tr:nth-child(even),
+#content[data-module="mantenimiento"] .table-wrap tbody tr:nth-child(even),
+#content[data-module="calidad"] .table-wrap tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, .018);
+}
+
+#content[data-module="compras"] .table-wrap tbody tr:hover td,
+#content[data-module="deposito"] .table-wrap tbody tr:hover td,
+#content[data-module="produccion"] .table-wrap tbody tr:hover td,
+#content[data-module="mantenimiento"] .table-wrap tbody tr:hover td,
+#content[data-module="calidad"] .table-wrap tbody tr:hover td {
+    background: var(--module-accent-soft);
+}
+
+#content[data-module="compras"] .module-index-section:not([hidden]),
+#content[data-module="deposito"] .module-index-section:not([hidden]),
+#content[data-module="produccion"] .module-index-section:not([hidden]),
+#content[data-module="mantenimiento"] .module-index-section:not([hidden]),
+#content[data-module="calidad"] .module-index-section:not([hidden]) {
+    animation: module-panel-enter .24s ease-out both;
+}
+
+@keyframes module-panel-enter {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 620px) {
+    #content[data-module="compras"] .module-overview,
+    #content[data-module="deposito"] .module-overview,
+    #content[data-module="produccion"] .module-overview,
+    #content[data-module="mantenimiento"] .module-overview,
+    #content[data-module="calidad"] .module-overview {
+        min-height: 0;
+        padding: 21px 18px;
+    }
+
+    #content[data-module="compras"] .module-index,
+    #content[data-module="deposito"] .module-index,
+    #content[data-module="produccion"] .module-index,
+    #content[data-module="mantenimiento"] .module-index,
+    #content[data-module="calidad"] .module-index {
+        margin-right: 0;
+        margin-left: 0;
+    }
+
+    #content[data-module="compras"] .module-metric,
+    #content[data-module="deposito"] .module-metric,
+    #content[data-module="produccion"] .module-metric,
+    #content[data-module="mantenimiento"] .module-metric,
+    #content[data-module="calidad"] .module-metric {
+        min-height: 112px;
+    }
+
+    #content[data-module="compras"] .module-panel-heading,
+    #content[data-module="deposito"] .module-panel-heading,
+    #content[data-module="produccion"] .module-panel-heading,
+    #content[data-module="mantenimiento"] .module-panel-heading,
+    #content[data-module="calidad"] .module-panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #content[data-module="compras"] .module-panel-note,
+    #content[data-module="deposito"] .module-panel-note,
+    #content[data-module="produccion"] .module-panel-note,
+    #content[data-module="mantenimiento"] .module-panel-note,
+    #content[data-module="calidad"] .module-panel-note {
+        max-width: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #content[data-module="compras"] .module-index-section:not([hidden]),
+    #content[data-module="deposito"] .module-index-section:not([hidden]),
+    #content[data-module="produccion"] .module-index-section:not([hidden]),
+    #content[data-module="mantenimiento"] .module-index-section:not([hidden]),
+    #content[data-module="calidad"] .module-index-section:not([hidden]) {
+        animation: none;
+    }
+}
+
+/* Personaliza el resumen de cada sector y conserva el espacio útil en pantallas chicas. */
+#content .employee-greeting {
+    display: block;
+    margin-bottom: 8px;
+    color: #d8ddde;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .employee-greeting {
+    color: #e8eeee;
+    font-size: 13px;
+}
+
+#content[data-module="administracion"] .employee-greeting {
+    margin-bottom: 7px;
+}
+
+@media (max-width: 620px) {
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metrics,
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 9px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric,
+    #content[data-module="administracion"] .admin-metric {
+        min-height: 104px;
+        padding: 14px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric:last-child,
+    #content[data-module="administracion"] .admin-metric:last-child {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 380px) {
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metrics,
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric:last-child,
+    #content[data-module="administracion"] .admin-metric:last-child {
+        grid-column: auto;
+    }
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-overview {
+    min-height: 184px;
+    margin: 0 0 16px;
+    padding: clamp(25px, 3.1vw, 38px);
+    border: 1px solid rgba(169, 184, 189, .14);
+    border-left: 3px solid var(--module-accent);
+    border-radius: 12px;
+    background:
+        linear-gradient(105deg, rgba(12, 15, 17, .1) 0%, rgba(12, 15, 17, .82) 58%, rgba(12, 15, 17, .32) 100%),
+        radial-gradient(ellipse at 88% 8%, var(--module-accent-soft), transparent 39%),
+        linear-gradient(130deg, #20282b, #121719 72%);
+    box-shadow: 0 18px 42px rgba(0, 0, 0, .24), inset 0 1px rgba(255, 255, 255, .05);
+}
+
+#content[data-module="compras"] .module-overview::before,
+#content[data-module="deposito"] .module-overview::before,
+#content[data-module="produccion"] .module-overview::before,
+#content[data-module="mantenimiento"] .module-overview::before,
+#content[data-module="calidad"] .module-overview::before {
+    position: absolute;
+    right: 25px;
+    bottom: -17px;
+    color: rgba(240, 245, 244, .035);
+    font-size: clamp(44px, 7vw, 92px);
+    font-weight: 800;
+    letter-spacing: -.08em;
+    line-height: 1;
+    pointer-events: none;
+}
+
+#content[data-module="compras"] .module-overview::before { content: "SUPPLY"; }
+#content[data-module="deposito"] .module-overview::before { content: "STOCK"; }
+#content[data-module="produccion"] .module-overview::before { content: "PLANTA"; }
+#content[data-module="mantenimiento"] .module-overview::before { content: "EQUIPOS"; }
+#content[data-module="calidad"] .module-overview::before { content: "CONTROL"; }
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-overview h3 {
+    font-size: clamp(28px, 3.2vw, 38px);
+    line-height: 1.1;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-overview p {
+    max-width: 520px;
+    margin-top: 10px;
+    font-size: 12px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-date {
+    align-self: flex-start;
+    border-color: rgba(180, 193, 197, .16);
+    border-radius: 20px;
+    background: rgba(8, 11, 12, .45);
+    color: #ccd3d4;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metrics {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin: 0 0 17px;
+    counter-reset: operational-metric;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric {
+    min-height: 120px;
+    gap: 8px;
+    padding: 17px 19px;
+    border: 1px solid rgba(169, 184, 189, .13);
+    border-radius: 9px;
+    background:
+        radial-gradient(circle at 100% 0%, var(--module-accent-soft), transparent 50%),
+        linear-gradient(150deg, #1b2225, #121719 75%);
+    box-shadow: 0 9px 24px rgba(0, 0, 0, .16), inset 0 1px rgba(255, 255, 255, .035);
+    counter-increment: operational-metric;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric::before {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, var(--module-accent), transparent 72%);
+    opacity: .8;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric::after {
+    position: absolute;
+    top: 13px;
+    right: 15px;
+    color: rgba(231, 239, 239, .2);
+    content: "0" counter(operational-metric);
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .13em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric > span {
+    padding-right: 28px;
+    color: #a8b2b5;
+    font-size: 9px;
+    letter-spacing: .12em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric strong {
+    font-size: clamp(30px, 3vw, 36px);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-metric small {
+    font-size: 10px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index {
+    position: relative;
+    top: auto;
+    display: flex;
+    gap: 5px;
+    min-height: 55px;
+    margin: 0 0 17px;
+    padding: 7px;
+    overflow-x: auto;
+    border: 1px solid rgba(169, 184, 189, .13);
+    border-radius: 9px;
+    background: linear-gradient(110deg, #161c1e, #111618);
+    box-shadow: inset 0 1px rgba(255, 255, 255, .03);
+    counter-reset: operational-section;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-title {
+    align-self: center;
+    padding: 0 14px 0 8px;
+    border-right: 1px solid rgba(169, 184, 189, .15);
+    color: #788589;
+    font-size: 8px;
+    letter-spacing: .16em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button {
+    min-height: 38px;
+    gap: 9px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: #9ba7ab;
+    font-size: 10px;
+    font-weight: 700;
+    counter-increment: operational-section;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button::before {
+    color: #667277;
+    content: "0" counter(operational-section);
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button:hover {
+    border-color: rgba(169, 184, 189, .15);
+    background: rgba(255, 255, 255, .035);
+    color: #edf1ef;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button.active[aria-pressed="true"] {
+    border-color: var(--module-accent-line);
+    background: var(--module-accent-soft);
+    color: var(--module-accent);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button.active[aria-pressed="true"]::before {
+    color: var(--module-accent);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-section:not([hidden]) > .section-panel,
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) > [data-module-panel].section-panel:not([hidden]) {
+    min-height: 220px;
+    margin: 0;
+    padding: clamp(23px, 3vw, 34px);
+    border: 1px solid rgba(169, 184, 189, .14);
+    border-top: 2px solid var(--module-accent-line);
+    border-radius: 10px;
+    background:
+        radial-gradient(ellipse at 100% 0%, var(--module-accent-soft), transparent 38%),
+        linear-gradient(145deg, #1a2022, #111617 72%);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, .2), inset 0 1px rgba(255, 255, 255, .035);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-heading {
+    align-items: center;
+    gap: 18px;
+    margin: 0 0 24px;
+    padding: 0 0 17px;
+    border-bottom: 1px solid rgba(169, 184, 189, .13);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-heading .module-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--module-accent);
+    font-size: 8px;
+    letter-spacing: .16em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-heading .module-kicker::before {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--module-accent);
+    box-shadow: 0 0 10px var(--module-accent-soft);
+    content: "";
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-heading h3 {
+    margin-top: 7px;
+    font-size: clamp(19px, 2vw, 23px);
+    letter-spacing: -.04em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-note {
+    max-width: 40%;
+    padding: 8px 11px;
+    border: 1px solid rgba(169, 184, 189, .1);
+    border-radius: 5px;
+    background: rgba(7, 10, 11, .25);
+    color: #879397;
+    font-size: 9px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-chart-card {
+    min-height: 250px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-chart-wide {
+    min-height: 315px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .form-grid {
+    gap: 19px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .form-grid label {
+    position: relative;
+    gap: 8px;
+    color: #b5bfc1;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .02em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .form-grid input,
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .form-grid select,
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .form-grid textarea {
+    min-height: 45px;
+    padding: 12px 14px;
+    border: 1px solid #343e42;
+    border-radius: 6px;
+    background: linear-gradient(180deg, #141a1c, #101517);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, .18);
+    color: #eef1ef;
+    font-size: 12px;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .section-panel .btn.primary {
+    min-height: 44px;
+    padding: 11px 18px;
+    border: 1px solid var(--module-accent-line);
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--module-accent), color-mix(in srgb, var(--module-accent), #121719 35%));
+    box-shadow: 0 8px 19px var(--module-accent-soft);
+    color: #0c1112;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .025em;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .data-table {
+    overflow: hidden;
+    border: 1px solid rgba(169, 184, 189, .13);
+    border-radius: 7px;
+    background: rgba(8, 12, 13, .3);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .table-search {
+    align-items: center;
+    padding: 14px 14px 12px;
+    border-bottom: 1px solid rgba(169, 184, 189, .11);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .table-search-count {
+    padding: 8px 10px;
+    border: 1px solid rgba(169, 184, 189, .12);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, .025);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .table-wrap {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .table-wrap th {
+    background: #171e20;
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .table-wrap tbody tr:nth-child(even) {
+    background: rgba(255, 255, 255, .022);
+}
+
+#content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-section:not([hidden]) {
+    animation: module-panel-enter .28s cubic-bezier(.2, .7, .2, 1) both;
+}
+
+@media (max-width: 720px) {
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-overview {
+        min-height: 0;
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 17px;
+        padding: 23px 20px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-overview::before {
+        right: 8px;
+        bottom: -7px;
+        font-size: 42px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-date {
+        align-self: flex-start;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index {
+        gap: 3px;
+        min-height: 50px;
+        padding: 5px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-title {
+        display: none;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index button {
+        min-height: 36px;
+        gap: 7px;
+        padding: 7px 10px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-section:not([hidden]) > .section-panel,
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) > [data-module-panel].section-panel:not([hidden]) {
+        min-height: 0;
+        padding: 21px 17px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-panel-note {
+        max-width: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    #content:is([data-module="compras"], [data-module="deposito"], [data-module="produccion"], [data-module="mantenimiento"], [data-module="calidad"]) .module-index-section:not([hidden]) {
+        animation: none;
     }
 }

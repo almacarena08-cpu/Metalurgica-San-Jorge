@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 07-10-2026 a las 02:34:22
+-- Tiempo de generación: 15-10-2026 a las 01:27:36
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,6 +20,32 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `metalurgica_san_jorge`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `chat_adjunto`
+--
+
+CREATE TABLE `chat_adjunto` (
+  `id_adjunto` int(11) NOT NULL,
+  `id_mensaje` int(11) NOT NULL,
+  `nombre_original` varchar(255) NOT NULL,
+  `clave_archivo` varchar(60) NOT NULL,
+  `tipo_mime` varchar(100) NOT NULL,
+  `tamano` int(10) UNSIGNED NOT NULL,
+  `fecha_creacion` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `chat_adjunto`
+--
+
+INSERT INTO `chat_adjunto` (`id_adjunto`, `id_mensaje`, `nombre_original`, `clave_archivo`, `tipo_mime`, `tamano`, `fecha_creacion`) VALUES
+(7, 15, 'ACTIVIDAD 2.pdf', 'a5d32a63e226679d485b32095b7ffba774f21277a097d7e4.pdf', 'application/pdf', 868014, '2026-10-14 19:30:40'),
+(8, 16, 'TP_ La ética de Aristóteles.pdf', 'e5b882fbe0367f4e3871ab76d2ee4cf42dc4b649ffab725c.pdf', 'application/pdf', 1033215, '2026-10-14 19:34:51'),
+(9, 17, 'EXTINCIÓN DEL CONTRATO DE TRABAJO_Actividad N°1.pdf', '107d4f17e3395480e117de12bcf43747fe971c9c12cbf282.pdf', 'application/pdf', 59426, '2026-10-14 20:22:05'),
+(10, 19, 'MetalGest-browser-attachment-test.pdf', 'ebe69378ba649b3b827247ee10b959362d6b7f457eaedc80.pdf', 'application/pdf', 46, '2026-10-14 20:25:49');
 
 -- --------------------------------------------------------
 
@@ -41,7 +67,12 @@ CREATE TABLE `chat_conversacion` (
 --
 
 INSERT INTO `chat_conversacion` (`id_chat`, `id_cliente`, `asunto`, `estado`, `fecha_creacion`, `fecha_actualizacion`) VALUES
-(1, 4, 'rulemanes para tirolesas', 'Abierto', '2026-10-06 21:30:30', '2026-10-06 21:30:52');
+(1, 4, 'rulemanes para tirolesas', 'Abierto', '2026-10-06 21:30:30', '2026-10-06 21:30:52'),
+(2, 12, 'hplaa', 'Respondido', '2026-10-14 00:24:59', '2026-10-14 16:06:00'),
+(3, 31, 'Consulta a administracion', 'Abierto', '2026-10-14 18:37:05', '2026-10-14 18:37:18'),
+(4, 31, 'Consulta de presupuesto', 'Abierto', '2026-10-14 18:37:12', '2026-10-14 18:37:12'),
+(7, 39, 'Consulta a administracion', 'Abierto', '2026-10-14 19:30:40', '2026-10-14 20:22:05'),
+(8, 45, 'Consulta a administracion', 'Abierto', '2026-10-14 20:25:03', '2026-10-14 20:25:49');
 
 -- --------------------------------------------------------
 
@@ -87,27 +118,26 @@ CREATE TABLE `chat_mensaje_web` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Estructura de tabla para la tabla `chat_adjunto`
---
-
-CREATE TABLE `chat_adjunto` (
-  `id_adjunto` int(11) NOT NULL,
-  `id_mensaje` int(11) NOT NULL,
-  `nombre_original` varchar(255) NOT NULL,
-  `clave_archivo` varchar(60) NOT NULL,
-  `tipo_mime` varchar(100) NOT NULL,
-  `tamano` int(10) UNSIGNED NOT NULL,
-  `fecha_creacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
 -- Volcado de datos para la tabla `chat_mensaje_web`
 --
 
 INSERT INTO `chat_mensaje_web` (`id_mensaje`, `id_chat`, `id_usuario`, `autor_tipo`, `mensaje`, `fecha`) VALUES
 (1, 1, 295, 'Cliente', 'hola!, queria consultar el precio de 500 rulemanes', '2026-10-06 21:30:30'),
 (2, 1, 295, 'Cliente', 'cuanto saldria', '2026-10-06 21:30:46'),
-(3, 1, 295, 'Cliente', '??', '2026-10-06 21:30:52');
+(3, 1, 295, 'Cliente', '??', '2026-10-06 21:30:52'),
+(5, 2, NULL, 'Cliente', 'caca', '2026-10-14 00:24:59'),
+(6, 2, 1, 'Administracion', 'Hola perdon por no responder', '2026-10-14 01:57:02'),
+(7, 2, 1, 'Administracion', 'Estaba haciendo popo', '2026-10-14 01:57:08'),
+(8, 2, 1, 'Administracion', 'Que necesitas cuñado?', '2026-10-14 01:57:17'),
+(9, 2, 1, 'Administracion', 'hola caca', '2026-10-14 16:06:00'),
+(10, 3, NULL, 'Cliente', 'hola', '2026-10-14 18:37:05'),
+(11, 4, NULL, 'Cliente', 'caca', '2026-10-14 18:37:12'),
+(12, 3, NULL, 'Cliente', 'gogog', '2026-10-14 18:37:18'),
+(15, 7, NULL, 'Cliente', 'mira', '2026-10-14 19:30:40'),
+(16, 7, NULL, 'Cliente', 'hola', '2026-10-14 19:34:51'),
+(17, 7, NULL, 'Cliente', 'Holaaa, quiero saber cuanto sale el diamamte', '2026-10-14 20:22:05'),
+(18, 8, NULL, 'Cliente', 'Prueba de chat desde navegador', '2026-10-14 20:25:03'),
+(19, 8, NULL, 'Cliente', 'Envio de prueba con archivo', '2026-10-14 20:25:49');
 
 -- --------------------------------------------------------
 
@@ -125,22 +155,34 @@ CREATE TABLE `cliente` (
   `email_verificado` tinyint(1) NOT NULL DEFAULT 0,
   `token_verificacion` char(64) DEFAULT NULL,
   `token_verificacion_vence` datetime DEFAULT NULL,
+  `activo` tinyint(1) NOT NULL DEFAULT 1,
+  `eliminado` tinyint(1) NOT NULL DEFAULT 0,
   `token_proposito` varchar(20) DEFAULT NULL,
   `token_cambio_contrasena` char(64) DEFAULT NULL,
-  `token_cambio_contrasena_vence` datetime DEFAULT NULL,
-  `activo` tinyint(1) NOT NULL DEFAULT 1,
-  `eliminado` tinyint(1) NOT NULL DEFAULT 0
+  `token_cambio_contrasena_vence` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `cliente`
 --
 
-INSERT INTO `cliente` (`id_cliente`, `razon_social`, `cuit`, `email`, `direccion`) VALUES
-(1, 'Constructora Norte SRL', '30-71234567-8', 'compras@constructoranorte.com', 'Av. Industrial 1200'),
-(2, 'AgroPartes del Sur SA', '30-70987654-3', 'produccion@agropartes.com', 'Ruta 9 Km 315'),
-(3, 'pedrito', '', 'pedrito@gmail.com', ''),
-(4, 'Molino eventos', '123123422', 'molinoeventos@gmail.com', 'Ramallo 456');
+INSERT INTO `cliente` (`id_cliente`, `razon_social`, `cuit`, `email`, `direccion`, `contrasena`, `email_verificado`, `token_verificacion`, `token_verificacion_vence`, `activo`, `eliminado`, `token_proposito`, `token_cambio_contrasena`, `token_cambio_contrasena_vence`) VALUES
+(1, 'Constructora Norte SRL', '30-71234567-8', 'compras@constructoranorte.com', 'Av. Industrial 1200', NULL, 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(2, 'AgroPartes del Sur SA', '30-70987654-3', 'produccion@agropartes.com', 'Ruta 9 Km 315', NULL, 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(3, 'pedrito', '', 'pedrito@gmail.com', '', NULL, 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(4, 'Molino eventos', '123123422', 'molinoeventos@gmail.com', 'Ramallo 456', NULL, 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(7, 'QA navegador 1791935614925', '', 'qa1791935614925@gmail.com', '', '$2y$10$6U/I2f0GsKtzAYkS1tRsFuHMLn0kXqaLnpQ30M.BJmRMqhSpHc1ly', 0, '2ece0fc9956d301dcd4a940b24212eaa8d0f4184c70a2237fc2d0f7df01e263e', '2026-10-13 21:24:01', 1, 0, NULL, NULL, NULL),
+(11, 'asdfgh', '23456', 'g@gmail.com', 'jaja890', '$2y$10$zqVG4AOfV4BoCp1CuoL4f.lmZak/EGProj.UVqIPRZOXTjTx0JQzq', 0, 'd597c8f79c5fbb35c4d54dcabb8234fee0534c09ac62847c7da2951ad88bf7bf', '2026-10-13 22:04:22', 1, 0, NULL, NULL, NULL),
+(12, 'asdfgh', '23456', 'almacarena08@gmail.com', 'jaja890', '$2y$10$n5UgnnZc6THQueer5FKo4.OC.SN45DxMqlasge5dGMpCyRHX.JHha', 1, NULL, NULL, 0, 0, NULL, NULL, NULL),
+(14, 'alma', '4567', 'almacaarena08@gmail.com', 'caca788', '$2y$10$dPffLlUHMCswiQuFCKTbI.9DhOfm4kxuBWdTIf4Fq6u5GFtRk0weu', 0, '71020dfd664c995c03ec183c53623466aa643ab0fb3758f5815655f77519cce6', '2026-10-13 22:57:22', 1, 0, NULL, NULL, NULL),
+(17, 'Alma', '34567', '0@gmail.com', 'jj', '$2y$10$rDrMo4ZR9a29weMirQ/ON.cz9QJ3Etp/SyYUBLXXSscczD0rdumCe', 0, '1b9735a2286c28c7fc2820cd88ffcdece1ebf88e771416d719e8879a0e6cda88', '2026-10-13 23:20:48', 1, 0, NULL, NULL, NULL),
+(26, 'lll', '345678', 'almachat3@gmail.com', 'hhh1', '$2y$10$839p3c6aJtdeUkA.5.SuA.FN3bnE0tgQ5wqQ5wCtyPPg5tPHwIVe.', 1, 'c68a217aa37455f266cdb4fec2f47db62a09e97480303eb13e1625d8d4708f9d', '2026-10-14 16:17:53', 1, 0, 'recuperar', '61b77379abe7f805cc3a8075f79bc5ad000d72a3ee25bf4957d6ab2e73885b6c', '2026-10-14 16:17:53'),
+(27, 'Empresa de prueba', '', 'persona@outlook.com', '', '$2y$10$iibrL40.byPj8z5E/2FhouUojBs1qKDyIY31VBxfNHNyp49TgCleG', 0, '14fa4ee2016cc64c97800e9c9335e182295f322e64b972170fd62364d84059ca', '2026-10-14 11:45:25', 1, 0, 'registro', NULL, NULL),
+(29, 'sdfghj', '12345678', '90@gmail.com', 'hola789', '$2y$10$jLrUGmzcHPFtsCUzfOhrgOHniAToduRwwx24PRTUDqUYKJHH2Ws4K', 0, 'fd25b715e31cc6dfc5bcfb95544f355ef3987d57dc97fbf1df39a46ac7ffc4b8', '2026-10-14 18:26:56', 1, 0, 'registro', NULL, NULL),
+(30, 'opoo', '6899', '900@gmail.com', '800platanos', '$2y$10$hUH.Zeiy7ElnBivi10fTn.oGjmaF9GtTsT4IJY/ApgVIwJpWisIhC', 0, '3c8d6c1e27e8735258b440cf75429acbe965bb1990fdd8001b854031c3c10394', '2026-10-14 18:28:58', 1, 0, 'registro', NULL, NULL),
+(31, 'isaurralde', '789', 'isaurralde@gmail.com', 'popo90', '$2y$10$guw8q4v8Y2uZ04eUyEDmnu9uo8LSV99MlEPnvw5vzpUZE6JYBjkiC', 0, '7e27c02299ab9010f61e1da5f37d9b5efd348e11101f8144b425f9d05f3d986b', '2026-10-14 18:30:13', 0, 0, 'registro', NULL, NULL),
+(39, 'Pop', '678', 'po@gmail.com', '8900plata', '$2y$10$i/FNL3aSrTKuWVhN8WxUluGZiGQmAvNS3ofShzQvGnGoQtUGlmJ6O', 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(45, 'MetalGest prueba navegador', NULL, 'mg-browser-efb4da1e8b124a699635ce63ed7772a7@example.invalid', NULL, '$2y$10$gcc/L0lvj4SpPK78FNy.MO1hAEZelBrjRO/nxaHe4qVbdMK3J7MaW', 0, NULL, NULL, 1, 0, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -845,6 +887,14 @@ INSERT INTO `usuario` (`id_usuario`, `nombre`, `apellido`, `usuario`, `contrasen
 --
 
 --
+-- Indices de la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  ADD PRIMARY KEY (`id_adjunto`),
+  ADD UNIQUE KEY `clave_archivo` (`clave_archivo`),
+  ADD KEY `id_mensaje` (`id_mensaje`);
+
+--
 -- Indices de la tabla `chat_conversacion`
 --
 ALTER TABLE `chat_conversacion`
@@ -865,14 +915,6 @@ ALTER TABLE `chat_mensaje_web`
   ADD PRIMARY KEY (`id_mensaje`),
   ADD KEY `id_chat` (`id_chat`),
   ADD KEY `id_usuario` (`id_usuario`);
-
---
--- Indices de la tabla `chat_adjunto`
---
-ALTER TABLE `chat_adjunto`
-  ADD PRIMARY KEY (`id_adjunto`),
-  ADD UNIQUE KEY `clave_archivo` (`clave_archivo`),
-  ADD KEY `id_mensaje` (`id_mensaje`);
 
 --
 -- Indices de la tabla `cliente`
@@ -1022,10 +1064,16 @@ ALTER TABLE `usuario`
 --
 
 --
+-- AUTO_INCREMENT de la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  MODIFY `id_adjunto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
 -- AUTO_INCREMENT de la tabla `chat_conversacion`
 --
 ALTER TABLE `chat_conversacion`
-  MODIFY `id_chat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_chat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT de la tabla `chat_mensaje`
@@ -1037,19 +1085,13 @@ ALTER TABLE `chat_mensaje`
 -- AUTO_INCREMENT de la tabla `chat_mensaje_web`
 --
 ALTER TABLE `chat_mensaje_web`
-  MODIFY `id_mensaje` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT de la tabla `chat_adjunto`
---
-ALTER TABLE `chat_adjunto`
-  MODIFY `id_adjunto` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id_mensaje` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `cliente`
 --
 ALTER TABLE `cliente`
-  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
 
 --
 -- AUTO_INCREMENT de la tabla `compra`
@@ -1097,7 +1139,7 @@ ALTER TABLE `maquina`
 -- AUTO_INCREMENT de la tabla `material`
 --
 ALTER TABLE `material`
-  MODIFY `id_material` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_material` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `material_movimiento`
@@ -1146,6 +1188,12 @@ ALTER TABLE `usuario`
 --
 
 --
+-- Filtros para la tabla `chat_adjunto`
+--
+ALTER TABLE `chat_adjunto`
+  ADD CONSTRAINT `chat_adjunto_ibfk_1` FOREIGN KEY (`id_mensaje`) REFERENCES `chat_mensaje_web` (`id_mensaje`) ON DELETE CASCADE;
+
+--
 -- Filtros para la tabla `chat_conversacion`
 --
 ALTER TABLE `chat_conversacion`
@@ -1163,12 +1211,6 @@ ALTER TABLE `chat_mensaje`
 ALTER TABLE `chat_mensaje_web`
   ADD CONSTRAINT `chat_mensaje_web_ibfk_1` FOREIGN KEY (`id_chat`) REFERENCES `chat_conversacion` (`id_chat`),
   ADD CONSTRAINT `chat_mensaje_web_ibfk_2` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`);
-
---
--- Filtros para la tabla `chat_adjunto`
---
-ALTER TABLE `chat_adjunto`
-  ADD CONSTRAINT `chat_adjunto_ibfk_1` FOREIGN KEY (`id_mensaje`) REFERENCES `chat_mensaje_web` (`id_mensaje`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `compra`

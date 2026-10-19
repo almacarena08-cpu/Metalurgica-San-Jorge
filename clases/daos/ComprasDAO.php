@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/BaseDAO.php';
+require_once __DIR__ . '/PedidoSeguimientoDAO.php';
 
 class ComprasDAO extends BaseDAO {
     public function listarMateriales() {
@@ -112,6 +113,16 @@ class ComprasDAO extends BaseDAO {
             if (($datos['estado'] ?? 'Solicitada') === 'Recibida') {
                 $stock = $pdo->prepare('UPDATE material SET stock = stock + :cantidad WHERE id_material = :id_material');
                 $stock->execute([':cantidad' => $cantidad, ':id_material' => (int)$datos['id_material']]);
+            }
+            if (!empty($datos['seguimiento_estado'])) {
+                (new PedidoSeguimientoDAO())->registrarEnTransaccion(
+                    $pdo,
+                    (int)$datos['id_pedido'],
+                    $datos['seguimiento_estado'],
+                    $datos['seguimiento_descripcion'],
+                    'Compras',
+                    (int)($datos['id_usuario'] ?? 0)
+                );
             }
             $pdo->commit();
             return $idCompra;

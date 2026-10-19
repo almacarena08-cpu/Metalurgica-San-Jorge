@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/BaseDAO.php';
+require_once __DIR__ . '/PedidoSeguimientoDAO.php';
 
 class MantenimientoDAO extends BaseDAO {
     public function crearPreventivo(array $datos) {
@@ -29,30 +30,52 @@ class MantenimientoDAO extends BaseDAO {
     }
 
     public function actualizar(array $datos) {
-        $stmt = $this->db()->prepare(
-            'UPDATE mantenimiento
-             SET reparacion = :reparacion,
-                 repuestos = :repuestos,
-                 estado = :estado
-             WHERE id_mantenimiento = :id_mantenimiento'
-        );
-        $stmt->execute([
-            ':reparacion' => $datos['reparacion'],
-            ':repuestos' => $datos['repuestos'],
-            ':estado' => $datos['estado'],
-            ':id_mantenimiento' => (int)$datos['id_mantenimiento']
-        ]);
+        $pdo = $this->db();
+        $pdo->beginTransaction();
+        try {
+            $detail = $pdo->prepare(
+                'SELECT id_orden, afecta_plazo, problema FROM mantenimiento WHERE id_mantenimiento = :id_mantenimiento FOR UPDATE'
+            );
+            $detail->execute([':id_mantenimiento' => (int)$datos['id_mantenimiento']]);
+            $incidente = $detail->fetch();
+            if (!$incidente) throw new InvalidArgumentException('La intervención de mantenimiento no existe.');
 
-        $estadoMaquina = $datos['estado'] === 'Resuelta' ? 'Operativa' : 'Con falla';
-        $maquina = $this->db()->prepare(
-            'UPDATE maquina q
-             INNER JOIN mantenimiento m ON m.id_maquina = q.id_maquina
-             SET q.estado = :estado_maquina
-             WHERE m.id_mantenimiento = :id_mantenimiento'
-        );
-        $maquina->execute([
-            ':estado_maquina' => $estadoMaquina,
-            ':id_mantenimiento' => (int)$datos['id_mantenimiento']
-        ]);
+            $stmt = $pdo->prepare(
+                'UPDATE mantenimiento
+                 SET reparacion = :reparacion, repuestos = :repuestos, estado = :estado
+                 WHERE id_mantenimiento = :id_mantenimiento'
+            );
+            $stmt->execute([
+                ':reparacion' => $datos['reparacion'],
+                ':repuestos' => $datos['repuestos'],
+                ':estado' => $datos['estado'],
+                ':id_mantenimiento' => (int)$datos['id_mantenimiento']
+            ]);
+            $estadoMaquina = $datos['estado'] === 'Resuelta' ? 'Operativa' : 'Con falla';
+            $maquina = $pdo->prepare(
+                'UPDATE maquina q
+                 INNER JOIN mantenimiento m ON m.id_maquina = q.id_maquina
+                 SET q.estado = :estado_maquina
+                 WHERE m.id_mantenimiento = :id_mantenimiento'
+            );
+            $maquina->execute([
+                ':estado_maquina' => $estadoMaquina,
+                ':id_mantenimiento' => (int)$datos['id_mantenimiento']
+            ]);
+            if (!empty($incidente['afecta_plazo']) && !empty($incidente['id_orden'])) {
+                $estadoPedido = $datos['estado'] === 'Resuelta' ? 'Problema resuelto' : 'Pedido demorado';
+                $detalle = $datos['estado'] === 'Resuelta'
+                    ? 'Se resolvió el inconveniente de máquina. ' . $datos['reparacion']
+                    : 'Actualización del inconveniente que afecta el plazo: ' . $datos['reparacion'];
+                (new PedidoSeguimientoDAO())->registrarDesdeOrdenEnTransaccion(
+                    $pdo, (int)$incidente['id_orden'], $estadoPedido, $detalle, 'Mantenimiento', (int)($datos['id_usuario'] ?? 0)
+                );
+            }
+            $pdo->commit();
+            return $incidente;
+        } catch (Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            throw $e;
+        }
     }
 }

@@ -26,6 +26,7 @@ require_once __DIR__ . '/../daos/ComprasDAO.php';
 require_once __DIR__ . '/../daos/CalidadDAO.php';
 require_once __DIR__ . '/../daos/ClienteDAO.php';
 require_once __DIR__ . '/../daos/ChatDAO.php';
+require_once __DIR__ . '/../daos/PedidoSeguimientoDAO.php';
 
 function api_db() {
     return Database::getConnection();
@@ -163,6 +164,49 @@ function api_send_client_code_email($email, $code, $purpose, $resetToken = null)
     }
 }
 
+function api_send_new_chat_message_email($email) {
+    $smtp = api_mail_smtp_settings();
+    if (!$smtp['host'] || !$smtp['user'] || !$smtp['password'] || !$smtp['from']
+        || !filter_var($smtp['from'], FILTER_VALIDATE_EMAIL) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        error_log('MetalGest chat notification not sent: SMTP configuration is incomplete or the address is invalid.');
+        return false;
+    }
+    require_once __DIR__ . '/../../vendor/phpmailer/phpmailer/src/Exception.php';
+    require_once __DIR__ . '/../../vendor/phpmailer/phpmailer/src/PHPMailer.php';
+    require_once __DIR__ . '/../../vendor/phpmailer/phpmailer/src/SMTP.php';
+    $mail = null;
+    try {
+        $mail = new \PHPMailer\PHPMailer\PHPMailer(true);
+        $mail->CharSet = 'UTF-8';
+        $mail->isSMTP();
+        $mail->Host = $smtp['host'];
+        $mail->SMTPAuth = true;
+        $mail->Username = $smtp['user'];
+        $mail->Password = $smtp['password'];
+        $mail->Port = $smtp['port'];
+        if ($smtp['secure'] === 'none') {
+            $mail->SMTPAutoTLS = false;
+            $mail->SMTPSecure = false;
+        } else {
+            $mail->SMTPSecure = $smtp['secure'];
+        }
+        $mail->Timeout = 15;
+        $mail->setFrom($smtp['from'], 'MetalGest');
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Tienes un nuevo mensaje | MetalGest';
+        $mail->Body = '<div style="max-width:560px;margin:24px auto;background:#17191b;border-top:4px solid #ff6e20;font-family:Arial,sans-serif;color:#f1f3f5">'
+            . '<div style="padding:22px 28px;background:#101213;color:#fff;font-weight:bold">METALÚRGICA SAN JORGE / METALGEST</div>'
+            . '<div style="padding:28px"><p style="font-size:17px;line-height:1.6">Tienes un nuevo mensaje. Entra a la página para verlo</p></div></div>';
+        $mail->AltBody = 'Tienes un nuevo mensaje. Entra a la página para verlo';
+        return $mail->send();
+    } catch (Throwable $e) {
+        $error = str_replace([$smtp['password'], $smtp['user']], '[redacted]', $mail instanceof \PHPMailer\PHPMailer\PHPMailer ? $mail->ErrorInfo : $e->getMessage());
+        error_log('MetalGest chat notification failed: ' . $error);
+        return false;
+    }
+}
+
 function api_date($value) {
     return $value === '' || $value === null ? null : $value;
 }
@@ -179,6 +223,25 @@ function api_chat_require_user() {
     $user = $_SESSION['metalgest_user'] ?? null;
     if (!$user) {
         api_json(['success' => false, 'message' => 'Iniciá sesión para acceder al chat.'], 401);
+    }
+    return $user;
+}
+
+function api_require_employee_roles(array $roles) {
+    $user = $_SESSION['metalgest_user'] ?? null;
+    if (!$user || ($user['tipo'] ?? '') !== 'empleado') {
+        api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta de empleado.'], 401);
+    }
+    if (!in_array(strtolower($user['rol'] ?? ''), array_map('strtolower', $roles), true)) {
+        api_json(['success' => false, 'message' => 'Tu cuenta no tiene permiso para esta acción.'], 403);
+    }
+    return $user;
+}
+
+function api_require_client() {
+    $user = api_chat_require_user();
+    if (($user['tipo'] ?? '') !== 'cliente' || (int)($user['id_cliente'] ?? 0) <= 0) {
+        api_json(['success' => false, 'message' => 'Esta función es exclusiva de una cuenta de cliente.'], 403);
     }
     return $user;
 }
@@ -309,6 +372,7 @@ $comprasDAO = new ComprasDAO();
 $calidadDAO = new CalidadDAO();
 $clienteDAO = new ClienteDAO();
 $chatDAO = new ChatDAO();
+$pedidoSeguimientoDAO = new PedidoSeguimientoDAO();
 
 if ($action === 'health') {
     api_json(['success' => true, 'app' => 'MetalGest']);
@@ -803,6 +867,15 @@ if ($action === 'chat_messages') {
     api_json($chatDAO->obtenerMensajes($idChat));
 }
 
+if ($action === 'chat_presence') {
+    $user = api_require_client();
+    $idChat = api_int('id_chat');
+    if ($idChat <= 0 || !$chatDAO->registrarActividadCliente($idChat, (int)$user['id_cliente'])) {
+        api_json(['success' => false, 'message' => 'No tenés acceso a esta conversación.'], 403);
+    }
+    api_json(['success' => true]);
+}
+
 if ($action === 'chat_attachment') {
     $user = api_chat_require_user();
     $idAdjunto = filter_input(INPUT_GET, 'id_adjunto', FILTER_VALIDATE_INT);
@@ -886,6 +959,12 @@ if ($action === 'chat_reply') {
         if (trim($mensaje) === '' && !$uploads) {
             api_json(['success' => false, 'message' => 'Escribí una respuesta o adjuntá al menos un archivo.'], 422);
         }
+        $contacto = $chatDAO->obtenerContacto($idChat);
+        if (!$contacto) {
+            api_chat_remove_uploads($uploads);
+            api_json(['success' => false, 'message' => 'No se encontró la conversación.'], 404);
+        }
+        $clienteEnLinea = $chatDAO->clienteActivoRecientemente($idChat);
         $chatDAO->enviarMensaje([
             'id_chat' => $idChat,
             'id_usuario' => (int)$user['id_usuario'],
@@ -893,7 +972,11 @@ if ($action === 'chat_reply') {
             'mensaje' => $mensaje,
             'adjuntos' => $uploads
         ]);
-        api_json(['success' => true]);
+        $notificacionEnviada = false;
+        if (!$clienteEnLinea && filter_var($contacto['email'] ?? '', FILTER_VALIDATE_EMAIL)) {
+            $notificacionEnviada = api_send_new_chat_message_email($contacto['email']);
+        }
+        api_json(['success' => true, 'cliente_en_linea' => $clienteEnLinea, 'notificacion_enviada' => $notificacionEnviada]);
     } catch (Throwable $e) {
         api_chat_remove_uploads($uploads ?? []);
         error_log('MetalGest chat upload failed: ' . $e->getMessage());
@@ -901,12 +984,41 @@ if ($action === 'chat_reply') {
     }
 }
 
+if ($action === 'pedido_create_from_chat') {
+    try {
+        $user = api_chat_require_staff();
+        $cantidad = api_int('cantidad', 1);
+        if ($cantidad <= 0) api_json(['success' => false, 'message' => 'La cantidad debe ser mayor que cero.'], 422);
+        $idPedido = $pedidoDAO->crearDesdeConversacion([
+            'id_chat' => api_int('id_chat'),
+            'descripcion' => api_required('descripcion'),
+            'cantidad' => $cantidad,
+            'material' => api_required('material'),
+            'fecha_entrega' => api_date(api_input('fecha_entrega')),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
+        ]);
+        api_json(['success' => true, 'id_pedido' => $idPedido]);
+    } catch (InvalidArgumentException $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 409);
+    } catch (Throwable $e) {
+        error_log('MetalGest order registration from chat failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo registrar el pedido desde la conversación.'], 500);
+    }
+}
+
+if ($action === 'pedidos_tracking') {
+    $user = api_require_client();
+    api_json($pedidoSeguimientoDAO->listarParaCliente((int)$user['id_cliente']));
+}
+
 if ($action === 'pedidos_list') {
+    api_require_employee_roles(['gerencia', 'administracion']);
     api_json($pedidoDAO->listar());
 }
 
 if ($action === 'pedidos_create') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'administracion']);
         $cantidad = api_int('cantidad', 1);
         if ($cantidad <= 0) {
             api_json(['success' => false, 'message' => 'La cantidad debe ser mayor que cero'], 422);
@@ -922,7 +1034,8 @@ if ($action === 'pedidos_create') {
             'descripcion' => api_required('descripcion'),
             'cantidad' => $cantidad,
             'material' => api_required('material'),
-            'fecha_entrega' => api_date(api_input('fecha_entrega'))
+            'fecha_entrega' => api_date(api_input('fecha_entrega')),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true, 'id_pedido' => $idPedido]);
     } catch (Throwable $e) {
@@ -931,11 +1044,13 @@ if ($action === 'pedidos_create') {
 }
 
 if ($action === 'ordenes_list') {
+    api_require_employee_roles(['gerencia', 'administracion', 'produccion', 'calidad', 'mantenimiento', 'deposito', 'compras']);
     api_json($ordenTrabajoDAO->listar());
 }
 
 if ($action === 'ordenes_create') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'administracion']);
         $idPedido = api_int('id_pedido');
         if ($idPedido <= 0) {
             api_json(['success' => false, 'message' => 'El pedido debe ser vÃ¡lido'], 422);
@@ -946,7 +1061,7 @@ if ($action === 'ordenes_create') {
             'fecha_prevista' => api_date(api_input('fecha_prevista')),
             'prioridad' => api_input('prioridad', 'Media'),
             'observaciones' => api_input('observaciones', ''),
-            'id_usuario' => api_int('id_usuario', 1)
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true, 'id_orden' => $idOrden]);
     } catch (Throwable $e) {
@@ -956,14 +1071,24 @@ if ($action === 'ordenes_create') {
 
 if ($action === 'orden_update_status') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'administracion', 'produccion']);
         $idOrden = api_int('id_orden');
         if ($idOrden <= 0) {
             api_json(['success' => false, 'message' => 'La orden debe ser vÃ¡lida'], 422);
         }
+        $estado = api_required('estado');
+        if (!in_array($estado, ['Pendiente', 'En produccion', 'En producción', 'Pausada', 'Demorada', 'Pendiente por inconveniente', 'Lista para entrega', 'Finalizada'], true)) {
+            api_json(['success' => false, 'message' => 'El estado del pedido no es válido.'], 422);
+        }
+        $observaciones = api_input('observaciones', '');
         $ordenTrabajoDAO->actualizarEstado([
             'id_orden' => $idOrden,
-            'estado' => api_required('estado'),
-            'observaciones' => api_input('observaciones', '')
+            'estado' => $estado,
+            'observaciones' => $observaciones,
+            'seguimiento_estado' => $estado === 'Finalizada' ? 'Pedido finalizado' : ($estado === 'Lista para entrega' ? 'Listo para su entrega' : $estado),
+            'seguimiento_descripcion' => $observaciones !== '' ? $observaciones : 'El área de ' . ucfirst($user['rol']) . ' actualizó el estado del pedido a ' . $estado . '.',
+            'area' => $user['rol'] === 'produccion' ? 'Producción' : 'Administración',
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true]);
     } catch (Throwable $e) {
@@ -972,10 +1097,12 @@ if ($action === 'orden_update_status') {
 }
 
 if ($action === 'produccion_list') {
+    api_require_employee_roles(['gerencia', 'administracion', 'produccion']);
     api_json($produccionDAO->listar());
 }
 
 if ($action === 'produccion_register') {
+    $user = api_require_employee_roles(['gerencia', 'produccion']);
     $cantidad = api_int('cantidad_producida');
     $avance = api_int('avance');
     if (api_int('id_orden') <= 0 || $cantidad < 0 || $avance < 0 || $avance > 100) {
@@ -986,7 +1113,8 @@ if ($action === 'produccion_register') {
             'id_orden' => api_int('id_orden'),
             'cantidad_producida' => $cantidad,
             'avance' => $avance,
-            'observaciones' => api_input('observaciones', '')
+            'observaciones' => api_input('observaciones', ''),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true, 'id_produccion' => $idProduccion]);
     } catch (Throwable $e) {
@@ -995,20 +1123,32 @@ if ($action === 'produccion_register') {
 }
 
 if ($action === 'maquinas_list') {
+    api_require_employee_roles(['gerencia', 'produccion', 'mantenimiento']);
     api_json($maquinaDAO->listar());
 }
 
 if ($action === 'mantenimiento_report') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'produccion', 'mantenimiento']);
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
         }
+        $afectaPlazo = api_input('afecta_plazo') === '1';
+        $idOrden = api_int('id_orden');
+        if ($afectaPlazo && $idOrden <= 0) {
+            api_json(['success' => false, 'message' => 'Seleccioná el pedido afectado para informarle una demora.'], 422);
+        }
+        $problema = api_required('problema');
         $idMantenimiento = $maquinaDAO->reportarFalla([
             'id_maquina' => $idMaquina,
-            'id_usuario' => api_int('id_usuario', 3),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0),
             'tipo' => api_input('tipo', 'Correctivo'),
-            'problema' => api_required('problema')
+            'problema' => $problema,
+            'id_orden' => $idOrden,
+            'afecta_plazo' => $afectaPlazo,
+            'seguimiento_descripcion' => 'Se informó un problema con una máquina que afecta el plazo del pedido: ' . $problema,
+            'area' => strtolower($user['rol']) === 'mantenimiento' ? 'Mantenimiento' : 'Producción'
         ]);
         api_json(['success' => true, 'id_mantenimiento' => $idMantenimiento]);
     } catch (Throwable $e) {
@@ -1017,18 +1157,20 @@ if ($action === 'mantenimiento_report') {
 }
 
 if ($action === 'mantenimientos_list') {
+    api_require_employee_roles(['gerencia', 'mantenimiento']);
     api_json($mantenimientoDAO->listar());
 }
 
 if ($action === 'mantenimiento_preventivo_create') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'mantenimiento']);
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
         }
         $idMantenimiento = $mantenimientoDAO->crearPreventivo([
             'id_maquina' => $idMaquina,
-            'id_usuario' => api_int('id_usuario', 1),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0),
             'fecha' => api_input('fecha', date('Y-m-d')),
             'problema' => api_required('problema')
         ]);
@@ -1040,6 +1182,7 @@ if ($action === 'mantenimiento_preventivo_create') {
 
 if ($action === 'mantenimiento_update') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'mantenimiento']);
         $idMantenimiento = api_int('id_mantenimiento');
         if ($idMantenimiento <= 0) {
             api_json(['success' => false, 'message' => 'El mantenimiento debe ser vÃ¡lido'], 422);
@@ -1048,11 +1191,12 @@ if ($action === 'mantenimiento_update') {
         if (!in_array($estado, ['Pendiente', 'En proceso', 'Resuelta'], true)) {
             api_json(['success' => false, 'message' => 'Estado de mantenimiento invÃ¡lido'], 422);
         }
-        $mantenimientoDAO->actualizar([
+        $detalleMantenimiento = $mantenimientoDAO->actualizar([
             'id_mantenimiento' => $idMantenimiento,
             'reparacion' => api_required('reparacion'),
             'repuestos' => api_input('repuestos', ''),
-            'estado' => $estado
+            'estado' => $estado,
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true]);
     } catch (Throwable $e) {
@@ -1061,11 +1205,13 @@ if ($action === 'mantenimiento_update') {
 }
 
 if ($action === 'materiales_list') {
+    api_require_employee_roles(['gerencia', 'administracion', 'compras', 'deposito']);
     api_json($comprasDAO->listarMateriales());
 }
 
 if ($action === 'materiales_create') {
     try {
+        api_require_employee_roles(['gerencia', 'compras']);
         $stockMinimo = (float)api_input('stock_minimo', '0');
         $stockMaximo = (float)api_input('stock_maximo', '0');
         if ($stockMinimo < 0 || $stockMaximo < $stockMinimo) {
@@ -1084,6 +1230,7 @@ if ($action === 'materiales_create') {
 
 if ($action === 'materiales_update') {
     try {
+        api_require_employee_roles(['gerencia', 'compras']);
         $idMaterial = api_int('id_material');
         $stockMinimo = (float)api_input('stock_minimo', '0');
         $stockMaximo = (float)api_input('stock_maximo', '0');
@@ -1103,6 +1250,7 @@ if ($action === 'materiales_update') {
 
 if ($action === 'materiales_delete') {
     try {
+        api_require_employee_roles(['gerencia', 'compras']);
         $idMaterial = api_int('id_material');
         if ($idMaterial <= 0) {
             api_json(['success' => false, 'message' => 'El material no es valido'], 422);
@@ -1115,23 +1263,49 @@ if ($action === 'materiales_delete') {
 }
 
 if ($action === 'deposito_movimientos_list') {
+    api_require_employee_roles(['gerencia', 'deposito']);
     api_json($depositoDAO->listarMovimientos());
 }
 
 if ($action === 'deposito_movimiento_create') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'deposito']);
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
         $tipo = api_required('tipo');
         if ($idMaterial <= 0 || $cantidad <= 0 || !in_array($tipo, ['Ingreso', 'Salida'], true)) {
             api_json(['success' => false, 'message' => 'Movimiento de stock invalido'], 422);
         }
+        $motivo = api_input('motivo', '');
+        $seguimientoEstado = api_input('seguimiento_estado', '');
+        $idPedidoRelacionado = api_int('id_pedido');
+        $seguimientoDescripcion = '';
+        if ($seguimientoEstado !== '') {
+            if ($idPedidoRelacionado <= 0 || !in_array($seguimientoEstado, ['Falta de materiales', 'Material disponible'], true)
+                || ($seguimientoEstado === 'Falta de materiales' && $tipo !== 'Salida')
+                || ($seguimientoEstado === 'Material disponible' && $tipo !== 'Ingreso')) {
+                api_json(['success' => false, 'message' => 'Elegí un pedido y un movimiento compatible con la novedad.'], 422);
+            }
+            $materiales = $comprasDAO->listarMateriales();
+            $material = null;
+            foreach ($materiales as $item) {
+                if ((int)$item['id_material'] === $idMaterial) { $material = $item; break; }
+            }
+            $materialNombre = $material['nombre'] ?? 'material';
+            $seguimientoDescripcion = $seguimientoEstado === 'Falta de materiales'
+                ? 'Depósito informó una falta de ' . $materialNombre . ' que afecta este pedido.'
+                : 'Depósito confirmó disponibilidad de ' . $materialNombre . ' para este pedido.';
+            if ($motivo !== '') $seguimientoDescripcion .= ' ' . $motivo;
+        }
         $idMovimiento = $depositoDAO->registrarMovimiento([
             'id_material' => $idMaterial,
             'tipo' => $tipo,
             'cantidad' => $cantidad,
-            'motivo' => api_input('motivo', ''),
-            'id_usuario' => api_int('id_usuario', 1)
+            'motivo' => $motivo,
+            'id_usuario' => (int)($user['id_usuario'] ?? 0),
+            'id_pedido' => $idPedidoRelacionado,
+            'seguimiento_estado' => $seguimientoEstado,
+            'seguimiento_descripcion' => $seguimientoDescripcion
         ]);
         api_json(['success' => true, 'id_movimiento' => $idMovimiento]);
     } catch (Throwable $e) {
@@ -1140,11 +1314,13 @@ if ($action === 'deposito_movimiento_create') {
 }
 
 if ($action === 'proveedores_list') {
+    api_require_employee_roles(['gerencia', 'compras']);
     api_json($comprasDAO->listarProveedores());
 }
 
 if ($action === 'proveedores_create') {
     try {
+        api_require_employee_roles(['gerencia', 'compras']);
         $idProveedor = $comprasDAO->crearProveedor([
             'razon_social' => api_required('razon_social'),
             'cuit' => api_input('cuit', ''),
@@ -1158,11 +1334,13 @@ if ($action === 'proveedores_create') {
 }
 
 if ($action === 'compras_list') {
+    api_require_employee_roles(['gerencia', 'compras']);
     api_json($comprasDAO->listarCompras());
 }
 
 if ($action === 'compras_create') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'compras']);
         $idProveedor = api_int('id_proveedor');
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
@@ -1174,13 +1352,36 @@ if ($action === 'compras_create') {
         if (!in_array($estado, ['Solicitada', 'Recibida', 'Cancelada'], true)) {
             api_json(['success' => false, 'message' => 'Estado de compra invalido'], 422);
         }
+        $seguimientoEstado = api_input('seguimiento_estado', '');
+        $idPedidoRelacionado = api_int('id_pedido');
+        $seguimientoDescripcion = '';
+        if ($seguimientoEstado !== '') {
+            if ($idPedidoRelacionado <= 0 || !in_array($seguimientoEstado, ['Falta de materiales', 'Material disponible'], true)
+                || ($seguimientoEstado === 'Falta de materiales' && $estado === 'Cancelada')
+                || ($seguimientoEstado === 'Material disponible' && $estado !== 'Recibida')) {
+                api_json(['success' => false, 'message' => 'La novedad debe asociarse a un pedido y coincidir con el estado de compra.'], 422);
+            }
+            $materiales = $comprasDAO->listarMateriales();
+            $material = null;
+            foreach ($materiales as $item) {
+                if ((int)$item['id_material'] === $idMaterial) { $material = $item; break; }
+            }
+            $materialNombre = $material['nombre'] ?? 'material';
+            $seguimientoDescripcion = $seguimientoEstado === 'Material disponible'
+                ? 'Compras recibió ' . $materialNombre . ' y confirmó su disponibilidad para este pedido.'
+                : 'Compras informó una demora por falta de ' . $materialNombre . ' para este pedido.';
+        }
         $idCompra = $comprasDAO->crearCompra([
             'id_proveedor' => $idProveedor,
             'id_material' => $idMaterial,
             'cantidad' => $cantidad,
             'precio' => $precio,
             'fecha' => api_input('fecha', date('Y-m-d')),
-            'estado' => $estado
+            'estado' => $estado,
+            'id_pedido' => $idPedidoRelacionado,
+            'seguimiento_estado' => $seguimientoEstado,
+            'seguimiento_descripcion' => $seguimientoDescripcion,
+            'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true, 'id_compra' => $idCompra]);
     } catch (Throwable $e) {
@@ -1189,11 +1390,13 @@ if ($action === 'compras_create') {
 }
 
 if ($action === 'calidad_list') {
+    api_require_employee_roles(['gerencia', 'administracion', 'calidad']);
     api_json($calidadDAO->listarControles());
 }
 
 if ($action === 'calidad_register') {
     try {
+        $user = api_require_employee_roles(['gerencia', 'calidad']);
         $idOrden = api_int('id_orden');
         $resultado = api_required('resultado');
         if ($idOrden <= 0 || !in_array($resultado, ['Aprobado', 'Observado', 'Rechazado'], true)) {
@@ -1201,7 +1404,7 @@ if ($action === 'calidad_register') {
         }
         $idControl = $calidadDAO->registrar([
             'id_orden' => $idOrden,
-            'id_usuario' => api_int('id_usuario', 1),
+            'id_usuario' => (int)($user['id_usuario'] ?? 0),
             'fecha' => api_input('fecha', date('Y-m-d')),
             'resultado' => $resultado,
             'observaciones' => api_input('observaciones', '')

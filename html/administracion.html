@@ -2,33 +2,52 @@
     {{adminNavigation}}
     <section class="admin-overview">
         <div class="admin-overview-copy">
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
             <span class="admin-kicker">CENTRO DE CONTROL</span>
             <h3>Resumen operativo</h3>
-            <p>Seguimiento de pedidos, producción y atención comercial en un solo lugar.</p>
+            <p>Pedidos, órdenes de trabajo y consultas en seguimiento.</p>
         </div>
-        <span class="admin-overview-date"><span></span> {{today}}</span>
+        <div class="admin-dashboard-status">
+            <span class="admin-overview-date"><span></span> {{today}}</span>
+            <small data-dashboard-sync>Actualización automática cada minuto</small>
+        </div>
     </section>
     <section class="admin-metrics" aria-label="Indicadores operativos">
         <article class="admin-metric">
-            <span class="admin-metric-label">PEDIDOS REGISTRADOS</span>
+            <span class="admin-metric-label">PEDIDOS</span>
             <strong>{{pedidosCount}}</strong>
             <span class="admin-metric-note">Solicitudes de clientes</span>
         </article>
         <article class="admin-metric">
             <span class="admin-metric-label">ÓRDENES DE TRABAJO</span>
             <strong>{{ordenesCount}}</strong>
-            <span class="admin-metric-note">Órdenes en el sistema</span>
+            <span class="admin-metric-note">Seguimiento productivo</span>
         </article>
         <article class="admin-metric">
             <span class="admin-metric-label">CHATS ABIERTOS</span>
             <strong>{{chatsCount}}</strong>
-            <span class="admin-metric-note">Consultas por atender</span>
+            <span class="admin-metric-note">Consultas por responder</span>
+        </article>
+    </section>
+    <section class="module-chart-grid" aria-label="Análisis de administración">
+        <article class="section-panel module-chart-card module-chart-wide">
+            <div class="admin-section-heading">
+                <div><span class="admin-kicker">ACTIVIDAD COMERCIAL</span><h3>Pedidos por mes</h3></div>
+                <span class="admin-section-caption">Registros de los últimos 6 meses</span>
+            </div>
+            {{pedidosChart}}
+        </article>
+        <article class="section-panel module-chart-card">
+            <div class="admin-section-heading">
+                <div><span class="admin-kicker">PRODUCCIÓN</span><h3>Órdenes de trabajo por estado</h3></div>
+            </div>
+            {{ordenesChart}}
         </article>
     </section>
     <section class="section-panel admin-activity">
         <div class="admin-section-heading">
-            <div><span class="admin-kicker">SEGUIMIENTO</span><h3>Actividad reciente</h3></div>
-            <span class="admin-section-caption">Últimos pedidos registrados</span>
+            <div><span class="admin-kicker">SEGUIMIENTO</span><h3>Pedidos recientes</h3></div>
+            <span class="admin-section-caption">Últimos registros del sistema</span>
         </div>
         {{recentOrders}}
     </section>
@@ -68,7 +87,7 @@
         <h3>Actualizar estado</h3>
         <form id="estadoOrdenForm" class="toolbar">
             <label>ID orden<input name="id_orden" type="number" required></label>
-            <label>Estado<select name="estado"><option>Pendiente</option><option>En produccion</option><option>Pausada</option><option>Finalizada</option></select></label>
+            <label>Estado<select name="estado"><option>Pendiente</option><option>En producción</option><option>Pausada</option><option>Demorada</option><option>Pendiente por inconveniente</option><option>Lista para entrega</option><option>Finalizada</option></select></label>
             <label>Observacion<input name="observaciones"></label>
             <button class="btn primary">Actualizar</button>
         </form>
@@ -79,7 +98,7 @@
 <template data-view="clientes">
     {{adminNavigation}}
     <section class="section-panel">
-        <h3>Modulo clientes</h3>
+        <div class="module-panel-heading"><div><span class="module-kicker">GESTIÓN COMERCIAL</span><h3>Clientes</h3></div><span class="module-panel-note">Buscá, registrá y actualizá tus contactos</span></div>
         <form id="clienteForm" class="form-grid">
             <label>ID para editar<input name="id_cliente" type="number" placeholder="Solo si editas"></label>
             <label>Razon social<input name="razon_social" required></label>
@@ -94,5 +113,8 @@
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel">{{clientsTable}}</section>
+    <section class="section-panel">
+        <div class="module-panel-heading"><div><span class="module-kicker">DIRECTORIO</span><h3>Listado de clientes</h3></div></div>
+        <div id="clientsTable">{{clientsTable}}</div>
+    </section>
 </template>

@@ -1,8 +1,42 @@
 <template data-view="compras">
-    <section class="section-panel">
-        <h3>Proveedor</h3>
+    <section class="module-overview">
+        <div>
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="module-kicker">OPERACIÓN · ABASTECIMIENTO</span>
+            <h3>Centro de compras</h3>
+            <p>Gestioná proveedores, órdenes de compra y necesidades de reposición.</p>
+        </div>
+        <span class="module-date"><span></span>{{today}}</span>
+    </section>
+    <section class="module-metrics" aria-label="Indicadores de compras">
+        <article class="module-metric"><span>PROVEEDORES</span><strong>{{supplierCount}}</strong><small>Contactos registrados</small></article>
+        <article class="module-metric"><span>ÓRDENES DE COMPRA</span><strong>{{purchaseCount}}</strong><small>Registros disponibles</small></article>
+        <article class="module-metric"><span>STOCK A REVISAR</span><strong>{{lowStockCount}}</strong><small>Materiales cerca del mínimo</small></article>
+    </section>
+    <nav class="module-index" aria-label="Secciones de compras">
+        <span class="module-index-title">Secciones</span>
+        <button type="button" class="active" data-module-index="analisis" aria-pressed="true">Análisis</button>
+        <button type="button" data-module-index="proveedores" aria-pressed="false">Proveedores</button>
+        <button type="button" data-module-index="nueva-compra" aria-pressed="false">Nueva compra</button>
+        <button type="button" data-module-index="inventario" aria-pressed="false">Inventario</button>
+        <button type="button" data-module-index="historial" aria-pressed="false">Historial</button>
+    </nav>
+    <div data-module-panel="analisis" class="module-index-section">
+    <section class="module-chart-grid" aria-label="Análisis de compras">
+        <article class="section-panel module-chart-card module-chart-wide">
+            <div class="module-panel-heading"><div><span class="module-kicker">TENDENCIA DE ABASTECIMIENTO</span><h3>Inversión por mes</h3></div><span class="module-panel-note">Total {{purchaseTotal}} · últimos seis meses</span></div>
+            {{purchaseTrendChart}}
+        </article>
+        <article class="section-panel module-chart-card">
+            <div class="module-panel-heading"><div><span class="module-kicker">ESTADO DE COMPRAS</span><h3>Distribución de órdenes</h3></div></div>
+            {{purchaseStatusChart}}
+        </article>
+    </section>
+    </div>
+    <section data-module-panel="proveedores" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">RED DE ABASTECIMIENTO</span><h3>Registrar proveedor</h3></div><span class="module-panel-note">Mantené actualizados los datos de contacto</span></div>
         <form id="proveedorForm" class="form-grid">
-            <label>Razon social<input name="razon_social" required></label>
+            <label>Razón social<input name="razon_social" required></label>
             <label>CUIT<input name="cuit"></label>
             <label>Telefono<input name="telefono"></label>
             <label>Email<input name="email"></label>
@@ -10,8 +44,8 @@
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel">
-        <h3>Orden de compra</h3>
+    <section data-module-panel="nueva-compra" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">ABASTECIMIENTO</span><h3>Nueva orden de compra</h3></div><span class="module-panel-note">Registrá materiales y cantidades solicitadas</span></div>
         <form id="compraForm" class="form-grid">
             <label>Proveedor<select name="id_proveedor">{{suppliers}}</select></label>
             <label>Material<select name="id_material">{{materials}}</select></label>
@@ -19,10 +53,12 @@
             <label>Precio<input name="precio" type="number" min="0" step="0.01"></label>
             <label>Fecha<input name="fecha" type="date"></label>
             <label>Estado<select name="estado"><option>Solicitada</option><option>Recibida</option><option>Cancelada</option></select></label>
+            <label>Pedido relacionado<select name="id_pedido"><option value="">Sin asociar</option>{{orders}}</select></label>
+            <label>Novedad para seguimiento<select name="seguimiento_estado"><option value="">No publicar novedad</option><option value="Falta de materiales">Falta de materiales (demora)</option><option value="Material disponible">Material recibido</option></select></label>
             <button class="btn primary">Crear compra</button>
         </form>
         <div class="message"></div>
     </section>
-    <section class="section-panel"><h3>Materiales</h3>{{materialsTable}}</section>
-    <section class="section-panel"><h3>Compras</h3>{{purchasesTable}}</section>
+    <section data-module-panel="inventario" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">DISPONIBILIDAD</span><h3>Inventario de materiales</h3></div></div>{{materialsTable}}</section>
+    <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">HISTORIAL</span><h3>Órdenes de compra</h3></div></div>{{purchasesTable}}</section>
 </template>

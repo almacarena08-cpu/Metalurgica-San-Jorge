@@ -5,11 +5,13 @@ class ChatDAO extends BaseDAO {
     public function listar() {
         return $this->db()->query(
             'SELECT c.id_chat, c.id_cliente, c.asunto, c.estado, c.fecha_creacion, c.fecha_actualizacion,
+                    p.id_pedido,
                     cl.razon_social AS nombre, cl.email,
                     COALESCE(ultimo.mensaje, "") AS ultimo_mensaje,
                     COALESCE(ultimo.autor_tipo, "") AS ultimo_autor
              FROM chat_conversacion c
              INNER JOIN cliente cl ON cl.id_cliente = c.id_cliente
+             LEFT JOIN pedido p ON p.id_chat_origen = c.id_chat
              LEFT JOIN chat_mensaje_web ultimo ON ultimo.id_mensaje = (
                 SELECT cm.id_mensaje
                 FROM chat_mensaje_web cm
@@ -24,11 +26,13 @@ class ChatDAO extends BaseDAO {
     public function listarPorCliente(int $idCliente) {
         $stmt = $this->db()->prepare(
             'SELECT c.id_chat, c.id_cliente, c.asunto, c.estado, c.fecha_creacion, c.fecha_actualizacion,
+                    p.id_pedido,
                     cl.razon_social AS nombre, cl.email,
                     COALESCE(ultimo.mensaje, "") AS ultimo_mensaje,
                     COALESCE(ultimo.autor_tipo, "") AS ultimo_autor
              FROM chat_conversacion c
              INNER JOIN cliente cl ON cl.id_cliente = c.id_cliente
+             LEFT JOIN pedido p ON p.id_chat_origen = c.id_chat
              LEFT JOIN chat_mensaje_web ultimo ON ultimo.id_mensaje = (
                 SELECT cm.id_mensaje
                 FROM chat_mensaje_web cm
@@ -105,6 +109,38 @@ class ChatDAO extends BaseDAO {
              LIMIT 1'
         );
         $stmt->execute([':id_chat' => $idChat, ':id_cliente' => $idCliente]);
+        return (bool)$stmt->fetchColumn();
+    }
+
+    public function obtenerContacto(int $idChat) {
+        $stmt = $this->db()->prepare(
+            'SELECT c.id_cliente, c.cliente_ultimo_acceso, cl.email, cl.razon_social
+             FROM chat_conversacion c
+             INNER JOIN cliente cl ON cl.id_cliente = c.id_cliente
+             WHERE c.id_chat = :id_chat LIMIT 1'
+        );
+        $stmt->execute([':id_chat' => $idChat]);
+        return $stmt->fetch();
+    }
+
+    public function registrarActividadCliente(int $idChat, int $idCliente) {
+        $stmt = $this->db()->prepare(
+            'UPDATE chat_conversacion SET cliente_ultimo_acceso = NOW()
+             WHERE id_chat = :id_chat AND id_cliente = :id_cliente'
+        );
+        $stmt->execute([':id_chat' => $idChat, ':id_cliente' => $idCliente]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function clienteActivoRecientemente(int $idChat, int $segundos = 45) {
+        $segundos = max(10, min(120, $segundos));
+        $stmt = $this->db()->prepare(
+            'SELECT 1 FROM chat_conversacion
+             WHERE id_chat = :id_chat
+               AND cliente_ultimo_acceso >= DATE_SUB(NOW(), INTERVAL ' . $segundos . ' SECOND)
+             LIMIT 1'
+        );
+        $stmt->execute([':id_chat' => $idChat]);
         return (bool)$stmt->fetchColumn();
     }
 
