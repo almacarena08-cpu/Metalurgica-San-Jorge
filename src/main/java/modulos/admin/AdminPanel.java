@@ -4,9 +4,14 @@ import modulos.admin.dao.AdministracionDao;
 import modulos.common.dao.ApiResult;
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
-import modulos.common.SettingsDialog;
 import modulos.common.IndustrialBanner;
 import modulos.common.UiTheme;
+import modulos.common.RecordDetailEditor;
+import modulos.produccion.ProductionPanel;
+import modulos.mantenimiento.MaintenancePanel;
+import modulos.deposito.DepositPanel;
+import modulos.compras.PurchasesPanel;
+import modulos.calidad.QualityPanel;
 
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -48,6 +53,43 @@ import java.util.Map;
 public class AdminPanel {
     private static int usuarioId = 1;
     private static final AdministracionDao administracionDao = new AdministracionDao();
+    private static JComboBox<ClienteOption> pedidoClienteCombo;
+    private static String pedidoClientePendiente = "";
+
+    private static final class ClienteOption {
+        private final String id;
+        private final String nombre;
+
+        private ClienteOption(String id, String nombre) {
+            this.id = id;
+            this.nombre = nombre;
+        }
+
+        @Override
+        public String toString() {
+            return nombre;
+        }
+    }
+
+    private static void abrirPedidoDesdeChat(String idCliente, CardLayout layout, JPanel pages) {
+        pedidoClientePendiente = idCliente;
+        if (pedidoClienteCombo != null) {
+            for (int i = 0; i < pedidoClienteCombo.getItemCount(); i++) {
+                if (idCliente.equals(pedidoClienteCombo.getItemAt(i).id)) {
+                    pedidoClienteCombo.setSelectedIndex(i);
+                    pedidoClientePendiente = "";
+                    break;
+                }
+            }
+            if (!pedidoClientePendiente.isEmpty()) {
+                JOptionPane.showMessageDialog(pages, "El cliente de esta conversación ya no aparece en la lista de clientes.", "Crear pedido", JOptionPane.WARNING_MESSAGE);
+                pedidoClientePendiente = "";
+                return;
+            }
+        }
+        layout.show(pages, "pedidos");
+        UiTheme.selectNavigationFrom(pages, "Pedidos");
+    }
 
     public static void openAdmin() {
         EmployeeSession session = ModuleLogin.authenticate("Administracion", "Administracion");
@@ -71,7 +113,13 @@ public class AdminPanel {
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
-        pages.add(crearPanelChat(session), "chat");
+        pages.add(crearPanelChat(session, id -> abrirPedidoDesdeChat(id, layout, pages)), "chat");
+        pages.add(crearPanelEmpleados(session.getId()), "empleados");
+        pages.add(ProductionPanel.createView(session, onLogout), "mod_produccion");
+        pages.add(MaintenancePanel.createView(session, onLogout), "mod_mantenimiento");
+        pages.add(DepositPanel.createView(session, onLogout), "mod_deposito");
+        pages.add(PurchasesPanel.createView(session, onLogout), "mod_compras");
+        pages.add(QualityPanel.createView(session, onLogout), "mod_calidad");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", session.getNombreCompleto(), entry -> {
             if ("Inicio".equals(entry) || "Administracion".equals(entry)) {
                 layout.show(pages, "resumen");
@@ -81,14 +129,36 @@ public class AdminPanel {
                 layout.show(pages, "ordenes");
             } else if ("Chat".equals(entry)) {
                 layout.show(pages, "chat");
-            } else if ("Configuracion".equals(entry)) {
-                SettingsDialog.open(session.getId());
-            } else if (!"Administracion".equals(entry)) {
+            } else if ("Empleados".equals(entry)) {
+                layout.show(pages, "empleados");
+            } else if ("Produccion".equals(entry)) layout.show(pages,"mod_produccion");
+            else if ("Mantenimiento".equals(entry)) layout.show(pages,"mod_mantenimiento");
+            else if ("Deposito".equals(entry)) layout.show(pages,"mod_deposito");
+            else if ("Compras".equals(entry)) layout.show(pages,"mod_compras");
+            else if ("Calidad".equals(entry)) layout.show(pages,"mod_calidad");
+            else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
         }, onLogout);
         UiTheme.content(shell).add(pages, BorderLayout.CENTER);
         return shell;
+    }
+
+    private static JPanel crearPanelEmpleados(int adminId) {
+        JPanel panel=new JPanel(new BorderLayout(10,10)); panel.setBackground(UiTheme.BACKGROUND);
+        DefaultTableModel model=new DefaultTableModel(new String[]{"ID","Nombre","Apellido","Usuario","Rol"},0){ public boolean isCellEditable(int r,int c){return false;} };
+        JTable table=new JTable(model); UiTheme.styleTable(table); panel.add(UiTheme.tableScroll(table),BorderLayout.CENTER);
+        JTextField nombre=new JTextField(), apellido=new JTextField(), usuario=new JTextField(); JPasswordField clave=new JPasswordField();
+        JComboBox<String> rol=new JComboBox<>(new String[]{"Administrador Global","Administracion","Gerencia","Produccion","Mantenimiento","Deposito","Compras","Calidad","Supervisor Produccion","Supervisor Mantenimiento","Supervisor Deposito","Supervisor Compras","Supervisor Calidad"});
+        JButton guardar=new JButton("Crear empleado"), recargar=new JButton("Recargar");
+        JPanel form=new JPanel(new GridLayout(2,6,8,8));
+        for(String s:new String[]{"Nombre","Apellido","Usuario","Contraseña (vacía conserva)","Rol","Acciones"}) form.add(new JLabel(s));
+        form.add(nombre);form.add(apellido);form.add(usuario);form.add(clave);form.add(rol); JPanel actions=new JPanel();actions.add(guardar);actions.add(recargar);form.add(actions);panel.add(form,BorderLayout.SOUTH);
+        Runnable refresh=()->{model.setRowCount(0);try{for(Map<String,String> r:administracionDao.listarEmpleados(adminId))model.addRow(new Object[]{r.get("id_usuario"),r.get("nombre"),r.get("apellido"),r.get("usuario"),r.get("rol")});}catch(IOException ex){JOptionPane.showMessageDialog(panel,ex.getMessage(),"Empleados",JOptionPane.ERROR_MESSAGE);}};
+        table.getSelectionModel().addListSelectionListener(e->{if(!e.getValueIsAdjusting()&&table.getSelectedRow()>=0){int r=table.convertRowIndexToModel(table.getSelectedRow());nombre.setText(String.valueOf(model.getValueAt(r,1)));apellido.setText(String.valueOf(model.getValueAt(r,2)));usuario.setText(String.valueOf(model.getValueAt(r,3)));rol.setSelectedItem(model.getValueAt(r,4));guardar.setText("Guardar cambios");}});
+        recargar.addActionListener(e->refresh.run());
+        guardar.addActionListener(e->{if(nombre.getText().trim().isEmpty()||usuario.getText().trim().isEmpty()){JOptionPane.showMessageDialog(panel,"Completa nombre y usuario.");return;}boolean edit=table.getSelectedRow()>=0;Map<String,String>d=new LinkedHashMap<>();d.put("id_usuario",String.valueOf(adminId));d.put("id_empleado",edit?String.valueOf(model.getValueAt(table.convertRowIndexToModel(table.getSelectedRow()),0)):"");d.put("nombre",nombre.getText().trim());d.put("apellido",apellido.getText().trim());d.put("usuario",usuario.getText().trim());d.put("contrasena",new String(clave.getPassword()));d.put("rol",String.valueOf(rol.getSelectedItem()));try{ApiResult result=edit?administracionDao.actualizarEmpleado(d):administracionDao.crearEmpleado(d);if(result.isSuccess()){table.clearSelection();guardar.setText("Crear empleado");clave.setText("");refresh.run();}else JOptionPane.showMessageDialog(panel,result.getBody(),"Empleados",JOptionPane.ERROR_MESSAGE);}catch(IOException ex){JOptionPane.showMessageDialog(panel,ex.getMessage(),"Empleados",JOptionPane.ERROR_MESSAGE);}});
+        refresh.run();return panel;
     }
 
     private static void cargarMain(String employeeName) {
@@ -105,7 +175,7 @@ public class AdminPanel {
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
-        pages.add(crearPanelChat(null), "chat");
+        pages.add(crearPanelChat(null, id -> abrirPedidoDesdeChat(id, layout, pages)), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", employeeName, entry -> {
             if ("Inicio".equals(entry) || "Administracion".equals(entry)) {
                 layout.show(pages, "resumen");
@@ -257,6 +327,7 @@ public class AdminPanel {
         }
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "pedido");
         pedidos.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
         actividad.add(pedidos);
 
@@ -302,26 +373,37 @@ public class AdminPanel {
         panel.setBackground(UiTheme.BACKGROUND);
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
-        JPanel form = new JPanel(new GridLayout(2, 6, 8, 8));
-        JComboBox<String> cliente = new JComboBox<>();
+        JPanel form = new JPanel(new BorderLayout(8, 8));
+        JPanel campos = new JPanel(new GridLayout(2, 6, 8, 8));
+        JComboBox<ClienteOption> cliente = new JComboBox<>();
+        pedidoClienteCombo = cliente;
         JTextField email = new JTextField();
         JTextField telefono = new JTextField();
         JTextField descripcion = new JTextField();
         JTextField cantidad = new JTextField("1");
         JComboBox<String> material = new JComboBox<>();
         JTextField entrega = new JTextField(LocalDate.now().plusDays(14).toString());
-        form.add(new JLabel("Cliente"));
-        form.add(new JLabel("Email"));
-        form.add(new JLabel("Telefono"));
-        form.add(new JLabel("Descripcion"));
-        form.add(new JLabel("Cantidad"));
-        form.add(new JLabel("Material"));
-        form.add(cliente);
-        form.add(email);
-        form.add(telefono);
-        form.add(descripcion);
-        form.add(cantidad);
-        form.add(material);
+        campos.add(new JLabel("Cliente"));
+        campos.add(new JLabel("Email"));
+        campos.add(new JLabel("Telefono"));
+        campos.add(new JLabel("Descripcion"));
+        campos.add(new JLabel("Cantidad"));
+        campos.add(new JLabel("Material"));
+        campos.add(cliente);
+        campos.add(email);
+        campos.add(telefono);
+        campos.add(descripcion);
+        campos.add(cantidad);
+        campos.add(material);
+        JTextField buscarCliente = new JTextField();
+        buscarCliente.setToolTipText("Escribí el nombre para buscar un cliente");
+        UiTheme.styleInput(buscarCliente);
+        JPanel busquedaCliente = new JPanel(new BorderLayout(8, 0));
+        busquedaCliente.setOpaque(false);
+        busquedaCliente.add(new JLabel("Buscar cliente"), BorderLayout.WEST);
+        busquedaCliente.add(buscarCliente, BorderLayout.CENTER);
+        form.add(busquedaCliente, BorderLayout.NORTH);
+        form.add(campos, BorderLayout.CENTER);
 
         JPanel inferior = new JPanel(new BorderLayout(8, 8));
         inferior.add(form, BorderLayout.CENTER);
@@ -350,11 +432,37 @@ public class AdminPanel {
         panel.add(inferior, BorderLayout.SOUTH);
 
         cargarClientes(cliente, email, telefono);
+        List<Map<String, String>> clientesDisponibles = getRows("clientes_list");
+        final boolean[] actualizandoClientes = {false};
+        buscarCliente.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private void actualizar() {
+                if (actualizandoClientes[0]) return;
+                String query = buscarCliente.getText().trim().toLowerCase();
+                String selectedId = clienteIdSeleccionado(cliente);
+                actualizandoClientes[0] = true;
+                cliente.removeAllItems();
+                for (Map<String, String> row : clientesDisponibles) {
+                    String id = row.getOrDefault("id_cliente", "");
+                    String name = row.getOrDefault("razon_social", "");
+                    if (query.isEmpty() || name.toLowerCase().contains(query)) cliente.addItem(new ClienteOption(id, name));
+                }
+                boolean restored = false;
+                for (int i = 0; i < cliente.getItemCount(); i++) if (selectedId.equals(cliente.getItemAt(i).id)) { cliente.setSelectedIndex(i); restored = true; break; }
+                if (!restored && cliente.getItemCount() > 0) cliente.setSelectedIndex(0);
+                actualizandoClientes[0] = false;
+                completarContacto(cliente, clientesDisponibles, email, telefono);
+            }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { actualizar(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { actualizar(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { actualizar(); }
+        });
         cargarMateriales(material);
         recargarPedidos(modelo);
 
         recargar.addActionListener(e -> {
             cargarClientes(cliente, email, telefono);
+            clientesDisponibles.clear();
+            clientesDisponibles.addAll(getRows("clientes_list"));
             cargarMateriales(material);
             recargarPedidos(modelo);
         });
@@ -364,8 +472,8 @@ public class AdminPanel {
                 return;
             }
             Map<String, String> data = new LinkedHashMap<>();
-            data.put("id_cliente", idSeleccionado(cliente));
-            data.put("razon_social", textoSeleccionado(cliente));
+            data.put("id_cliente", clienteIdSeleccionado(cliente));
+            data.put("razon_social", clienteNombreSeleccionado(cliente));
             data.put("email", email.getText().trim());
             data.put("telefono", telefono.getText().trim());
             data.put("descripcion", descripcion.getText().trim());
@@ -379,14 +487,7 @@ public class AdminPanel {
             }
         });
 
-        tabla.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent event) {
-                if (event.getClickCount() == 2 && tabla.getSelectedRow() >= 0) {
-                    mostrarDetallePedido(String.valueOf(modelo.getValueAt(tabla.getSelectedRow(), 0)));
-                }
-            }
-        });
+        RecordDetailEditor.attach(tabla, "pedido");
 
         crearOrden.addActionListener(e -> {
             int row = tabla.getSelectedRow();
@@ -437,6 +538,7 @@ public class AdminPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "orden");
         panel.setBackground(UiTheme.BACKGROUND);
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
@@ -479,7 +581,7 @@ public class AdminPanel {
         return panel;
     }
 
-    private static JPanel crearPanelChat(EmployeeSession session) {
+    private static JPanel crearPanelChat(EmployeeSession session, java.util.function.Consumer<String> crearPedido) {
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(UiTheme.BACKGROUND);
         if (!chatWebConfigurar()) {
@@ -498,7 +600,7 @@ public class AdminPanel {
         views.setOpaque(false);
         Runnable[] abrirBandeja = {() -> {
             views.removeAll();
-            JPanel inbox = crearBandejaChat();
+            JPanel inbox = crearBandejaChat(crearPedido);
             views.add(inbox, "bandeja");
             cards.show(views, "bandeja");
             views.revalidate();
@@ -620,11 +722,11 @@ public class AdminPanel {
         return outer;
     }
 
-    private static JPanel crearBandejaChat() {
+    private static JPanel crearBandejaChat(java.util.function.Consumer<String> crearPedido) {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setBackground(UiTheme.WHITE);
         panel.setBorder(BorderFactory.createLineBorder(UiTheme.LINE));
-        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Cliente", "Email", "Último mensaje", "Estado"}, 0) {
+        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Cliente", "Email", "Último mensaje", "Estado", "Cliente ID"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         JTable chats = new JTable(model);
@@ -637,6 +739,9 @@ public class AdminPanel {
         chats.getColumnModel().getColumn(2).setPreferredWidth(145);
         chats.getColumnModel().getColumn(3).setPreferredWidth(190);
         chats.getColumnModel().getColumn(4).setPreferredWidth(80);
+        chats.getColumnModel().getColumn(5).setMinWidth(0);
+        chats.getColumnModel().getColumn(5).setMaxWidth(0);
+        chats.getColumnModel().getColumn(5).setPreferredWidth(0);
         JPanel list = new JPanel(new BorderLayout(0, 8));
         list.setPreferredSize(new java.awt.Dimension(410, 0));
         list.setBackground(UiTheme.WHITE);
@@ -648,10 +753,16 @@ public class AdminPanel {
         listTitle.setForeground(UiTheme.ORANGE);
         JButton refresh = new JButton("Actualizar");
         JButton logout = new JButton("Salir del chat");
+        JButton createOrder = new JButton("Crear pedido");
         UiTheme.styleButton(refresh, false);
         UiTheme.styleButton(logout, false);
+        UiTheme.styleButton(createOrder, true);
         listHeader.add(listTitle, BorderLayout.WEST);
-        listHeader.add(logout, BorderLayout.EAST);
+        JPanel headerActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        headerActions.setOpaque(false);
+        headerActions.add(createOrder);
+        headerActions.add(logout);
+        listHeader.add(headerActions, BorderLayout.EAST);
         list.add(listHeader, BorderLayout.NORTH);
         list.add(UiTheme.tableScroll(chats), BorderLayout.CENTER);
         JPanel conversation = new JPanel(new BorderLayout(0, 0));
@@ -710,7 +821,7 @@ public class AdminPanel {
                 List<Map<String, String>> chatRows = administracionDao.listarChatsWeb();
                 chatSource[0] = !chatRows.isEmpty() && "local".equals(chatRows.get(0).get("_chat_source")) ? "local" : "web";
                 for (Map<String, String> row : chatRows) {
-                    model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado")});
+                    model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado"), row.get("id_cliente")});
                 }
                 if (!selectedChat[0].isEmpty()) {
                     for (int i = 0; i < model.getRowCount(); i++) {
@@ -803,6 +914,17 @@ public class AdminPanel {
             contact.setText(selectedClient[0] + "  ·  " + model.getValueAt(row, 2) + "  ·  " + model.getValueAt(row, 4));
             loadMessages.run();
         });
+        createOrder.addActionListener(event -> {
+            int selected = chats.getSelectedRow();
+            if (selected < 0) { JOptionPane.showMessageDialog(panel, "Seleccioná una conversación.", "Crear pedido", JOptionPane.WARNING_MESSAGE); return; }
+            int row = chats.convertRowIndexToModel(selected);
+            String customerId = String.valueOf(model.getValueAt(row, 5));
+            if (customerId.isEmpty() || "null".equals(customerId)) {
+                JOptionPane.showMessageDialog(panel, "No se pudo asociar esta conversación con un cliente registrado.", "Crear pedido", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
+            crearPedido.accept(customerId);
+        });
         refresh.addActionListener(event -> {
             String keep = selectedChat[0];
             loadChats.run();
@@ -874,7 +996,7 @@ public class AdminPanel {
                 views.removeAll();
                 views.add(crearIngresoChat(null, () -> {
                     views.removeAll();
-                    views.add(crearBandejaChat(), "bandeja");
+                    views.add(crearBandejaChat(crearPedido), "bandeja");
                     cardLayout.show(views, "bandeja");
                     views.revalidate();
                     views.repaint();
@@ -937,19 +1059,27 @@ public class AdminPanel {
         }
     }
 
-    private static void cargarClientes(JComboBox<String> cliente, JTextField email, JTextField telefono) {
+    private static void cargarClientes(JComboBox<ClienteOption> cliente, JTextField email, JTextField telefono) {
         cliente.removeAllItems();
         List<Map<String, String>> clientes = getRows("clientes_list");
         for (Map<String, String> fila : clientes) {
-            cliente.addItem(fila.get("id_cliente") + " - " + fila.get("razon_social"));
+            cliente.addItem(new ClienteOption(fila.getOrDefault("id_cliente", ""), fila.getOrDefault("razon_social", "")));
         }
-        cliente.addActionListener(event -> completarContacto(cliente, clientes, email, telefono));
+        Object previousListener = cliente.getClientProperty("metalgest.clienteListener");
+        if (previousListener instanceof java.awt.event.ActionListener) cliente.removeActionListener((java.awt.event.ActionListener) previousListener);
+        java.awt.event.ActionListener listener = event -> completarContacto(cliente, clientes, email, telefono);
+        cliente.putClientProperty("metalgest.clienteListener", listener);
+        cliente.addActionListener(listener);
         completarContacto(cliente, clientes, email, telefono);
+        if (!pedidoClientePendiente.isEmpty()) {
+            for (int i = 0; i < cliente.getItemCount(); i++) if (pedidoClientePendiente.equals(cliente.getItemAt(i).id)) cliente.setSelectedIndex(i);
+            pedidoClientePendiente = "";
+        }
     }
 
-    private static void completarContacto(JComboBox<String> cliente, List<Map<String, String>> clientes,
+    private static void completarContacto(JComboBox<ClienteOption> cliente, List<Map<String, String>> clientes,
                                           JTextField email, JTextField telefono) {
-        String idCliente = idSeleccionado(cliente);
+        String idCliente = clienteIdSeleccionado(cliente);
         for (Map<String, String> fila : clientes) {
             if (idCliente.equals(fila.get("id_cliente"))) {
                 email.setText(fila.getOrDefault("email", ""));
@@ -1089,6 +1219,21 @@ public class AdminPanel {
             return "";
         }
         return seleccionado.toString().split(" - ", 2)[0];
+    }
+
+    private static String clienteIdSeleccionado(JComboBox<ClienteOption> combo) {
+        ClienteOption seleccionado = (ClienteOption) combo.getSelectedItem();
+        return seleccionado == null ? "" : seleccionado.id;
+    }
+
+    private static String clienteNombreSeleccionado(JComboBox<ClienteOption> combo) {
+        ClienteOption seleccionado = (ClienteOption) combo.getSelectedItem();
+        return seleccionado == null ? "" : seleccionado.nombre;
+    }
+
+    private static String idSeleccionado(JComboBox<String> combo, int index) {
+        Object value = combo.getItemAt(index);
+        return value == null ? "" : value.toString().split(" - ", 2)[0];
     }
 
     private static String textoSeleccionado(JComboBox<String> combo) {

@@ -3,237 +3,152 @@ package modulos.mantenimiento;
 import modulos.common.dao.ApiResult;
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
-import modulos.common.SettingsDialog;
 import modulos.common.UiTheme;
+import modulos.common.RecordDetailEditor;
 import modulos.mantenimiento.dao.MantenimientoDao;
 
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.JTable;
-import javax.swing.JTextArea;
-import javax.swing.JTextField;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.BorderLayout;
-import java.awt.GridLayout;
+import javax.swing.table.TableRowSorter;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.RowFilter;
+import java.awt.*;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 public class MaintenancePanel {
-    private static final MantenimientoDao mantenimientoDao = new MantenimientoDao();
+    private static final MantenimientoDao dao = new MantenimientoDao();
 
     public static void openMantenimiento() {
         EmployeeSession session = ModuleLogin.authenticate("Mantenimiento", "Mantenimiento");
-        if (session != null) {
-            openAuthenticated(session);
-        }
+        if (session != null) openAuthenticated(session);
     }
-
     public static void openAuthenticated(EmployeeSession session) {
-        SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto(), session.getId()));
+        SwingUtilities.invokeLater(() -> cargarMain(session.getNombreCompleto()));
     }
-
     public static JPanel createView(EmployeeSession session, Runnable onLogout) {
         JTabbedPane tabs = crearTabs();
-        JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", session.getNombreCompleto(), entry -> {
-            if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) {
-                tabs.setSelectedIndex(0);
-            } else if ("Solicitudes".equals(entry) || "Preventivos".equals(entry)) {
-                tabs.setSelectedIndex(1);
-            } else if ("Configuracion".equals(entry)) {
-                SettingsDialog.open(session.getId());
-            }
-        }, onLogout);
+        JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", session.getNombreCompleto(), entry -> seleccionar(tabs, entry), onLogout);
         UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
         return shell;
     }
-
-    private static void cargarMain(String employeeName, int employeeId) {
+    private static void cargarMain(String nombre) {
         JFrame ventana = new JFrame("MetalGest - Mantenimiento");
-        UiTheme.configureWindow(ventana);
-        ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        ventana.setLocationRelativeTo(null);
+        UiTheme.configureWindow(ventana); ventana.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); ventana.setLocationRelativeTo(null);
         JTabbedPane tabs = crearTabs();
-        JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", employeeName, entry -> {
-            if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) tabs.setSelectedIndex(0);
-            else if ("Solicitudes".equals(entry) || "Preventivos".equals(entry)) tabs.setSelectedIndex(1);
-        });
-        UiTheme.content(shell).add(tabs, BorderLayout.CENTER);
-        ventana.add(shell);
-        ventana.setVisible(true);
+        JPanel shell = UiTheme.shell("Mantenimiento", "Gestion de mantenimiento", nombre, entry -> seleccionar(tabs, entry));
+        UiTheme.content(shell).add(tabs, BorderLayout.CENTER); ventana.add(shell); ventana.setVisible(true);
     }
-
+    private static void seleccionar(JTabbedPane tabs, String entry) {
+        if ("Solicitudes".equals(entry)) tabs.setSelectedIndex(1);
+        else if ("Preventivos".equals(entry)) tabs.setSelectedIndex(2);
+        else if ("Inicio".equals(entry) || "Mantenimiento".equals(entry)) tabs.setSelectedIndex(0);
+    }
     private static JTabbedPane crearTabs() {
-        JTabbedPane tabs = new JTabbedPane();
-        UiTheme.styleTabs(tabs);
+        JTabbedPane tabs = new JTabbedPane(); UiTheme.styleTabs(tabs);
         tabs.addTab("Dashboard", UiTheme.dashboard("Mantenimiento", "Organizá solicitudes, reparaciones y tareas preventivas.", "Solicitudes",
                 new String[][]{{"Solicitudes", "Atender"}, {"Reparaciones", "En curso"}, {"Preventivos", "Programar"}},
-                new String[]{"Revisá reportes de falla pendientes", "Actualizá reparaciones y repuestos utilizados", "Programá controles preventivos para cada máquina"},
-                entry -> tabs.setSelectedIndex(1)));
-        tabs.addTab("Solicitudes y preventivos", crearPanel());
+                new String[]{"Revisá reportes de falla pendientes", "Actualizá reparaciones y repuestos utilizados", "Programá controles preventivos para cada máquina"}, entry -> seleccionar(tabs, entry)));
+        tabs.addTab("Solicitudes", crearPanel(false));
+        tabs.addTab("Preventivos", crearPanel(true));
         return tabs;
     }
-
-    private static JPanel crearPanel() {
-        JPanel panel = new JPanel(new BorderLayout(10, 10));
-        DefaultTableModel modelo = new DefaultTableModel(
-                new String[]{"ID", "Maquina", "Marca", "Modelo", "Tipo", "Problema", "Reparacion", "Repuestos", "Estado"}, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+    private static JPanel crearPanel(boolean preventivos) {
+        JPanel panel = new JPanel(new BorderLayout(10, 10)); panel.setBackground(UiTheme.BACKGROUND);
+        DefaultTableModel modelo = new DefaultTableModel(new String[]{"ID", "Máquina", "Marca", "Modelo", "Tipo", "Problema", "Reparación", "Repuestos", "Estado", "id_maquina"}, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
-        JTable tabla = new JTable(modelo);
-        UiTheme.styleTable(tabla);
-        tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        panel.setBackground(UiTheme.BACKGROUND);
-        panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
-
-        JTextArea reparacion = new JTextArea(3, 24);
-        JTextArea repuestos = new JTextArea(3, 24);
-        JComboBox<String> estado = new JComboBox<>(new String[]{"Pendiente", "En proceso", "Resuelta"});
-        JButton actualizar = new JButton("Guardar mantenimiento");
-        JButton preventivo = new JButton("Programar preventivo");
-        JButton recargar = new JButton("Recargar");
-        UiTheme.styleInput(reparacion);
-        UiTheme.styleInput(repuestos);
-        UiTheme.styleInput(estado);
-        UiTheme.styleButton(actualizar, true);
-        UiTheme.styleButton(preventivo, true);
-        UiTheme.styleButton(recargar, false);
-        JPanel formulario = new JPanel(new GridLayout(2, 4, 8, 8));
-        formulario.add(new JLabel("Reparacion realizada"));
-        formulario.add(new JLabel("Repuestos utilizados"));
-        formulario.add(new JLabel("Estado"));
-        formulario.add(new JLabel("Acciones"));
-        formulario.add(new JScrollPane(reparacion));
-        formulario.add(new JScrollPane(repuestos));
-        formulario.add(estado);
-        JPanel botones = new JPanel();
-        botones.add(actualizar);
-        botones.add(preventivo);
-        botones.add(recargar);
-        formulario.add(botones);
-        panel.add(formulario, BorderLayout.SOUTH);
-
+        JTable tabla = new JTable(modelo); UiTheme.styleTable(tabla); tabla.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        RecordDetailEditor.attach(tabla, "mantenimiento");
+        JScrollPane scroll = UiTheme.tableScroll(tabla);
+        tabla.getColumnModel().getColumn(9).setMinWidth(0); tabla.getColumnModel().getColumn(9).setMaxWidth(0); tabla.getColumnModel().getColumn(9).setPreferredWidth(0);
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(modelo); tabla.setRowSorter(sorter);
+        JCheckBox pendientes = new JCheckBox("Pendientes", true), proceso = new JCheckBox("En proceso", true), resueltas = new JCheckBox("Resueltas", true);
+        for (JCheckBox check : new JCheckBox[]{pendientes, proceso, resueltas}) { check.setOpaque(false); check.setForeground(UiTheme.INK); }
+        JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT)); filters.setOpaque(false); filters.add(new JLabel("Mostrar:")); filters.add(pendientes); filters.add(proceso); filters.add(resueltas);
+        JButton editar = new JButton("Editar solicitud"), programar = new JButton("Programar preventivo"), recargar = new JButton("Recargar");
+        UiTheme.styleButton(editar, true); UiTheme.styleButton(programar, true); UiTheme.styleButton(recargar, false);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT)); actions.setOpaque(false);
+        if (preventivos) actions.add(programar); else actions.add(editar);
+        actions.add(recargar);
+        JPanel north = new JPanel(new BorderLayout()); north.setOpaque(false); north.add(filters, BorderLayout.WEST); north.add(actions, BorderLayout.EAST);
+        panel.add(north, BorderLayout.NORTH); panel.add(scroll, BorderLayout.CENTER);
+        Runnable filter = () -> sorter.setRowFilter(new RowFilter<DefaultTableModel, Integer>() {
+            @Override public boolean include(Entry<? extends DefaultTableModel, ? extends Integer> entry) {
+                String type = String.valueOf(entry.getValue(4));
+                String status = String.valueOf(entry.getValue(8));
+                if (!(preventivos ? "Preventivo" : "Correctivo").equalsIgnoreCase(type)) return false;
+                return ("Pendiente".equalsIgnoreCase(status) && pendientes.isSelected())
+                        || ("En proceso".equalsIgnoreCase(status) && proceso.isSelected())
+                        || ("Resuelta".equalsIgnoreCase(status) && resueltas.isSelected());
+            }
+        });
+        for (JCheckBox check : new JCheckBox[]{pendientes, proceso, resueltas}) check.addActionListener(e -> filter.run());
+        for (int column = 0; column < tabla.getColumnCount(); column++) tabla.getColumnModel().getColumn(column).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int row, int col) {
+                Component c = super.getTableCellRendererComponent(t, value, selected, focus, row, col);
+                String status = String.valueOf(t.getValueAt(row, 8));
+                Color color = "Resuelta".equalsIgnoreCase(status) ? new Color(45, 170, 90) : "En proceso".equalsIgnoreCase(status) ? new Color(235, 185, 45) : new Color(205, 65, 60);
+                ((JComponent)c).setBorder(BorderFactory.createMatteBorder(1, 1, 1, 1, color));
+                return c;
+            }
+        });
         recargar.addActionListener(e -> cargarMantenimientos(modelo));
-        tabla.getSelectionModel().addListSelectionListener(e -> {
-            if (!e.getValueIsAdjusting() && tabla.getSelectedRow() >= 0) {
-                reparacion.setText(valor(modelo, tabla.getSelectedRow(), 6));
-                repuestos.setText(valor(modelo, tabla.getSelectedRow(), 7));
-                estado.setSelectedItem(valor(modelo, tabla.getSelectedRow(), 8));
-            }
-        });
-        actualizar.addActionListener(e -> {
-            int fila = tabla.getSelectedRow();
-            if (fila < 0) {
-                mostrarAviso("Selecciona un mantenimiento.");
-                return;
-            }
-            if (reparacion.getText().trim().isEmpty()) {
-                mostrarAviso("Describe la reparacion realizada.");
-                return;
-            }
-            Map<String, String> datos = new LinkedHashMap<>();
-            datos.put("id_mantenimiento", valor(modelo, fila, 0));
-            datos.put("reparacion", reparacion.getText().trim());
-            datos.put("repuestos", repuestos.getText().trim());
-            datos.put("estado", estado.getSelectedItem().toString());
-            if (guardar(datos)) {
-                cargarMantenimientos(modelo);
-            }
-        });
-        preventivo.addActionListener(e -> programarPreventivo(tabla, modelo));
-        cargarMantenimientos(modelo);
+        editar.addActionListener(e -> editar(tabla, modelo));
+        programar.addActionListener(e -> programar(tabla, modelo));
+        cargarMantenimientos(modelo); filter.run();
         return panel;
     }
-
-    private static void programarPreventivo(JTable tabla, DefaultTableModel modelo) {
-        int fila = tabla.getSelectedRow();
-        if (fila < 0) {
-            mostrarAviso("Selecciona una maquina.");
-            return;
-        }
-        JTextField fecha = new JTextField(java.time.LocalDate.now().plusMonths(1).toString());
-        JTextArea tarea = new JTextArea(3, 24);
-        JPanel dialogo = new JPanel(new GridLayout(0, 1, 6, 6));
-        dialogo.add(new JLabel("Fecha programada (AAAA-MM-DD)"));
-        dialogo.add(fecha);
-        dialogo.add(new JLabel("Control preventivo"));
-        dialogo.add(new JScrollPane(tarea));
-        int resultado = JOptionPane.showConfirmDialog(null, dialogo, "Programar mantenimiento preventivo", JOptionPane.OK_CANCEL_OPTION);
-        if (resultado != JOptionPane.OK_OPTION || tarea.getText().trim().isEmpty()) {
-            return;
-        }
-        Map<String, String> datos = new LinkedHashMap<>();
-        datos.put("id_maquina", valor(modelo, fila, 0));
-        datos.put("fecha", fecha.getText().trim());
-        datos.put("problema", tarea.getText().trim());
-        try {
-            ApiResult respuesta = mantenimientoDao.crearPreventivo(datos);
-            if (respuesta.isSuccess()) {
-                JOptionPane.showMessageDialog(null, "Mantenimiento preventivo programado.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
-                cargarMantenimientos(modelo);
-            } else {
-                JOptionPane.showMessageDialog(null, respuesta.getBody(), "MetalGest", JOptionPane.ERROR_MESSAGE);
-            }
-        } catch (IOException e) {
-            mostrarError(e);
-        }
-    }
-
     private static void cargarMantenimientos(DefaultTableModel modelo) {
         modelo.setRowCount(0);
         try {
-            List<Map<String, String>> filas = mantenimientoDao.listar();
-            for (Map<String, String> fila : filas) {
-                modelo.addRow(new Object[]{
-                        fila.get("id_mantenimiento"), fila.get("numero_identificacion"), fila.get("marca"),
-                        fila.get("modelo"), fila.get("tipo"), fila.get("problema"), fila.get("reparacion"),
-                        fila.get("repuestos"), fila.get("estado")
-                });
-            }
-        } catch (IOException e) {
-            mostrarError(e);
-        }
+            for (Map<String, String> row : dao.listar()) modelo.addRow(new Object[]{row.get("id_mantenimiento"), row.get("numero_identificacion"), row.get("marca"), row.get("modelo"), row.get("tipo"), row.get("problema"), row.get("reparacion"), row.get("repuestos"), row.get("estado"), row.get("id_maquina")});
+        } catch (IOException e) { error(e); }
     }
-
-    private static boolean guardar(Map<String, String> datos) {
-        try {
-            ApiResult resultado = mantenimientoDao.actualizar(datos);
-            if (resultado.isSuccess()) {
-                JOptionPane.showMessageDialog(null, "Mantenimiento actualizado.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
-                return true;
-            }
-            JOptionPane.showMessageDialog(null, resultado.getBody(), "MetalGest", JOptionPane.ERROR_MESSAGE);
-        } catch (IOException e) {
-            mostrarError(e);
-        }
-        return false;
+    private static void editar(JTable tabla, DefaultTableModel modelo) {
+        int selected = tabla.getSelectedRow(); if (selected < 0) { aviso("Seleccioná una solicitud."); return; }
+        int row = tabla.convertRowIndexToModel(selected);
+        JTextArea reparacion = new JTextArea(2, 30), repuestos = new JTextArea(2, 30), problema = new JTextArea(valor(modelo, row, 5), 2, 30);
+        problema.setEditable(false); problema.setLineWrap(true); problema.setWrapStyleWord(true);
+        reparacion.setText(valor(modelo, row, 6)); repuestos.setText(valor(modelo, row, 7));
+        JComboBox<String> estado = new JComboBox<>(new String[]{"Pendiente", "En proceso", "Resuelta"}); estado.setSelectedItem(valor(modelo, row, 8));
+        UiTheme.styleInput(reparacion); UiTheme.styleInput(repuestos); UiTheme.styleInput(problema); UiTheme.styleInput(estado);
+        JPanel form = new JPanel(new GridBagLayout()); form.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+        GridBagConstraints c = new GridBagConstraints(); c.gridx = 0; c.weightx = 1; c.fill = GridBagConstraints.HORIZONTAL; c.insets = new Insets(2, 2, 2, 2);
+        c.gridy = 0; form.add(new JLabel("Máquina: " + valor(modelo, row, 1) + " · " + valor(modelo, row, 2) + " " + valor(modelo, row, 3)), c);
+        c.gridy = 1; form.add(new JLabel("Tipo: " + valor(modelo, row, 4)), c);
+        c.gridy = 2; form.add(new JLabel("Problema reportado"), c);
+        c.gridy = 3; form.add(areaConAltura(problema), c);
+        c.gridy = 4; form.add(new JLabel("Reparación realizada"), c);
+        c.gridy = 5; form.add(areaConAltura(reparacion), c);
+        c.gridy = 6; form.add(new JLabel("Repuestos utilizados"), c);
+        c.gridy = 7; form.add(areaConAltura(repuestos), c);
+        c.gridy = 8; form.add(new JLabel("Estado"), c);
+        c.gridy = 9; form.add(estado, c);
+        if (JOptionPane.showConfirmDialog(tabla, form, "Actualizar mantenimiento", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
+        Map<String, String> data = new LinkedHashMap<>(); data.put("id_mantenimiento", valor(modelo, row, 0)); data.put("reparacion", reparacion.getText().trim()); data.put("repuestos", repuestos.getText().trim()); data.put("estado", String.valueOf(estado.getSelectedItem()));
+        try { ApiResult result = dao.actualizar(data); if (result.isSuccess()) cargarMantenimientos(modelo); else JOptionPane.showMessageDialog(tabla, result.getBody(), "Mantenimiento", JOptionPane.ERROR_MESSAGE); }
+        catch (IOException e) { error(e); }
     }
-
-    private static String valor(DefaultTableModel modelo, int fila, int columna) {
-        Object valor = modelo.getValueAt(fila, columna);
-        return valor == null ? "" : valor.toString();
+    private static JScrollPane areaConAltura(JTextArea area) {
+        JScrollPane scroll = new JScrollPane(area);
+        scroll.setPreferredSize(new Dimension(440, 48));
+        return scroll;
     }
-
-    private static void mostrarAviso(String mensaje) {
-        JOptionPane.showMessageDialog(null, mensaje, "MetalGest", JOptionPane.WARNING_MESSAGE);
+    private static void programar(JTable tabla, DefaultTableModel modelo) {
+        int selected = tabla.getSelectedRow(); if (selected < 0) { aviso("Seleccioná una máquina de la lista."); return; }
+        int row = tabla.convertRowIndexToModel(selected);
+        JTextField fecha = new JTextField(java.time.LocalDate.now().plusMonths(1).toString()); JTextArea tarea = new JTextArea(4, 28);
+        JPanel form = new JPanel(new GridLayout(0, 1, 7, 7)); form.add(new JLabel("Fecha programada (AAAA-MM-DD)")); form.add(fecha); form.add(new JLabel("Control preventivo")); form.add(new JScrollPane(tarea));
+        if (JOptionPane.showConfirmDialog(tabla, form, "Programar preventivo", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION || tarea.getText().trim().isEmpty()) return;
+        Map<String, String> data = new LinkedHashMap<>(); data.put("id_maquina", valor(modelo, row, 9)); data.put("fecha", fecha.getText().trim()); data.put("problema", tarea.getText().trim());
+        try { ApiResult result = dao.crearPreventivo(data); if (result.isSuccess()) cargarMantenimientos(modelo); else JOptionPane.showMessageDialog(tabla, result.getBody(), "Mantenimiento", JOptionPane.ERROR_MESSAGE); }
+        catch (IOException e) { error(e); }
     }
-
-    private static void mostrarError(IOException error) {
-        JOptionPane.showMessageDialog(null, "No se pudo conectar con la API: " + error.getMessage(), "Conexion", JOptionPane.ERROR_MESSAGE);
-    }
-
-    public static void main(String[] args) {
-        openMantenimiento();
-    }
+    private static String valor(DefaultTableModel model, int row, int col) { Object value = model.getValueAt(row, col); return value == null ? "" : value.toString(); }
+    private static void aviso(String value) { JOptionPane.showMessageDialog(null, value, "MetalGest", JOptionPane.WARNING_MESSAGE); }
+    private static void error(IOException e) { JOptionPane.showMessageDialog(null, "No se pudo conectar con la API: " + e.getMessage(), "Conexión", JOptionPane.ERROR_MESSAGE); }
+    public static void main(String[] args) { openMantenimiento(); }
 }

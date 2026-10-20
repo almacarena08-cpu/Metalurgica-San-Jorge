@@ -2,8 +2,8 @@ package modulos.deposito;
 
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
-import modulos.common.SettingsDialog;
 import modulos.common.UiTheme;
+import modulos.common.RecordDetailEditor;
 import modulos.common.dao.ApiResult;
 import modulos.deposito.dao.DepositoDao;
 
@@ -53,8 +53,6 @@ public class DepositPanel {
                 tabs.setSelectedIndex(1);
             } else if ("Movimientos".equals(entry)) {
                 tabs.setSelectedIndex(2);
-            } else if ("Configuracion".equals(entry)) {
-                SettingsDialog.open(session.getId());
             } else if (!"Deposito".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este modulo pertenece a otra aplicacion.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -94,6 +92,7 @@ public class DepositPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "material");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
         JButton recargar = new JButton("Recargar inventario");
         UiTheme.styleButton(recargar, false);
@@ -111,6 +110,7 @@ public class DepositPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "movimiento");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JComboBox<String> material = new JComboBox<>();

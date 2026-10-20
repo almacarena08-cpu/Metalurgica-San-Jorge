@@ -72,6 +72,8 @@ Ejecutar la aplicacion con un unico login:
 & C:\jdk\bin\java.exe -Dmetalgest.api.url=http://localhost:8080/clases/php/api.php -cp build\classes modulos.MetalGestApp
 ```
 
+Para compilar la version actual y ejecutarla con doble clic en Windows, iniciar `MetalGestApp.bat` desde la carpeta del proyecto. El lanzador genera `build\MetalGestApp-latest.jar` en cada ejecucion y requiere JDK 17 o superior.
+
 El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/Metalurgica-San-Jorge/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 
 ## Acceso por rol
@@ -87,6 +89,12 @@ El login solicita usuario y contrasena. Segun el rol del usuario, la aplicacion 
 | Deposito | `deposito` | `1234` |
 | Compras | `compras` | `1234` |
 | Calidad | `calidad` | `1234` |
+| Administrador Global | `admin_global` | `1234` |
+| Supervisor Produccion | `supervisor_produccion` | `1234` |
+| Supervisor Mantenimiento | `supervisor_mantenimiento` | `1234` |
+| Supervisor Deposito | `supervisor_deposito` | `1234` |
+| Supervisor Compras | `supervisor_compras` | `1234` |
+| Supervisor Calidad | `supervisor_calidad` | `1234` |
 
 Luego del acceso, la cabecera muestra `Hola, Nombre!`.
 

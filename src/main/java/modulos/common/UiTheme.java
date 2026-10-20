@@ -11,6 +11,10 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JOptionPane;
+import javax.swing.JTable;
+import javax.swing.UIManager;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.AbstractButton;
 import javax.swing.ListSelectionModel;
 import javax.swing.SwingConstants;
@@ -21,6 +25,12 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Component;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.List;
 import java.awt.GraphicsEnvironment;
 import java.awt.Rectangle;
 import java.util.function.Consumer;
@@ -44,6 +54,29 @@ public final class UiTheme {
     public static final Color WHITE = new Color(30, 34, 38);
 
     private UiTheme() {
+    }
+
+    public static void installDarkDefaults() {
+        Color surface = new Color(27, 31, 35);
+        Color input = new Color(39, 44, 49);
+        Object[][] defaults = {
+                {"Panel.background", BACKGROUND}, {"OptionPane.background", BACKGROUND},
+                {"OptionPane.messageArea.background", BACKGROUND}, {"OptionPane.foreground", INK},
+                {"Label.foreground", INK}, {"Button.background", NAVY_LIGHT}, {"Button.foreground", INK},
+                {"Button.select", BLUE_SOFT}, {"ToggleButton.background", NAVY_LIGHT}, {"ToggleButton.foreground", INK},
+                {"CheckBox.background", BACKGROUND}, {"CheckBox.foreground", INK}, {"RadioButton.background", BACKGROUND},
+                {"RadioButton.foreground", INK}, {"ComboBox.background", input}, {"ComboBox.foreground", INK},
+                {"ComboBox.selectionBackground", BLUE_SOFT}, {"ComboBox.selectionForeground", INK},
+                {"TextField.background", input}, {"TextField.foreground", INK}, {"TextField.caretForeground", INK},
+                {"TextArea.background", input}, {"TextArea.foreground", INK}, {"TextArea.caretForeground", INK},
+                {"FormattedTextField.background", input}, {"FormattedTextField.foreground", INK},
+                {"ScrollPane.background", surface}, {"Viewport.background", surface},
+                {"TabbedPane.background", BACKGROUND}, {"TabbedPane.foreground", INK},
+                {"Table.background", surface}, {"Table.foreground", INK}, {"TableHeader.background", NAVY_LIGHT},
+                {"TableHeader.foreground", INK}, {"PopupMenu.background", surface}, {"MenuItem.background", surface},
+                {"MenuItem.foreground", INK}, {"List.background", surface}, {"List.foreground", INK}
+        };
+        for (Object[] entry : defaults) UIManager.put((String) entry[0], entry[1]);
     }
 
     public static void configureWindow(javax.swing.JFrame window) {
@@ -152,16 +185,6 @@ public final class UiTheme {
         sidebar.add(menu, BorderLayout.CENTER);
         JPanel footer = new JPanel(new GridLayout(0, 1, 0, 6));
         footer.setOpaque(false);
-        JButton settings = new JButton("⚙  Configuracion");
-        settings.setHorizontalAlignment(SwingConstants.LEFT);
-        settings.setFocusPainted(false);
-        settings.setBorderPainted(false);
-        settings.setOpaque(false);
-        settings.setForeground(new Color(213, 224, 230));
-        settings.setFont(new Font("SansSerif", Font.PLAIN, 11));
-        settings.setBorder(BorderFactory.createEmptyBorder(8, 8, 0, 0));
-        settings.addActionListener(event -> onNavigate.accept("Configuracion"));
-        footer.add(settings);
         JButton logout = new JButton("Salir");
         logout.setHorizontalAlignment(SwingConstants.LEFT);
         logout.setFocusPainted(false);
@@ -221,7 +244,7 @@ public final class UiTheme {
 
     private static String[] menuEntries(String module) {
         if ("Administracion".equals(module)) {
-            return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat"};
+            return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat", "Empleados", "Produccion", "Mantenimiento", "Deposito", "Compras", "Calidad"};
         }
         if ("Produccion".equals(module)) {
             return new String[]{"Produccion", "Ordenes recibidas", "Historial de avance", "Aviso a mantenimiento"};
@@ -257,6 +280,47 @@ public final class UiTheme {
         search.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(LINE), BorderFactory.createEmptyBorder(7, 10, 7, 10)));
         search.setPreferredSize(new Dimension(245, 30));
         topbar.add(search, BorderLayout.CENTER);
+        search.addFocusListener(new java.awt.event.FocusAdapter() {
+            @Override public void focusGained(java.awt.event.FocusEvent event) {
+                if ("Buscar en este módulo...".equals(search.getText())) search.setText("");
+            }
+            @Override public void focusLost(java.awt.event.FocusEvent event) {
+                if (search.getText().trim().isEmpty()) search.setText("Buscar en este módulo...");
+            }
+        });
+        final List<int[]> matches = new ArrayList<>();
+        final int[] current = {-1};
+        Runnable refreshMatches = () -> {
+            matches.clear(); current[0] = -1;
+            JPanel root = findShell(topbar);
+            if (root == null) return;
+            String query = "Buscar en este módulo...".equals(search.getText()) ? "" : search.getText().trim();
+            collectVisibleTables(root, tables -> {
+                for (JTable table : tables) {
+                    table.putClientProperty("metalgest.search", query);
+                    for (int row = 0; row < table.getRowCount(); row++) for (int col = 0; col < table.getColumnCount(); col++) {
+                        Object value = table.getValueAt(row, col);
+                        if (!query.isEmpty() && value != null && value.toString().toLowerCase().contains(query.toLowerCase())) matches.add(new int[]{tables.indexOf(table), row, col});
+                    }
+                    table.repaint();
+                }
+            });
+            if (!matches.isEmpty()) { current[0] = 0; selectSearchMatch(root, matches.get(0)); }
+        };
+        search.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { refreshMatches.run(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { refreshMatches.run(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { refreshMatches.run(); }
+        });
+        search.getInputMap().put(javax.swing.KeyStroke.getKeyStroke(KeyEvent.VK_F3, 0), "nextSearchMatch");
+        search.getActionMap().put("nextSearchMatch", new javax.swing.AbstractAction() {
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                if (matches.isEmpty()) return;
+                current[0] = (current[0] + 1) % matches.size();
+                JPanel root = findShell(topbar);
+                if (root != null) selectSearchMatch(root, matches.get(current[0]));
+            }
+        });
         String greeting = employeeName == null || employeeName.isEmpty()
             ? "MetalGest   |   Usuario interno"
             : "Hola, " + employeeName + "!";
@@ -285,10 +349,68 @@ public final class UiTheme {
     }
 
     public static JScrollPane tableScroll(JTable table) {
+        table.addMouseListener(new MouseAdapter() {
+            @Override public void mouseClicked(MouseEvent event) {
+                if (event.getClickCount() != 2) return;
+                int viewRow = table.rowAtPoint(event.getPoint());
+                if (viewRow < 0) return;
+                int row = table.convertRowIndexToModel(viewRow);
+                JPanel details = new JPanel(new GridLayout(0, 2, 12, 8));
+                details.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
+                for (int col = 0; col < table.getColumnCount(); col++) {
+                    details.add(new JLabel(table.getColumnName(col) + ":"));
+                    Object value = table.getModel().getValueAt(row, table.convertColumnIndexToModel(col));
+                    JTextArea text = new JTextArea(value == null ? "" : value.toString(), 2, 24);
+                    text.setLineWrap(true); text.setWrapStyleWord(true); text.setEditable(false);
+                    details.add(new JScrollPane(text));
+                }
+                JOptionPane.showMessageDialog(table, details, "Detalle de fila", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        for (int col = 0; col < table.getColumnCount(); col++) {
+            table.getColumnModel().getColumn(col).setCellRenderer(new DefaultTableCellRenderer() {
+                @Override public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int row, int column) {
+                    Component component = super.getTableCellRendererComponent(t, value, selected, focus, row, column);
+                    String query = String.valueOf(t.getClientProperty("metalgest.search"));
+                    if (!selected) setBackground(!query.isEmpty() && value != null && value.toString().toLowerCase().contains(query.toLowerCase()) ? new Color(255, 220, 70) : WHITE);
+                    if (!selected && !query.isEmpty() && value != null && value.toString().toLowerCase().contains(query.toLowerCase())) setForeground(Color.BLACK);
+                    else if (!selected) setForeground(INK);
+                    return component;
+                }
+            });
+        }
         JScrollPane scroll = new JScrollPane(table);
         scroll.setBorder(BorderFactory.createLineBorder(LINE));
         scroll.getViewport().setBackground(WHITE);
         return scroll;
+    }
+
+    private interface TableConsumer { void accept(List<JTable> tables); }
+    private static JPanel findShell(Component component) {
+        Component current = component;
+        while (current != null) {
+            if (current instanceof JPanel && ((JPanel) current).getClientProperty(SIDEBAR_PROPERTY) != null) return (JPanel) current;
+            current = current.getParent();
+        }
+        return null;
+    }
+    private static void collectVisibleTables(Component root, TableConsumer consumer) {
+        List<JTable> tables = new ArrayList<>();
+        collectTables(root, tables);
+        consumer.accept(tables);
+    }
+    private static void collectTables(Component component, List<JTable> tables) {
+        if (!component.isVisible()) return;
+        if (component instanceof JTable) { tables.add((JTable) component); return; }
+        if (component instanceof java.awt.Container) for (Component child : ((java.awt.Container) component).getComponents()) collectTables(child, tables);
+    }
+    private static void selectSearchMatch(JPanel root, int[] match) {
+        List<JTable> tables = new ArrayList<>(); collectTables(root, tables);
+        if (match[0] >= tables.size()) return;
+        JTable table = tables.get(match[0]);
+        if (match[1] >= table.getRowCount() || match[2] >= table.getColumnCount()) return;
+        table.changeSelection(match[1], match[2], false, false);
+        table.scrollRectToVisible(table.getCellRect(match[1], match[2], true));
     }
 
     public static void styleButton(JButton button, boolean primary) {

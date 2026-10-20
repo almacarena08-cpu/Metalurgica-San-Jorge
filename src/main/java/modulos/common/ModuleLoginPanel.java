@@ -93,6 +93,10 @@ public class ModuleLoginPanel extends JPanel {
                 return;
             }
             Map<String, String> usuario = extraerUsuario(cuerpo);
+            if ("Cliente".equalsIgnoreCase(usuario.getOrDefault("rol", ""))) {
+                estado.setText("El acceso de clientes no está disponible en esta aplicación.");
+                return;
+            }
             onSuccess.accept(new EmployeeSession(
                     parseInt(usuario.get("id_usuario")),
                     usuario.getOrDefault("nombre", nombreIngresado),

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once __DIR__ . '/database.php';
 require_once __DIR__ . '/../daos/PedidoDAO.php';
 require_once __DIR__ . '/../daos/OrdenTrabajoDAO.php';
@@ -11,9 +11,47 @@ require_once __DIR__ . '/../daos/ComprasDAO.php';
 require_once __DIR__ . '/../daos/CalidadDAO.php';
 require_once __DIR__ . '/../daos/ClienteDAO.php';
 require_once __DIR__ . '/../daos/ChatDAO.php';
+if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 function api_db() {
     return Database::getConnection();
+}
+
+function api_current_role() {
+    $id = (int)($_SESSION['metalgest_user_id'] ?? 0);
+    if ($id <= 0) return '';
+    $stmt = api_db()->prepare('SELECT r.nombre FROM usuario u JOIN rol r ON r.id_rol=u.id_rol WHERE u.id_usuario=:id AND u.id_cliente IS NULL');
+    $stmt->execute([':id' => $id]);
+    $role = (string)($stmt->fetchColumn() ?: '');
+    $_SESSION['metalgest_role'] = $role;
+    return $role;
+}
+
+function api_record_config($entity) {
+    $configs = [
+        'pedido'=>['table'=>'pedido','key'=>'id_pedido','module'=>'admin','fields'=>['descripcion','cantidad','material','fecha_entrega','estado']],
+        'orden'=>['table'=>'orden_trabajo','key'=>'id_orden','module'=>'Produccion','fields'=>['fecha_inicio','fecha_prevista','prioridad','estado','observaciones']],
+        'produccion'=>['table'=>'produccion','key'=>'id_produccion','module'=>'Produccion','fields'=>['cantidad_producida','avance','observaciones']],
+        'mantenimiento'=>['table'=>'mantenimiento','key'=>'id_mantenimiento','module'=>'Mantenimiento','fields'=>['fecha','tipo','problema','reparacion','repuestos','estado']],
+        'material'=>['table'=>'material','key'=>'id_material','module'=>'materials','fields'=>['nombre','tipo','unidad','espesor','stock','stock_minimo','stock_maximo']],
+        'movimiento'=>['table'=>'material_movimiento','key'=>'id_movimiento','module'=>'Deposito','fields'=>['motivo']],
+        'proveedor'=>['table'=>'proveedor','key'=>'id_proveedor','module'=>'Compras','fields'=>['razon_social','cuit','telefono','email']],
+        'compra'=>['table'=>'compra','key'=>'id_compra','module'=>'Compras','fields'=>['fecha','estado']],
+        'control'=>['table'=>'control_calidad','key'=>'id_control','module'=>'Calidad','fields'=>['fecha','resultado','observaciones']]
+    ];
+    return $configs[$entity] ?? null;
+}
+
+function api_audit_creation($entity, $id) {
+    $idUsuario = (int)($_SESSION['metalgest_user_id'] ?? 0);
+    if ($idUsuario <= 0 || (int)$id <= 0) return;
+    api_db()->prepare('CREATE TABLE IF NOT EXISTS registro_creacion (entidad VARCHAR(40) NOT NULL, id_registro INT NOT NULL, id_usuario INT NOT NULL, fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(entidad,id_registro), FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4')->execute();
+    $stmt=api_db()->prepare('INSERT IGNORE INTO registro_creacion(entidad,id_registro,id_usuario) VALUES(:e,:i,:u)');
+    $stmt->execute([':e'=>$entity,':i'=>(int)$id,':u'=>$idUsuario]);
+}
+
+function api_is_global_admin($role) {
+    return in_array(strtolower(trim((string)$role)), ['administracion', 'gerencia', 'administrador global'], true);
 }
 
 function api_json($data, $status = 200) {
@@ -53,6 +91,37 @@ function api_ensure_role($nombre) {
 }
 
 $action = $_GET['action'] ?? null;
+$supervisorModules = ['Produccion', 'Mantenimiento', 'Deposito', 'Compras', 'Calidad'];
+foreach ($supervisorModules as $module) api_ensure_role('Supervisor ' . $module);
+api_ensure_role('Administrador Global');
+$actionScopes = [
+    'empleados_list'=>'admin','empleados_create'=>'admin','empleados_update'=>'admin',
+    'pedidos_list'=>'admin','pedidos_create'=>'admin','ordenes_list'=>'read_orders','ordenes_create'=>'admin','orden_update_status'=>'admin',
+    'produccion_list'=>'Produccion','produccion_register'=>'Produccion','maquinas_list'=>'maintenance','mantenimiento_report'=>'Produccion',
+    'mantenimientos_list'=>'Mantenimiento','mantenimiento_preventivo_create'=>'Mantenimiento','mantenimiento_update'=>'Mantenimiento',
+    'materiales_list'=>'materials','materiales_create'=>'Compras','materiales_update'=>'Compras','materiales_delete'=>'Compras',
+    'deposito_movimientos_list'=>'Deposito','deposito_movimiento_create'=>'Deposito',
+    'proveedores_list'=>'Compras','proveedores_create'=>'Compras','compras_list'=>'Compras','compras_create'=>'Compras',
+    'calidad_list'=>'Calidad','calidad_register'=>'Calidad'
+];
+foreach (['clientes_list','clientes_create','clientes_update','clientes_delete','chat_list','chat_messages','chat_attachments_list','chat_attachment','chat_reply'] as $adminAction) $actionScopes[$adminAction] = 'admin';
+$recordConfig = null;
+if (in_array($action, ['record_get','record_update'], true)) {
+    $recordConfig = api_record_config(api_input('entidad', ''));
+    if (!$recordConfig) api_json(['success'=>false,'message'=>'Tipo de registro no valido.'],422);
+    $actionScopes[$action] = $recordConfig['module'];
+}
+if (isset($actionScopes[$action])) {
+    $role = api_current_role();
+    $admin = api_is_global_admin($role);
+    $scope = $actionScopes[$action];
+    $moduleRole = preg_replace('/^Supervisor /i', '', $role);
+    $allowed = $admin || ($scope === 'admin' ? false :
+        ($scope === 'read_orders' ? in_array(strtolower($moduleRole), ['produccion','calidad'], true) :
+        ($scope === 'maintenance' ? in_array(strtolower($moduleRole), ['mantenimiento','produccion'], true) :
+        ($scope === 'materials' ? in_array(strtolower($moduleRole), ['deposito','compras'], true) : strcasecmp($scope, $moduleRole) === 0))));
+    if (!$allowed) api_json(['success'=>false,'message'=>'Inicia sesión con un rol autorizado para este módulo.'],403);
+}
 $pedidoDAO = new PedidoDAO();
 $ordenTrabajoDAO = new OrdenTrabajoDAO();
 $produccionDAO = new ProduccionDAO();
@@ -111,17 +180,68 @@ if ($action === 'chat_login') {
             ':contrasena' => $contrasenaLogin
         ]);
         $user = $stmt->fetch();
-        if (!$user || !in_array(strtolower($user['rol']), ['administracion', 'gerencia'], true)) {
+        if (!$user || !api_is_global_admin($user['rol'])) {
             api_json(['success' => false, 'message' => 'Credenciales incorrectas o sin acceso a Administración.'], 401);
         }
         $_SESSION['metalgest_chat_user'] = [
             'id_usuario' => (int)$user['id_usuario'],
             'rol' => $user['rol']
         ];
+        $_SESSION['metalgest_user_id'] = (int)$user['id_usuario'];
+        $_SESSION['metalgest_role'] = $user['rol'];
         api_json(['success' => true, 'usuario' => $user]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => 'No se pudo iniciar la sesión del chat.'], 500);
     }
+}
+
+if ($action === 'record_get') {
+    $id=api_int('id_registro');
+    $stmt=api_db()->prepare('SELECT * FROM '.$recordConfig['table'].' WHERE '.$recordConfig['key'].'=:id');
+    $stmt->execute([':id'=>$id]); $row=$stmt->fetch();
+    if (!$row) api_json(['success'=>false,'message'=>'El registro ya no existe.'],404);
+    api_db()->exec('CREATE TABLE IF NOT EXISTS registro_creacion (entidad VARCHAR(40) NOT NULL, id_registro INT NOT NULL, id_usuario INT NOT NULL, fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(entidad,id_registro), FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4');
+    $owner=(int)($row['id_usuario'] ?? 0);
+    $audit=api_db()->prepare('SELECT id_usuario FROM registro_creacion WHERE entidad=:e AND id_registro=:i');
+    $audit->execute([':e'=>api_input('entidad'),':i'=>$id]); $owner=(int)($audit->fetchColumn() ?: $owner);
+    if ($owner>0) { $user=api_db()->prepare('SELECT CONCAT(nombre," ",apellido) FROM usuario WHERE id_usuario=:id'); $user->execute([':id'=>$owner]); $row['creado_por']=$user->fetchColumn() ?: 'Usuario #'.$owner; }
+    else $row['creado_por']='Sin registro';
+    $row['campos_editables']=$recordConfig['fields'];
+    api_json(['success'=>true,'registro'=>$row]);
+}
+
+if ($action === 'record_update') {
+    $id=api_int('id_registro'); if($id<=0) api_json(['success'=>false,'message'=>'El registro no es valido.'],422);
+    $sets=[]; $values=[':id'=>$id];
+    foreach($recordConfig['fields'] as $field) if(array_key_exists($field,$_POST)) { $sets[]='`'.$field.'`=:'.$field; $values[':'.$field]=api_input($field,''); }
+    if(!$sets) api_json(['success'=>false,'message'=>'No hay cambios para guardar.'],422);
+    if (api_input('entidad')==='orden' && isset($_POST['estado']) && !in_array(api_input('estado'),['Pendiente','En produccion','Pausada','Finalizada'],true)) api_json(['success'=>false,'message'=>'Estado de orden no valido.'],422);
+    if (api_input('entidad')==='mantenimiento' && isset($_POST['estado']) && !in_array(api_input('estado'),['Pendiente','En proceso','Resuelta'],true)) api_json(['success'=>false,'message'=>'Estado de mantenimiento no valido.'],422);
+    if (api_input('entidad')==='control' && isset($_POST['resultado']) && !in_array(api_input('resultado'),['Aprobado','Observado','Rechazado'],true)) api_json(['success'=>false,'message'=>'Resultado de control no valido.'],422);
+    if (api_input('entidad')==='produccion' && ((isset($_POST['avance']) && (int)api_input('avance')<0) || (isset($_POST['avance']) && (int)api_input('avance')>100) || (isset($_POST['cantidad_producida']) && (int)api_input('cantidad_producida')<0))) api_json(['success'=>false,'message'=>'El avance o la cantidad no son validos.'],422);
+    if (api_input('entidad')==='material' && ((isset($_POST['stock']) && (float)api_input('stock')<0) || (isset($_POST['stock_minimo']) && (float)api_input('stock_minimo')<0) || (isset($_POST['stock_maximo']) && (float)api_input('stock_maximo')<0))) api_json(['success'=>false,'message'=>'El stock no puede ser negativo.'],422);
+    try {
+        $stmt=api_db()->prepare('UPDATE '.$recordConfig['table'].' SET '.implode(',',$sets).' WHERE '.$recordConfig['key'].'=:id'); $stmt->execute($values);
+        if(api_input('entidad')==='orden' && isset($_POST['estado'])) { $p=api_db()->prepare('UPDATE pedido p JOIN orden_trabajo ot ON ot.id_pedido=p.id_pedido SET p.estado=:s WHERE ot.id_orden=:id'); $p->execute([':s'=>api_input('estado'),':id'=>$id]); }
+        if(api_input('entidad')==='mantenimiento' && isset($_POST['estado'])) { $m=api_db()->prepare('UPDATE maquina q JOIN mantenimiento m ON m.id_maquina=q.id_maquina SET q.estado=:s WHERE m.id_mantenimiento=:id'); $m->execute([':s'=>api_input('estado')==='Resuelta'?'Operativa':'Con falla',':id'=>$id]); }
+        if(api_input('entidad')==='produccion') { $q=api_db()->prepare('SELECT id_orden FROM produccion WHERE id_produccion=:id'); $q->execute([':id'=>$id]); $orderId=(int)$q->fetchColumn(); $latest=api_db()->prepare('SELECT avance FROM produccion WHERE id_orden=:id ORDER BY id_produccion DESC LIMIT 1'); $latest->execute([':id'=>$orderId]); $state=(int)$latest->fetchColumn()>=100?'Finalizada':'En produccion'; $o=api_db()->prepare('UPDATE orden_trabajo SET estado=:s WHERE id_orden=:id'); $o->execute([':s'=>$state,':id'=>$orderId]); $p=api_db()->prepare('UPDATE pedido p JOIN orden_trabajo ot ON ot.id_pedido=p.id_pedido SET p.estado=:s WHERE ot.id_orden=:id'); $p->execute([':s'=>$state,':id'=>$orderId]); }
+        api_json(['success'=>true]);
+    } catch(Throwable $e) { api_json(['success'=>false,'message'=>$e->getMessage()],422); }
+}
+
+if (in_array($action, ['empleados_list', 'empleados_create', 'empleados_update'], true)) {
+    if (!api_is_global_admin(api_current_role())) api_json(['success'=>false,'message'=>'Acceso solo para el administrador global.'],403);
+    if ($action === 'empleados_list') api_json(api_db()->query('SELECT u.id_usuario,u.nombre,u.apellido,u.usuario,r.nombre rol FROM usuario u JOIN rol r ON r.id_rol=u.id_rol WHERE r.nombre <> "Cliente" ORDER BY u.nombre,u.apellido')->fetchAll());
+    $nombre=api_required('nombre'); $apellido=api_input('apellido',''); $usuario=api_required('usuario'); $rol=api_required('rol');
+    if ($action === 'empleados_create') {
+        $stmt=api_db()->prepare('INSERT INTO usuario(nombre,apellido,usuario,contrasena,id_rol) SELECT :n,:a,:u,:c,id_rol FROM rol WHERE nombre=:r');
+        $stmt->execute([':n'=>$nombre,':a'=>$apellido,':u'=>$usuario,':c'=>api_required('contrasena'),':r'=>$rol]);
+    } else {
+        $stmt=api_db()->prepare('UPDATE usuario SET nombre=:n,apellido=:a,usuario=:u,id_rol=(SELECT id_rol FROM rol WHERE nombre=:r) WHERE id_usuario=:id AND id_cliente IS NULL');
+        $stmt->execute([':n'=>$nombre,':a'=>$apellido,':u'=>$usuario,':r'=>$rol,':id'=>api_int('id_empleado')]);
+        if (api_input('contrasena','') !== '') { $pw=api_db()->prepare('UPDATE usuario SET contrasena=:p WHERE id_usuario=:id'); $pw->execute([':p'=>api_input('contrasena'),':id'=>api_int('id_empleado')]); }
+    }
+    api_json(['success'=>true]);
 }
 
 function api_chat_upload_directory() {
@@ -196,14 +316,16 @@ if ($action === 'chat_login_app') {
     try {
         $idUsuario = api_int('id_usuario');
         $rol = api_input('rol', '');
-        if ($idUsuario <= 0 || !in_array(strtolower($rol), ['administracion', 'gerencia'], true)) {
+        if ($idUsuario <= 0 || $idUsuario !== (int)($_SESSION['metalgest_user_id'] ?? 0)
+            || !api_is_global_admin($rol)
+            || strcasecmp(api_current_role(), $rol) !== 0) {
             api_json(['success' => false, 'message' => 'El usuario no tiene acceso al chat.'], 403);
         }
         $stmt = api_db()->prepare(
             'SELECT u.id_usuario, r.nombre AS rol
              FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
              WHERE u.id_usuario = :id_usuario
-               AND LOWER(r.nombre) IN ("administracion", "gerencia")
+               AND LOWER(r.nombre) IN ("administracion", "gerencia", "administrador global")
              LIMIT 1'
         );
         $stmt->execute([':id_usuario' => $idUsuario]);
@@ -211,6 +333,8 @@ if ($action === 'chat_login_app') {
         if (!$user || strcasecmp($user['rol'], $rol) !== 0) {
             api_json(['success' => false, 'message' => 'El usuario no tiene acceso al chat.'], 403);
         }
+        $_SESSION['metalgest_user_id'] = (int)$user['id_usuario'];
+        $_SESSION['metalgest_role'] = $user['rol'];
         api_json(['success' => true]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => 'No se pudo validar el acceso al chat.'], 500);
@@ -224,18 +348,10 @@ if ($action === 'chat_logout') {
 
 if ($action === 'chat_auth_check') {
     $user = $_SESSION['metalgest_chat_user'] ?? null;
-    if (!$user && api_int('id_usuario') > 0) {
-        $stmt = api_db()->prepare(
-            'SELECT u.id_usuario, r.nombre AS rol
-             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
-             WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia")
-             LIMIT 1'
-        );
-        $stmt->execute([':id_usuario' => api_int('id_usuario')]);
-        $verifiedUser = $stmt->fetch();
-        if ($verifiedUser) $user = ['id_usuario' => (int)$verifiedUser['id_usuario'], 'rol' => $verifiedUser['rol']];
-    }
-    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administracion', 'gerencia'], true)) {
+    if ($user) $user['rol'] = api_current_role();
+    if (!$user && api_is_global_admin(api_current_role()))
+        $user = ['id_usuario' => (int)$_SESSION['metalgest_user_id'], 'rol' => $_SESSION['metalgest_role']];
+    if (!$user || !api_is_global_admin($user['rol'] ?? '')) {
         api_json(['success' => false, 'message' => 'Iniciá sesión para acceder al chat.'], 401);
     }
     api_json(['success' => true, 'usuario' => $user]);
@@ -243,20 +359,9 @@ if ($action === 'chat_auth_check') {
 
 if (in_array($action, ['chat_list', 'chat_messages', 'chat_attachments_list', 'chat_reply'], true)) {
     $user = $_SESSION['metalgest_chat_user'] ?? null;
-    if (!$user && api_int('id_usuario') > 0) {
-        $stmt = api_db()->prepare(
-            'SELECT u.id_usuario, r.nombre AS rol
-             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
-             WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia")
-             LIMIT 1'
-        );
-        $stmt->execute([':id_usuario' => api_int('id_usuario')]);
-        $verifiedUser = $stmt->fetch();
-        if ($verifiedUser) {
-            $user = ['id_usuario' => (int)$verifiedUser['id_usuario'], 'rol' => $verifiedUser['rol']];
-        }
-    }
-    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administracion', 'gerencia'], true)) {
+    if (!$user && api_is_global_admin(api_current_role()))
+        $user = ['id_usuario' => (int)$_SESSION['metalgest_user_id'], 'rol' => $_SESSION['metalgest_role']];
+    if (!$user || !api_is_global_admin($user['rol'] ?? '')) {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta autorizada para acceder al chat.'], 401);
     }
     if ($action === 'chat_list') {
@@ -298,7 +403,7 @@ if ($action === 'chat_attachment') {
     $idUsuario = isset($_GET['id_usuario']) ? (int)$_GET['id_usuario'] : 0;
     $stmt = api_db()->prepare(
         'SELECT u.id_usuario FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
-         WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia") LIMIT 1'
+         WHERE u.id_usuario = :id_usuario AND LOWER(r.nombre) IN ("administracion", "gerencia", "administrador global") LIMIT 1'
     );
     $stmt->execute([':id_usuario' => $idUsuario]);
     if (!$stmt->fetch()) {
@@ -362,7 +467,13 @@ if ($action === 'login') {
         ['Mantenimiento', 'San Jorge', 'mantenimiento', 'Mantenimiento'],
         ['Deposito', 'San Jorge', 'deposito', 'Deposito'],
         ['Compras', 'San Jorge', 'compras', 'Compras'],
-        ['Calidad', 'San Jorge', 'calidad', 'Calidad']
+        ['Calidad', 'San Jorge', 'calidad', 'Calidad'],
+        ['Administrador', 'Global', 'admin_global', 'Administrador Global'],
+        ['Supervisor', 'Produccion', 'supervisor_produccion', 'Supervisor Produccion'],
+        ['Supervisor', 'Mantenimiento', 'supervisor_mantenimiento', 'Supervisor Mantenimiento'],
+        ['Supervisor', 'Deposito', 'supervisor_deposito', 'Supervisor Deposito'],
+        ['Supervisor', 'Compras', 'supervisor_compras', 'Supervisor Compras'],
+        ['Supervisor', 'Calidad', 'supervisor_calidad', 'Supervisor Calidad']
     ];
     $crearUsuarioBase = api_db()->prepare(
         'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol)
@@ -397,7 +508,15 @@ if ($action === 'login') {
     if (!$user) {
         api_json(['success' => false, 'message' => 'Credenciales incorrectas'], 401);
     }
+    $_SESSION['metalgest_user_id'] = (int)$user['id_usuario'];
+    $_SESSION['metalgest_role'] = $user['rol'];
     api_json(['success' => true, 'usuario' => $user]);
+}
+
+if ($action === 'logout') {
+    $_SESSION = [];
+    session_destroy();
+    api_json(['success'=>true]);
 }
 
 if ($action === 'cliente_register') {
@@ -596,6 +715,7 @@ if ($action === 'pedidos_create') {
             'material' => api_required('material'),
             'fecha_entrega' => api_date(api_input('fecha_entrega'))
         ]);
+        api_audit_creation('pedido', $idPedido);
         api_json(['success' => true, 'id_pedido' => $idPedido]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -618,8 +738,9 @@ if ($action === 'ordenes_create') {
             'fecha_prevista' => api_date(api_input('fecha_prevista')),
             'prioridad' => api_input('prioridad', 'Media'),
             'observaciones' => api_input('observaciones', ''),
-            'id_usuario' => api_int('id_usuario', 1)
+            'id_usuario' => (int)($_SESSION['metalgest_user_id'] ?? 1)
         ]);
+        api_audit_creation('orden', $idOrden);
         api_json(['success' => true, 'id_orden' => $idOrden]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -660,6 +781,7 @@ if ($action === 'produccion_register') {
             'avance' => $avance,
             'observaciones' => api_input('observaciones', '')
         ]);
+        api_audit_creation('produccion', $idProduccion);
         api_json(['success' => true, 'id_produccion' => $idProduccion]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -678,10 +800,11 @@ if ($action === 'mantenimiento_report') {
         }
         $idMantenimiento = $maquinaDAO->reportarFalla([
             'id_maquina' => $idMaquina,
-            'id_usuario' => api_int('id_usuario', 3),
+            'id_usuario' => (int)($_SESSION['metalgest_user_id'] ?? 3),
             'tipo' => api_input('tipo', 'Correctivo'),
             'problema' => api_required('problema')
         ]);
+        api_audit_creation('mantenimiento', $idMantenimiento);
         api_json(['success' => true, 'id_mantenimiento' => $idMantenimiento]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -700,10 +823,11 @@ if ($action === 'mantenimiento_preventivo_create') {
         }
         $idMantenimiento = $mantenimientoDAO->crearPreventivo([
             'id_maquina' => $idMaquina,
-            'id_usuario' => api_int('id_usuario', 1),
+            'id_usuario' => (int)($_SESSION['metalgest_user_id'] ?? 1),
             'fecha' => api_input('fecha', date('Y-m-d')),
             'problema' => api_required('problema')
         ]);
+        api_audit_creation('mantenimiento', $idMantenimiento);
         api_json(['success' => true, 'id_mantenimiento' => $idMantenimiento]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -748,6 +872,7 @@ if ($action === 'materiales_create') {
             'espesor' => api_input('espesor', ''), 'stock' => (float)api_input('stock', '0'),
             'stock_minimo' => $stockMinimo, 'stock_maximo' => $stockMaximo
         ]);
+        api_audit_creation('material', $idMaterial);
         api_json(['success' => true, 'id_material' => $idMaterial]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -803,8 +928,9 @@ if ($action === 'deposito_movimiento_create') {
             'tipo' => $tipo,
             'cantidad' => $cantidad,
             'motivo' => api_input('motivo', ''),
-            'id_usuario' => api_int('id_usuario', 1)
+            'id_usuario' => (int)($_SESSION['metalgest_user_id'] ?? 1)
         ]);
+        api_audit_creation('movimiento', $idMovimiento);
         api_json(['success' => true, 'id_movimiento' => $idMovimiento]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -823,6 +949,7 @@ if ($action === 'proveedores_create') {
             'telefono' => api_input('telefono', ''),
             'email' => api_input('email', '')
         ]);
+        api_audit_creation('proveedor', $idProveedor);
         api_json(['success' => true, 'id_proveedor' => $idProveedor]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -854,6 +981,7 @@ if ($action === 'compras_create') {
             'fecha' => api_input('fecha', date('Y-m-d')),
             'estado' => $estado
         ]);
+        api_audit_creation('compra', $idCompra);
         api_json(['success' => true, 'id_compra' => $idCompra]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -873,11 +1001,12 @@ if ($action === 'calidad_register') {
         }
         $idControl = $calidadDAO->registrar([
             'id_orden' => $idOrden,
-            'id_usuario' => api_int('id_usuario', 1),
+            'id_usuario' => (int)($_SESSION['metalgest_user_id'] ?? 1),
             'fecha' => api_input('fecha', date('Y-m-d')),
             'resultado' => $resultado,
             'observaciones' => api_input('observaciones', '')
         ]);
+        api_audit_creation('control', $idControl);
         api_json(['success' => true, 'id_control' => $idControl]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);

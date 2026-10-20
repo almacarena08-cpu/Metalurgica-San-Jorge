@@ -3,12 +3,13 @@ require_once __DIR__ . '/BaseDAO.php';
 
 class PedidoDAO extends BaseDAO {
     public function listar() {
+        $telefono = $this->hasColumn('cliente', 'telefono') ? 'c.telefono' : "''";
         $stmt = $this->db()->query(
-            'SELECT p.id_pedido, p.fecha, p.descripcion, p.cantidad, p.material, p.fecha_entrega,
-                    p.estado, c.razon_social, c.email, c.telefono
+            "SELECT p.id_pedido, p.fecha, p.descripcion, p.cantidad, p.material, p.fecha_entrega,
+                    p.estado, c.razon_social, c.email, $telefono AS telefono
              FROM pedido p
              INNER JOIN cliente c ON c.id_cliente = p.id_cliente
-             ORDER BY p.id_pedido DESC'
+             ORDER BY p.id_pedido DESC"
         );
         return $stmt->fetchAll();
     }

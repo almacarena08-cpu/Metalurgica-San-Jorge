@@ -15,6 +15,7 @@ public final class ModuleLogin {
     }
 
     public static EmployeeSession authenticate(String moduleName, String expectedRole) {
+        UiTheme.installDarkDefaults();
         JTextField nombre = new JTextField(18);
         JPasswordField contrasena = new JPasswordField(18);
         JPanel formulario = new JPanel(new GridLayout(0, 1, 7, 7));

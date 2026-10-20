@@ -16,6 +16,9 @@ public class AdministracionDao extends BaseApiDao {
             "metalgest.web.api.url",
             ApiClient.API_BASE);
     private volatile int chatUserId;
+    public List<Map<String,String>> listarEmpleados(int adminId) throws IOException { Map<String,String>d=new java.util.LinkedHashMap<>(); d.put("id_usuario",String.valueOf(adminId)); return getRows("empleados_list",d); }
+    public ApiResult crearEmpleado(Map<String,String> d) throws IOException { return post("empleados_create",d); }
+    public ApiResult actualizarEmpleado(Map<String,String> d) throws IOException { return post("empleados_update",d); }
 
     public String getChatWebApi() {
         return WEB_API;

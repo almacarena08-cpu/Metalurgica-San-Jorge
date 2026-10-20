@@ -2,8 +2,8 @@ package modulos.compras;
 
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
-import modulos.common.SettingsDialog;
 import modulos.common.UiTheme;
+import modulos.common.RecordDetailEditor;
 import modulos.common.dao.ApiResult;
 import modulos.compras.dao.ComprasDao;
 
@@ -54,8 +54,6 @@ public class PurchasesPanel {
                 tabs.setSelectedIndex(3);
             } else if ("Alertas de stock".equals(entry)) {
                 tabs.setSelectedIndex(4);
-            } else if ("Configuracion".equals(entry)) {
-                SettingsDialog.open(session.getId());
             } else if (!"Compras".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este modulo pertenece a otra aplicacion.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -97,6 +95,7 @@ public class PurchasesPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "compra");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JComboBox<String> proveedor = new JComboBox<>();
@@ -167,6 +166,7 @@ public class PurchasesPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "proveedor");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JTextField razon = new JTextField();
@@ -227,6 +227,7 @@ public class PurchasesPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "material");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
         JButton recargar = new JButton("Actualizar alertas");
         UiTheme.styleButton(recargar, false);
@@ -245,6 +246,7 @@ public class PurchasesPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "material");
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
         JTextField nombre = new JTextField();

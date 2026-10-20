@@ -3,8 +3,8 @@ package modulos.produccion;
 import modulos.common.dao.ApiResult;
 import modulos.common.EmployeeSession;
 import modulos.common.ModuleLogin;
-import modulos.common.SettingsDialog;
 import modulos.common.UiTheme;
+import modulos.common.RecordDetailEditor;
 import modulos.produccion.dao.ProduccionDao;
 
 import javax.swing.JButton;
@@ -22,6 +22,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableModel;
 import java.awt.BorderLayout;
 import java.awt.GridLayout;
+import java.awt.FlowLayout;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -65,8 +66,6 @@ public class ProductionPanel {
                 tabs.setSelectedIndex(2);
             } else if ("Aviso a mantenimiento".equals(entry)) {
                 tabs.setSelectedIndex(3);
-            } else if ("Configuracion".equals(entry)) {
-                SettingsDialog.open(session.getId());
             } else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -121,6 +120,7 @@ public class ProductionPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "orden");
         panel.setBackground(UiTheme.BACKGROUND);
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
 
@@ -187,13 +187,32 @@ public class ProductionPanel {
         };
         JTable tabla = new JTable(modelo);
         UiTheme.styleTable(tabla);
+        RecordDetailEditor.attach(tabla, "produccion");
         panel.setBackground(UiTheme.BACKGROUND);
         panel.add(UiTheme.tableScroll(tabla), BorderLayout.CENTER);
+        JTextField numeroOrden = new JTextField(10);
+        JButton filtrar = new JButton("Filtrar");
         JButton recargar = new JButton("Recargar historial");
+        UiTheme.styleInput(numeroOrden);
+        UiTheme.styleButton(filtrar, true);
         UiTheme.styleButton(recargar, false);
-        panel.add(recargar, BorderLayout.SOUTH);
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        controls.setOpaque(false);
+        controls.add(new JLabel("Número de orden:")); controls.add(numeroOrden); controls.add(filtrar); controls.add(recargar);
+        panel.add(controls, BorderLayout.SOUTH);
         recargarHistorial(modelo);
-        recargar.addActionListener(e -> recargarHistorial(modelo));
+        Runnable applyFilter = () -> {
+            String target = numeroOrden.getText().trim();
+            modelo.setRowCount(0);
+            for (Map<String, String> row : getRows("produccion_list")) {
+                if (target.isEmpty() || target.equals(row.get("id_orden"))) {
+                    modelo.addRow(new Object[]{row.get("id_produccion"), row.get("id_orden"), row.get("razon_social"), row.get("material"), row.get("cantidad_producida"), row.get("avance") + "%", row.get("fecha_inicio"), row.get("fecha_fin"), row.get("observaciones")});
+                }
+            }
+        };
+        filtrar.addActionListener(e -> applyFilter.run());
+        numeroOrden.addActionListener(e -> applyFilter.run());
+        recargar.addActionListener(e -> applyFilter.run());
         return panel;
     }
 

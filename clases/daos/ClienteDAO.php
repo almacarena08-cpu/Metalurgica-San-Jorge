@@ -3,10 +3,11 @@ require_once __DIR__ . '/BaseDAO.php';
 
 class ClienteDAO extends BaseDAO {
     public function listar() {
+        $telefono = $this->hasColumn('cliente', 'telefono') ? 'telefono' : "'' AS telefono";
         return $this->db()->query(
-            'SELECT id_cliente, razon_social, cuit, telefono, email, direccion
+            "SELECT id_cliente, razon_social, cuit, $telefono, email, direccion
              FROM cliente
-             ORDER BY razon_social'
+             ORDER BY razon_social"
         )->fetchAll();
     }
 
