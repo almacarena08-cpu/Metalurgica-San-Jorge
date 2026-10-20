@@ -37,9 +37,11 @@
     gap: 24px;
     margin-bottom: 17px;
     padding: 23px 25px;
-    border: 1px solid #292d31;
+    border: 1px solid rgba(255,255,255,.06);
     border-left: 3px solid #e7652b;
-    background: linear-gradient(105deg, #171a1c, #111315 70%);
+    background: linear-gradient(135deg, rgba(22,26,29,.98), rgba(14,17,20,.98) 70%);
+    border-radius: 14px;
+    box-shadow: 0 18px 38px rgba(0,0,0,.12);
 }
 
 #content[data-module="administracion"] .admin-kicker {
@@ -99,8 +101,10 @@
     align-content: start;
     gap: 7px;
     padding: 17px 19px;
-    border: 1px solid #292d31;
-    background: #141719;
+    border: 1px solid rgba(255,255,255,.06);
+    background: linear-gradient(180deg, rgba(22,27,30,.98), rgba(14,18,21,.98));
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.08);
 }
 
 #content[data-module="administracion"] .admin-metric-label {
@@ -132,6 +136,8 @@
     justify-content: space-between;
     gap: 16px;
     margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
 }
 
 #content[data-module="administracion"] .admin-section-heading h3 {
@@ -158,6 +164,43 @@
 }
 
 #content[data-module="administracion"] [data-dashboard-sync].is-error {
+    color: #e68c81;
+}
+
+#content[data-module="administracion"] .employee-role-help {
+    margin: -4px 0 18px;
+    color: #a1a7aa;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+#content[data-module="administracion"] .employee-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+}
+
+#content[data-module="administracion"] .employee-form-actions .btn {
+    min-height: 40px;
+}
+
+#content[data-module="administracion"] .employee-actions {
+    display: flex;
+    gap: 8px;
+}
+
+#content[data-module="administracion"] .employee-actions .btn {
+    min-height: 34px;
+    padding: 7px 11px;
+    font-size: 10px;
+}
+
+#content[data-module="administracion"] [data-employee-message]:empty {
+    display: none;
+}
+
+#content[data-module="administracion"] [data-employee-message].is-error {
     color: #e68c81;
 }
 
@@ -203,6 +246,10 @@
         align-items: flex-start;
         flex-direction: column;
     }
+
+    #content[data-module="administracion"] .employee-actions {
+        flex-direction: column;
+    }
 }
 
 #content[data-module="administracion"] .admin-overview {
@@ -227,6 +274,30 @@
     border-radius: 6px;
     font-size: 10px;
     text-transform: capitalize;
+}
+
+#content[data-module="administracion"] .module-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(270px, .9fr);
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 18px;
+}
+
+#content[data-module="administracion"] .module-chart-grid .module-chart-wide {
+    grid-column: auto;
+}
+
+#content[data-module="administracion"] .module-chart-grid .module-chart-card {
+    margin-bottom: 0;
+    min-height: 392px;
+    border-radius: 14px;
+}
+
+@media (max-width: 760px) {
+    #content[data-module="administracion"] .module-chart-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 #content[data-module="administracion"] .admin-metric {

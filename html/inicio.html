@@ -9,8 +9,9 @@
                 <nav aria-label="Navegación principal">
                     <a href="#planta">Instalaciones</a>
                     <a href="#servicios">Servicios</a>
+                    <a href="#como-funciona">Cómo funciona</a>
+                    <a href="#productos">Productos</a>
                     <a href="#empresa">Empresa</a>
-                    <a href="#beneficios">Beneficios</a>
                     <a href="#contacto">Contacto</a>
                 </nav>
                 <div class="public-menu-actions">{{menuActions}}</div>
@@ -35,10 +36,6 @@
             </div>
             <div class="hero-side-note" aria-hidden="true"><span>MSJ</span><i></i> INDUSTRIA EN MOVIMIENTO</div>
         </section>
-        <section class="quote-band">
-            <div><span class="eyebrow">Metalúrgica San Jorge</span><h2>Capacidad industrial y seguimiento de cada trabajo.</h2></div>
-            {{quoteAccess}}
-        </section>
         <section class="public-band gallery-band" id="planta">
             <div class="section-heading"><span class="eyebrow">Instalaciones y procesos</span><h2>Experiencia aplicada a cada proyecto.</h2></div>
             <div class="gallery-grid">
@@ -61,7 +58,83 @@
             <div class="service-grid">
                 <article><span class="service-number">01 / FABRICACIÓN</span><strong>Mecanizado y fabricación.</strong><span>Piezas y trabajos metalúrgicos desarrollados según los requerimientos de cada proyecto.</span></article>
                 <article><span class="service-number">02 / MANTENIMIENTO</span><strong>Continuidad operativa.</strong><span>Atención de necesidades de mantenimiento para acompañar el trabajo diario de planta.</span></article>
-                <article><span class="service-number">03 / GESTIÓN</span><strong>Seguimiento de producción.</strong><span>Órdenes, avances y controles centralizados en el portal MetalGest.</span></article>
+                <article><span class="service-number">03 / COORDINACIÓN</span><strong>Gestión industrial.</strong><span>Información de pedidos organizada entre las áreas de la empresa.</span></article>
+            </div>
+        </section>
+        <section class="public-band workflow-band" id="como-funciona">
+            <div class="workflow-lead">
+                <div class="section-heading">
+                    <span class="eyebrow">Cómo funciona</span>
+                    <h2>De la consulta al seguimiento.</h2>
+                    <p>Un recorrido simple para solicitar un trabajo y mantenerte al tanto.</p>
+                </div>
+                <figure class="workflow-visual">
+                    <img src="https://images.unsplash.com/photo-1727504172739-67b1dbf7e3ee?auto=format&fit=crop&w=1800&q=82" alt="Operario trabajando con una máquina en un taller industrial" loading="lazy" decoding="async">
+                    <figcaption><span>PRODUCCIÓN</span><strong>Trabajo metalúrgico en taller</strong></figcaption>
+                </figure>
+            </div>
+            <ol class="workflow-grid">
+                <li class="workflow-card">
+                    <span class="workflow-step">01</span>
+                    <h3>Explorá</h3>
+                    <p>Conocé los materiales, insumos y servicios de la empresa.</p>
+                    <a href="#productos">Ver productos <span aria-hidden="true">→</span></a>
+                </li>
+                <li class="workflow-card">
+                    <span class="workflow-step">02</span>
+                    <h3>Consultá</h3>
+                    <p>Escribí a Administración y compartí los detalles de tu proyecto.</p>
+                    <a href="#contacto">Iniciar consulta <span aria-hidden="true">→</span></a>
+                </li>
+                <li class="workflow-card">
+                    <span class="workflow-step">03</span>
+                    <h3>Seguí el avance</h3>
+                    <p>Consultá los mensajes y las novedades de tu pedido desde tu cuenta.</p>
+                    <span class="workflow-note">Mensajes y estado en un mismo lugar</span>
+                </li>
+            </ol>
+        </section>
+        <section class="public-band products-band" id="productos">
+            <div class="products-intro">
+                <div class="section-heading">
+                    <span class="eyebrow">Materiales y fabricación</span>
+                    <h2>Materiales para uso industrial.</h2>
+                    <p>Una guía de líneas para consultar. La disponibilidad y las especificaciones se confirman para cada pedido.</p>
+                </div>
+                <span class="products-stamp"><b>SJ</b><small>CATÁLOGO<br>ORIENTATIVO</small></span>
+            </div>
+            <div class="product-grid">
+                <article class="product-card product-card-featured">
+                    <div class="product-card-media">
+                        <img src="https://images.unsplash.com/photo-1664565262236-65166affe34a?auto=format&fit=crop&w=900&q=82" alt="Formación rocosa de una mina de hierro" loading="lazy" decoding="async">
+                        <span class="product-number">01 / MINERALES</span>
+                    </div>
+                    <h3>Minerales y ferroaleaciones</h3>
+                    <p>Materias primas para procesos metalúrgicos.</p>
+                    <ul class="product-list"><li>Mineral de hierro</li><li>Ferroaleaciones</li></ul>
+                </article>
+                <article class="product-card">
+                    <div class="product-card-media">
+                        <img src="https://images.unsplash.com/photo-1763926062529-1edf8664c366?auto=format&fit=crop&w=900&q=82" alt="Barras de acero apiladas en un depósito industrial" loading="lazy" decoding="async">
+                        <span class="product-number">02 / METALES</span>
+                    </div>
+                    <h3>Metales industriales</h3>
+                    <p>Opciones para trabajos de fabricación y mantenimiento.</p>
+                    <ul class="product-list"><li>Hierro y acero</li><li>Aluminio, cobre y bronce</li></ul>
+                </article>
+                <article class="product-card">
+                    <div class="product-card-media">
+                        <img src="https://images.unsplash.com/photo-1720036236632-fdb6211cf317?auto=format&fit=crop&w=900&q=82" alt="Tubos metálicos organizados en un almacén" loading="lazy" decoding="async">
+                        <span class="product-number">03 / FORMATOS</span>
+                    </div>
+                    <h3>Perfiles y semielaborados</h3>
+                    <p>Presentaciones y medidas para distintas aplicaciones.</p>
+                    <ul class="product-list"><li>Chapas y barras</li><li>Perfiles y tubos</li></ul>
+                </article>
+            </div>
+            <div class="products-footer">
+                <p><span aria-hidden="true">i</span> Especificaciones y disponibilidad a confirmar según cantidad y aplicación.</p>
+                <a class="products-cta" href="#contacto">Consultar por un producto <span aria-hidden="true">→</span></a>
             </div>
         </section>
         <section class="public-band company-band split" id="empresa">
@@ -72,21 +145,12 @@
                 {{companyAccess}}
             </div>
             <div class="process-panel">
-                <span class="process-label">UN FLUJO, DE PRINCIPIO A FIN</span>
-                <div class="process-list">
-                    <span><b>01</b> Pedido y evaluación</span>
-                    <span><b>02</b> Orden de trabajo</span>
-                    <span><b>03</b> Producción y seguimiento</span>
-                    <span><b>04</b> Calidad y entrega</span>
+                <span class="process-label">ÁREAS CONECTADAS</span>
+                <div class="company-areas">
+                    <div><b>01</b><span><strong>Administración</strong><small>Pedidos y atención comercial</small></span></div>
+                    <div><b>02</b><span><strong>Producción</strong><small>Fabricación y avances</small></span></div>
+                    <div><b>03</b><span><strong>Calidad</strong><small>Controles del trabajo</small></span></div>
                 </div>
-            </div>
-        </section>
-        <section class="benefits-band public-band" id="beneficios">
-            <div class="section-heading"><span class="eyebrow">Control operativo</span><h2>Información consistente para trabajar mejor.</h2></div>
-            <div class="benefit-grid">
-                <article><span class="benefit-mark">01</span><h3>Coordinación</h3><p>Administración, producción y calidad trabajan sobre un flujo compartido.</p></article>
-                <article><span class="benefit-mark">02</span><h3>Trazabilidad</h3><p>El estado y avance de las órdenes se mantienen actualizados para consulta.</p></article>
-                <article><span class="benefit-mark">03</span><h3>Control operativo</h3><p>Acceso a las herramientas correspondientes a cada sector y responsabilidad.</p></article>
             </div>
         </section>
         <section class="contact-band" id="contacto">

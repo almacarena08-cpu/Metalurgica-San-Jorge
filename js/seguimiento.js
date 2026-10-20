@@ -42,7 +42,7 @@ export const seguimientoPanel = {
                     <div><strong>${this.escape(update.estado)}</strong><span>${this.escape(update.descripcion)}</span>
                     <small>${this.escape(update.area)} · ${this.formatTrackingDate(update.fecha)}</small></div>
                 </li>`).join("")
-                : '<li class="tracking-event"><span class="tracking-event-dot"></span><div><strong>Pedido registrado</strong><span>El equipo actualizará este historial cuando haya novedades.</span></div></li>';
+                : `<li class="tracking-event"><span class="tracking-event-dot"></span><div><strong>${this.escape(pedido.estado || "Estado actual")}</strong><span>Este es el estado actual guardado. La base disponible no conserva un historial de cambios.</span></div></li>`;
             const expected = pedido.fecha_entrega
                 ? `Entrega estimada: ${this.formatTrackingDate(pedido.fecha_entrega, true)}`
                 : "Fecha de entrega a confirmar";
@@ -58,7 +58,7 @@ export const seguimientoPanel = {
             </article>`;
         }).join("");
         const status = this.root.querySelector("[data-tracking-sync]");
-        if (status) status.textContent = `Actualizado ${new Date().toLocaleTimeString("es-AR", {hour: "2-digit", minute: "2-digit"})} · Se revisa automáticamente cada 7 segundos.`;
+        if (status) status.textContent = `Estado actualizado ${new Date().toLocaleTimeString("es-AR", {hour: "2-digit", minute: "2-digit"})} · Se revisa automáticamente cada 7 segundos.`;
     },
 
     formatTrackingDate(value, dateOnly = false) {

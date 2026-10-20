@@ -850,7 +850,14 @@ INSERT INTO `rol` (`id_rol`, `nombre`) VALUES
 (5, 'Deposito'),
 (6, 'Compras'),
 (7, 'Calidad'),
-(8, 'Cliente');
+(8, 'Cliente'),
+(9, 'Administrador'),
+(10, 'Supervisor Administración'),
+(11, 'Supervisor Producción'),
+(12, 'Supervisor Mantenimiento'),
+(13, 'Supervisor Depósito'),
+(14, 'Supervisor Compras'),
+(15, 'Supervisor Calidad');
 
 -- --------------------------------------------------------
 
@@ -1175,7 +1182,7 @@ ALTER TABLE `proveedor`
 -- AUTO_INCREMENT de la tabla `rol`
 --
 ALTER TABLE `rol`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`

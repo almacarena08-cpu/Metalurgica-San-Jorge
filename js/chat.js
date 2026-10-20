@@ -21,26 +21,9 @@ export const chatPanel = {
             ? (isClient ? selectedChat.asunto : `${selectedChat.email || "Cliente"} · ${selectedChat.asunto}`)
             : (isClient ? "Te respondemos por este medio" : "Seleccioná una conversación para responder");
         const orderControls = !isClient && selectedChat
-            ? (selectedChat.id_pedido
-                ? `<button class="chat-order-badge" type="button" data-chat-order-view>Pedido #${this.escape(selectedChat.id_pedido)}</button>`
-                : '<button class="chat-order-open" type="button" data-chat-order-open>Registrar pedido</button>')
+            ? '<span class="chat-order-badge" title="Usá Administración > Pedidos para registrar pedidos; el esquema actual no permite vincularlos con esta conversación">Vínculo con pedido no disponible</span>'
             : "";
-        const orderDialog = !isClient && selectedChat && !selectedChat.id_pedido
-            ? `<dialog class="chat-order-dialog" id="chatOrderDialog">
-                <form id="chatOrderForm" class="chat-order-form">
-                    <button class="chat-order-close" type="button" data-chat-order-close aria-label="Cerrar">×</button>
-                    <span class="chat-welcome-eyebrow">CONFIRMACIÓN COMERCIAL</span>
-                    <h3>Registrar pedido</h3>
-                    <p>Confirmá los datos acordados en la conversación. El cliente verá el pedido y su seguimiento en su cuenta.</p>
-                    <input type="hidden" name="id_chat" value="${this.escape(selectedChat.id_chat)}">
-                    <label>Descripción<input name="descripcion" value="${this.escape(selectedChat.asunto)}" required maxlength="500"></label>
-                    <div class="chat-order-fields"><label>Cantidad<input name="cantidad" type="number" min="1" value="1" required></label><label>Material<input name="material" required maxlength="100"></label></div>
-                    <label>Fecha estimada de entrega<input name="fecha_entrega" type="date"></label>
-                    <div class="message" aria-live="polite"></div>
-                    <div class="chat-order-actions"><button class="chat-order-cancel" type="button" data-chat-order-close>Volver al chat</button><button class="chat-order-submit" type="submit">Confirmar pedido</button></div>
-                </form>
-            </dialog>`
-            : "";
+        const orderDialog = "";
         const chatItems = chats.length
             ? (await Promise.all(chats.map(chat => {
                 const title = isClient ? "Administración San Jorge" : chat.nombre;
@@ -127,40 +110,6 @@ export const chatPanel = {
                 await this.chatView();
             });
         });
-        const orderDialogElement = this.root.querySelector("#chatOrderDialog");
-        this.root.querySelectorAll("[data-chat-order-open]").forEach(button => button.addEventListener("click", () => orderDialogElement?.showModal()));
-        this.root.querySelectorAll("[data-chat-order-close]").forEach(button => button.addEventListener("click", () => orderDialogElement?.close()));
-        const orderForm = this.root.querySelector("#chatOrderForm");
-        if (orderForm) {
-            orderForm.addEventListener("submit", async event => {
-                event.preventDefault();
-                const submit = orderForm.querySelector('[type="submit"]');
-                const message = orderForm.querySelector(".message");
-                submit.disabled = true;
-                submit.textContent = "Registrando…";
-                message.textContent = "";
-                try {
-                    const result = await this.api.post("pedido_create_from_chat", Object.fromEntries(new FormData(orderForm)));
-                    if (!result.success) {
-                        message.textContent = result.message || "No se pudo registrar el pedido.";
-                        return;
-                    }
-                    orderDialogElement.close();
-                    await this.chatView();
-                } catch (error) {
-                    message.textContent = error.message || "No se pudo conectar con el servidor.";
-                } finally {
-                    if (submit.isConnected) {
-                        submit.disabled = false;
-                        submit.textContent = "Confirmar pedido";
-                    }
-                }
-            });
-        }
-        this.root.querySelector("[data-chat-order-view]")?.addEventListener("click", async () => {
-            await this.openModule("administracion");
-            this.root.querySelector('[data-admin-view="pedidos"]')?.click();
-        });
         const chatSearch = this.root.querySelector("[data-chat-search]");
         if (chatSearch) {
             const chatSearchCount = this.root.querySelector("[data-chat-search-count]");
@@ -203,12 +152,6 @@ export const chatPanel = {
             this.pendingChatDraft = null;
         }
         await this.loadMessages();
-        if (isClient && this.activeChat) {
-            this.updateChatPresence().catch(error => console.error("No se pudo actualizar la presencia del chat:", error));
-            this.presenceTimer = setInterval(() => {
-                this.updateChatPresence().catch(error => console.error("No se pudo actualizar la presencia del chat:", error));
-            }, 15000);
-        }
         this.root.querySelectorAll("[data-chat-suggestion]").forEach(button => {
             button.addEventListener("click", () => {
                 const input = this.root.querySelector("#chatMessage");
@@ -217,7 +160,11 @@ export const chatPanel = {
                 input.focus();
             });
         });
-        this.chatTimer = setInterval(() => this.loadMessages(), 5000);
+        this.chatTimer = setInterval(() => {
+            if (document.visibilityState !== "hidden") {
+                this.loadMessages().catch(error => console.error("No se pudieron actualizar los mensajes:", error));
+            }
+        }, 5000);
     },
 
     async loadMessages() {
@@ -268,12 +215,6 @@ export const chatPanel = {
         thread.scrollTop = thread.scrollHeight;
     },
 
-    async updateChatPresence() {
-        if (document.visibilityState === "hidden" || !this.activeChat) return;
-        const result = await this.api.post("chat_presence", {id_chat: this.activeChat});
-        if (result.authRequired) this.promptChatLogin();
-    },
-
     async sendChat(event, isClient) {
         event.preventDefault();
         const form = event.currentTarget;
@@ -302,6 +243,11 @@ export const chatPanel = {
         formData.set("id_cliente", this.session.user.id_cliente || "");
         formData.set("autor_tipo", isClient ? "Cliente" : "Administracion");
         formData.set("asunto", formData.get("asunto") || "Consulta a administracion");
+        if (this.chatSendPending) return;
+        this.chatSendPending = true;
+        const sendButton = form.querySelector('[type="submit"]');
+        sendButton.disabled = true;
+        let messageSaved = false;
         try {
             const result = await this.api.postMultipart(isClient ? "chat_send" : "chat_reply", formData);
             if (!result.success) {
@@ -314,6 +260,7 @@ export const chatPanel = {
                 messageBox.textContent = result.message || "No se pudo enviar.";
                 return;
             }
+            messageSaved = true;
             this.activeChat = result.id_chat || this.activeChat;
             this.pendingChatFiles = null;
             await this.chatView();
@@ -321,15 +268,19 @@ export const chatPanel = {
             if (feedback) {
                 feedback.textContent = isClient
                     ? "Mensaje enviado."
-                    : result.cliente_en_linea
-                        ? "Respuesta enviada."
-                        : result.notificacion_enviada
-                            ? "Respuesta enviada y aviso por correo enviado al cliente."
-                            : "Respuesta guardada, pero no se pudo enviar el aviso por correo.";
+                    : result.notificacion_enviada
+                        ? "Respuesta enviada y aviso por correo enviado al cliente."
+                        : "Respuesta guardada, pero no se pudo enviar el aviso por correo.";
             }
         } catch (error) {
             console.error("No se pudo enviar el mensaje del chat:", error);
-            messageBox.textContent = error.message || "No se pudo enviar el mensaje.";
+            const feedback = this.root.querySelector(".chat-window > .message") || messageBox;
+            feedback.textContent = messageSaved
+                ? "El mensaje quedó guardado, pero no se pudo actualizar la conversación."
+                : error.message || "No se pudo enviar el mensaje.";
+        } finally {
+            this.chatSendPending = false;
+            if (sendButton.isConnected) sendButton.disabled = false;
         }
     },
 
@@ -392,10 +343,6 @@ export const chatPanel = {
         if (this.chatTimer) {
             clearInterval(this.chatTimer);
             this.chatTimer = null;
-        }
-        if (this.presenceTimer) {
-            clearInterval(this.presenceTimer);
-            this.presenceTimer = null;
         }
     }
 };

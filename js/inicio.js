@@ -1,12 +1,12 @@
-import {administracionPanel} from "./administracion.js?v=pedido-chat-flow-20261019-2";
-import {produccionPanel} from "./produccion.js?v=pedido-chat-flow-20261019-2";
-import {mantenimientoPanel} from "./mantenimiento.js?v=pedido-chat-flow-20261019-2";
-import {depositoPanel} from "./deposito.js?v=pedido-chat-flow-20261019-2";
-import {comprasPanel} from "./compras.js?v=pedido-chat-flow-20261019-2";
+import {administracionPanel} from "./administracion.js?v=employee-roles-20261020-2";
+import {produccionPanel} from "./produccion.js?v=pedido-chat-flow-20261019-3";
+import {mantenimientoPanel} from "./mantenimiento.js?v=pedido-chat-flow-20261019-3";
+import {depositoPanel} from "./deposito.js?v=pedido-chat-flow-20261019-3";
+import {comprasPanel} from "./compras.js?v=pedido-chat-flow-20261019-3";
 import {calidadPanel} from "./calidad.js?v=module-index-20261017-3";
-import {chatPanel} from "./chat.js?v=pedido-chat-flow-20261019-2";
+import {chatPanel} from "./chat.js?v=pedido-chat-flow-20261019-3";
 import {chartsPanel} from "./charts.js?v=module-index-20261017-3";
-import {seguimientoPanel} from "./seguimiento.js?v=pedido-chat-flow-20261019-2";
+import {seguimientoPanel} from "./seguimiento.js?v=pedido-chat-flow-20261019-3";
 
 const panelModules = [chartsPanel, comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel, seguimientoPanel];
 
@@ -99,7 +99,7 @@ class App {
         try {
             const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat", "seguimiento"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=pedido-chat-flow-20261019-2`);
+                const response = await fetch(`html/${moduleName}.html?v=employee-roles-20261019-1`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));
@@ -166,14 +166,24 @@ class App {
             stockWarningButton.addEventListener("click", () => this.openModule("compras"));
             this.refreshStockWarnings();
         }
-        const initialModule = (this.session.user.rol || "").toLowerCase() === "gerencia"
+        const initialRole = this.normalizeRole(this.session.user.rol || "");
+        const initialModule = ["gerencia", "administrador"].includes(initialRole)
             ? "administracion"
             : modules[0].id;
         this.openModule(initialModule);
     }
 
+    normalizeRole(role) {
+        return String(role).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+    }
+
+    isGlobalAdministrator() {
+        return ["administrador", "gerencia"].includes(this.normalizeRole(this.session.user.rol || ""));
+    }
+
     modulesForRole() {
-        const role = (this.session.user.rol || this.session.user.tipo || "").toLowerCase();
+        const role = this.normalizeRole(this.session.user.rol || this.session.user.tipo || "");
         const all = [
             {id: "compras", label: "Compras"},
             {id: "deposito", label: "Depósito"},
@@ -184,8 +194,13 @@ class App {
             {id: "chat", label: "Chat"}
         ];
         if (role === "cliente") return [{id: "chat", label: "Mensajes"}, {id: "seguimiento", label: "Mis pedidos"}];
-        if (role === "gerencia") return all;
+        if (["gerencia", "administrador"].includes(role)) return all;
         if (role === "administracion") return all.filter(m => ["administracion", "chat"].includes(m.id));
+        const supervisorModule = role.match(/^supervisor_(.+)$/)?.[1];
+        if (supervisorModule === "administracion") {
+            return all.filter(module => ["administracion", "chat"].includes(module.id));
+        }
+        if (supervisorModule) return all.filter(module => module.id === supervisorModule);
         if (["produccion", "mantenimiento", "deposito", "compras", "calidad"].includes(role)) {
             return all.filter(module => module.id === role);
         }

@@ -213,7 +213,7 @@ function api_date($value) {
 
 function api_chat_require_staff() {
     $user = $_SESSION['metalgest_user'] ?? null;
-    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['gerencia', 'administracion'], true)) {
+    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administrador', 'gerencia', 'administracion'], true)) {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta autorizada para acceder al chat.'], 401);
     }
     return $user;
@@ -232,10 +232,35 @@ function api_require_employee_roles(array $roles) {
     if (!$user || ($user['tipo'] ?? '') !== 'empleado') {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta de empleado.'], 401);
     }
-    if (!in_array(strtolower($user['rol'] ?? ''), array_map('strtolower', $roles), true)) {
+    $role = api_normalize_role($user['rol'] ?? '');
+    $allowedRoles = array_map('api_normalize_role', $roles);
+    $isAdministrator = $role === 'administrador';
+    $isSupervisorForAllowedModule = preg_match('/^supervisor_(.+)$/', $role, $matches)
+        && in_array($matches[1], $allowedRoles, true);
+    if (!$isAdministrator && !$isSupervisorForAllowedModule && !in_array($role, $allowedRoles, true)) {
         api_json(['success' => false, 'message' => 'Tu cuenta no tiene permiso para esta acción.'], 403);
     }
     return $user;
+}
+
+function api_normalize_role($role) {
+    $asciiRole = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', (string)$role);
+    $normalizedRole = strtolower($asciiRole === false ? (string)$role : $asciiRole);
+    return trim(preg_replace('/[^a-z0-9]+/', '_', $normalizedRole), '_');
+}
+
+function api_employee_role($idRole) {
+    $statement = api_db()->prepare("SELECT id_rol, nombre FROM rol WHERE id_rol = :id_rol AND LOWER(nombre) <> 'cliente'");
+    $statement->execute([':id_rol' => $idRole]);
+    $role = $statement->fetch();
+    if (!$role) {
+        api_json(['success' => false, 'message' => 'Seleccioná un rol válido para el empleado.'], 422);
+    }
+    return $role;
+}
+
+function api_employee_is_administrator($roleName) {
+    return api_normalize_role($roleName) === 'administrador';
 }
 
 function api_require_client() {
@@ -418,20 +443,24 @@ if ($action === 'login') {
     $usuarioLogin = api_required('usuario');
     $contrasenaLogin = api_required('contrasena');
     $stmt = api_db()->prepare(
-        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.id_cliente, r.nombre AS rol
+        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.contrasena, u.id_cliente, r.nombre AS rol
          FROM usuario u
          INNER JOIN rol r ON r.id_rol = u.id_rol
-         WHERE u.usuario = :usuario
-             AND u.contrasena = :contrasena
+         WHERE u.usuario = :usuario AND u.id_cliente IS NULL
          LIMIT 1'
     );
-    $stmt->execute([
-        ':usuario' => $usuarioLogin,
-        ':contrasena' => $contrasenaLogin
-    ]);
+    $stmt->execute([':usuario' => $usuarioLogin]);
     $user = $stmt->fetch();
-    if (!$user) {
+    if (!$user || (!password_verify($contrasenaLogin, $user['contrasena'])
+        && !hash_equals((string)$user['contrasena'], $contrasenaLogin))) {
         api_json(['success' => false, 'message' => 'Credenciales incorrectas'], 401);
+    }
+    if (password_get_info($user['contrasena'])['algo'] === null) {
+        $updatePassword = api_db()->prepare('UPDATE usuario SET contrasena = :contrasena WHERE id_usuario = :id_usuario');
+        $updatePassword->execute([
+            ':contrasena' => password_hash($contrasenaLogin, PASSWORD_DEFAULT),
+            ':id_usuario' => (int)$user['id_usuario']
+        ]);
     }
     session_regenerate_id(true);
     $_SESSION['metalgest_user'] = [
@@ -439,7 +468,186 @@ if ($action === 'login') {
         'id_usuario' => (int)$user['id_usuario'],
         'rol' => $user['rol']
     ];
+    unset($user['contrasena']);
     api_json(['success' => true, 'usuario' => $user]);
+}
+
+if ($action === 'empleados_roles_list') {
+    api_require_employee_roles(['administrador', 'gerencia']);
+    $roles = api_db()->query("SELECT id_rol, nombre FROM rol WHERE LOWER(nombre) <> 'cliente' ORDER BY nombre")->fetchAll();
+    api_json($roles);
+}
+
+if ($action === 'empleados_list') {
+    api_require_employee_roles(['administrador', 'gerencia']);
+    $employees = api_db()->query(
+        "SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.id_rol, r.nombre AS rol
+         FROM usuario u
+         INNER JOIN rol r ON r.id_rol = u.id_rol
+         WHERE u.id_cliente IS NULL
+         ORDER BY u.apellido, u.nombre, u.id_usuario"
+    )->fetchAll();
+    api_json($employees);
+}
+
+if ($action === 'empleados_create') {
+    api_require_employee_roles(['administrador', 'gerencia']);
+    try {
+        $nombre = api_required('nombre');
+        $apellido = api_input('apellido', '');
+        $usuario = api_required('usuario');
+        $contrasena = api_required('contrasena');
+        if (strlen($contrasena) < 4) {
+            api_json(['success' => false, 'message' => 'La contraseña debe tener al menos 4 caracteres.'], 422);
+        }
+        $role = api_employee_role(api_int('id_rol'));
+        $statement = api_db()->prepare(
+            'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol, id_cliente)
+             VALUES (:nombre, :apellido, :usuario, :contrasena, :id_rol, NULL)'
+        );
+        $statement->execute([
+            ':nombre' => $nombre,
+            ':apellido' => $apellido,
+            ':usuario' => $usuario,
+            ':contrasena' => password_hash($contrasena, PASSWORD_DEFAULT),
+            ':id_rol' => (int)$role['id_rol']
+        ]);
+        api_json(['success' => true, 'id_usuario' => (int)api_db()->lastInsertId()]);
+    } catch (PDOException $e) {
+        if ($e->getCode() === '23000') {
+            api_json(['success' => false, 'message' => 'Ese nombre de usuario ya está en uso.'], 409);
+        }
+        error_log('MetalGest employee creation failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo crear el empleado.'], 500);
+    } catch (Throwable $e) {
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'empleados_update') {
+    api_require_employee_roles(['administrador', 'gerencia']);
+    $idUsuario = api_int('id_usuario');
+    if ($idUsuario <= 0) {
+        api_json(['success' => false, 'message' => 'Seleccioná un empleado válido.'], 422);
+    }
+    try {
+        $role = api_employee_role(api_int('id_rol'));
+        $fields = [
+            'nombre' => api_required('nombre'),
+            'apellido' => api_input('apellido', ''),
+            'usuario' => api_required('usuario'),
+            'id_rol' => (int)$role['id_rol'],
+            'id_usuario' => $idUsuario
+        ];
+        $password = api_input('contrasena', '');
+        if ($password !== '' && strlen($password) < 4) {
+            api_json(['success' => false, 'message' => 'La contraseña debe tener al menos 4 caracteres.'], 422);
+        }
+        $pdo = api_db();
+        $pdo->beginTransaction();
+        $currentStatement = $pdo->prepare(
+            'SELECT u.id_usuario, u.id_rol, r.nombre AS rol
+             FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = :id_usuario AND u.id_cliente IS NULL
+             FOR UPDATE'
+        );
+        $currentStatement->execute([':id_usuario' => $idUsuario]);
+        $currentEmployee = $currentStatement->fetch();
+        if (!$currentEmployee) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'No se encontró el empleado.'], 404);
+        }
+        $isSelf = $idUsuario === (int)($_SESSION['metalgest_user']['id_usuario'] ?? 0);
+        $isChangingOwnRole = $isSelf && (int)$role['id_rol'] !== (int)$currentEmployee['id_rol'];
+        if ($isChangingOwnRole && !api_employee_is_administrator($role['nombre'])) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'No podés quitarte el rol de administrador de tu propia cuenta.'], 409);
+        }
+        if (api_employee_is_administrator($currentEmployee['rol']) && !api_employee_is_administrator($role['nombre'])) {
+            $countStatement = $pdo->query(
+                "SELECT COUNT(*) FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) = 'administrador'"
+            );
+            if ((int)$countStatement->fetchColumn() <= 1) {
+                $pdo->rollBack();
+                api_json(['success' => false, 'message' => 'No se puede quitar el rol al último administrador.'], 409);
+            }
+        }
+        $query = 'UPDATE usuario SET nombre = :nombre, apellido = :apellido, usuario = :usuario, id_rol = :id_rol';
+        if ($password !== '') {
+            $query .= ', contrasena = :contrasena';
+            $fields['contrasena'] = password_hash($password, PASSWORD_DEFAULT);
+        }
+        $query .= ' WHERE id_usuario = :id_usuario AND id_cliente IS NULL';
+        $statement = $pdo->prepare($query);
+        $statement->execute($fields);
+        $pdo->commit();
+        api_json(['success' => true]);
+    } catch (PDOException $e) {
+        if (api_db()->inTransaction()) {
+            api_db()->rollBack();
+        }
+        if ($e->getCode() === '23000') {
+            api_json(['success' => false, 'message' => 'Ese nombre de usuario ya está en uso.'], 409);
+        }
+        error_log('MetalGest employee update failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo actualizar el empleado.'], 500);
+    } catch (Throwable $e) {
+        if (api_db()->inTransaction()) {
+            api_db()->rollBack();
+        }
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'empleados_delete') {
+    api_require_employee_roles(['administrador', 'gerencia']);
+    $idUsuario = api_int('id_usuario');
+    if ($idUsuario <= 0) {
+        api_json(['success' => false, 'message' => 'Seleccioná un empleado válido.'], 422);
+    }
+    if ($idUsuario === (int)($_SESSION['metalgest_user']['id_usuario'] ?? 0)) {
+        api_json(['success' => false, 'message' => 'No podés eliminar tu propia cuenta.'], 409);
+    }
+    try {
+        $pdo = api_db();
+        $pdo->beginTransaction();
+        $employeeStatement = $pdo->prepare(
+            'SELECT r.nombre AS rol FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+             WHERE u.id_usuario = :id_usuario AND u.id_cliente IS NULL FOR UPDATE'
+        );
+        $employeeStatement->execute([':id_usuario' => $idUsuario]);
+        $employee = $employeeStatement->fetch();
+        if (!$employee) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'No se encontró el empleado.'], 404);
+        }
+        if (api_employee_is_administrator($employee['rol'])) {
+            $administratorCount = (int)$pdo->query(
+                "SELECT COUNT(*) FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
+                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) = 'administrador'"
+            )->fetchColumn();
+            if ($administratorCount <= 1) {
+                $pdo->rollBack();
+                api_json(['success' => false, 'message' => 'No se puede eliminar al último administrador.'], 409);
+            }
+        }
+        $statement = $pdo->prepare('DELETE FROM usuario WHERE id_usuario = :id_usuario AND id_cliente IS NULL');
+        $statement->execute([':id_usuario' => $idUsuario]);
+        $pdo->commit();
+        api_json(['success' => true]);
+    } catch (PDOException $e) {
+        if (api_db()->inTransaction()) {
+            api_db()->rollBack();
+        }
+        error_log('MetalGest employee deletion failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se puede eliminar un empleado con registros asociados.'], 409);
+    } catch (Throwable $e) {
+        if (api_db()->inTransaction()) {
+            api_db()->rollBack();
+        }
+        api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
 }
 
 if ($action === 'cliente_login') {
@@ -794,10 +1002,12 @@ if ($action === 'cliente_password_reset_link') {
 }
 
 if ($action === 'clientes_list') {
+    api_require_employee_roles(['gerencia', 'administracion']);
     api_json($clienteDAO->listar());
 }
 
 if ($action === 'clientes_create') {
+    api_require_employee_roles(['gerencia', 'administracion']);
     try {
         $idCliente = $clienteDAO->crear([
             'razon_social' => api_required('razon_social'),
@@ -812,6 +1022,7 @@ if ($action === 'clientes_create') {
 }
 
 if ($action === 'clientes_update') {
+    api_require_employee_roles(['gerencia', 'administracion']);
     try {
         $idCliente = api_int('id_cliente');
         if ($idCliente <= 0) {
@@ -831,6 +1042,7 @@ if ($action === 'clientes_update') {
 }
 
 if ($action === 'clientes_delete') {
+    api_require_employee_roles(['gerencia', 'administracion']);
     try {
         $idCliente = api_int('id_cliente');
         if ($idCliente <= 0) {
@@ -865,15 +1077,6 @@ if ($action === 'chat_messages') {
         api_chat_require_staff();
     }
     api_json($chatDAO->obtenerMensajes($idChat));
-}
-
-if ($action === 'chat_presence') {
-    $user = api_require_client();
-    $idChat = api_int('id_chat');
-    if ($idChat <= 0 || !$chatDAO->registrarActividadCliente($idChat, (int)$user['id_cliente'])) {
-        api_json(['success' => false, 'message' => 'No tenés acceso a esta conversación.'], 403);
-    }
-    api_json(['success' => true]);
 }
 
 if ($action === 'chat_attachment') {
@@ -942,8 +1145,8 @@ if ($action === 'chat_send') {
         api_json(['success' => true, 'id_chat' => $nuevoChat]);
     } catch (Throwable $e) {
         api_chat_remove_uploads($uploads ?? []);
-        error_log('MetalGest chat upload failed: ' . $e->getMessage());
-        api_json(['success' => false, 'message' => 'No se pudieron guardar los archivos. Intentá nuevamente.'], 500);
+        error_log('MetalGest chat message save failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo guardar el mensaje. Intentá nuevamente.'], 500);
     }
 }
 
@@ -964,7 +1167,6 @@ if ($action === 'chat_reply') {
             api_chat_remove_uploads($uploads);
             api_json(['success' => false, 'message' => 'No se encontró la conversación.'], 404);
         }
-        $clienteEnLinea = $chatDAO->clienteActivoRecientemente($idChat);
         $chatDAO->enviarMensaje([
             'id_chat' => $idChat,
             'id_usuario' => (int)$user['id_usuario'],
@@ -972,38 +1174,23 @@ if ($action === 'chat_reply') {
             'mensaje' => $mensaje,
             'adjuntos' => $uploads
         ]);
-        $notificacionEnviada = false;
-        if (!$clienteEnLinea && filter_var($contacto['email'] ?? '', FILTER_VALIDATE_EMAIL)) {
-            $notificacionEnviada = api_send_new_chat_message_email($contacto['email']);
-        }
-        api_json(['success' => true, 'cliente_en_linea' => $clienteEnLinea, 'notificacion_enviada' => $notificacionEnviada]);
+        $notificacionEnviada = filter_var($contacto['email'] ?? '', FILTER_VALIDATE_EMAIL)
+            ? api_send_new_chat_message_email($contacto['email'])
+            : false;
+        api_json(['success' => true, 'notificacion_enviada' => $notificacionEnviada]);
     } catch (Throwable $e) {
         api_chat_remove_uploads($uploads ?? []);
-        error_log('MetalGest chat upload failed: ' . $e->getMessage());
-        api_json(['success' => false, 'message' => 'No se pudieron guardar los archivos. Intentá nuevamente.'], 500);
+        error_log('MetalGest chat reply save failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo guardar la respuesta. Intentá nuevamente.'], 500);
     }
 }
 
 if ($action === 'pedido_create_from_chat') {
-    try {
-        $user = api_chat_require_staff();
-        $cantidad = api_int('cantidad', 1);
-        if ($cantidad <= 0) api_json(['success' => false, 'message' => 'La cantidad debe ser mayor que cero.'], 422);
-        $idPedido = $pedidoDAO->crearDesdeConversacion([
-            'id_chat' => api_int('id_chat'),
-            'descripcion' => api_required('descripcion'),
-            'cantidad' => $cantidad,
-            'material' => api_required('material'),
-            'fecha_entrega' => api_date(api_input('fecha_entrega')),
-            'id_usuario' => (int)($user['id_usuario'] ?? 0)
-        ]);
-        api_json(['success' => true, 'id_pedido' => $idPedido]);
-    } catch (InvalidArgumentException $e) {
-        api_json(['success' => false, 'message' => $e->getMessage()], 409);
-    } catch (Throwable $e) {
-        error_log('MetalGest order registration from chat failed: ' . $e->getMessage());
-        api_json(['success' => false, 'message' => 'No se pudo registrar el pedido desde la conversación.'], 500);
-    }
+    api_chat_require_staff();
+    api_json([
+        'success' => false,
+        'message' => 'El esquema actual no permite vincular un pedido con una conversación. Registralo desde Administración > Pedidos; el vínculo requiere una columna que no existe en la base actual.'
+    ], 409);
 }
 
 if ($action === 'pedidos_tracking') {
@@ -1065,6 +1252,9 @@ if ($action === 'ordenes_create') {
         ]);
         api_json(['success' => true, 'id_orden' => $idOrden]);
     } catch (Throwable $e) {
+        if ($e instanceof InvalidArgumentException) {
+            api_json(['success' => false, 'message' => $e->getMessage()], 409);
+        }
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }
@@ -1152,6 +1342,9 @@ if ($action === 'mantenimiento_report') {
         ]);
         api_json(['success' => true, 'id_mantenimiento' => $idMantenimiento]);
     } catch (Throwable $e) {
+        if ($e instanceof InvalidArgumentException) {
+            api_json(['success' => false, 'message' => $e->getMessage()], 409);
+        }
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }

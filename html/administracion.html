@@ -118,3 +118,35 @@
         <div id="clientsTable">{{clientsTable}}</div>
     </section>
 </template>
+<template data-view="empleados">
+    {{adminNavigation}}
+    <section class="section-panel employee-management">
+        <div class="module-panel-heading">
+            <div><span class="module-kicker">ACCESO AL SISTEMA</span><h3>Empleados y roles</h3></div>
+            <span class="module-panel-note">Administrá cuentas y permisos por módulo</span>
+        </div>
+        <p class="employee-role-help">El administrador puede acceder a todos los módulos. Cada supervisor puede gestionar únicamente su área.</p>
+        <form id="employeeForm" class="form-grid">
+            <input type="hidden" name="id_usuario">
+            <label>Nombre<input name="nombre" maxlength="50" required></label>
+            <label>Apellido<input name="apellido" maxlength="50"></label>
+            <label>Usuario<input name="usuario" maxlength="50" required autocomplete="off"></label>
+            <label data-password-label>Contraseña<input name="contrasena" type="password" minlength="4" required autocomplete="new-password"></label>
+            <label>Rol<select name="id_rol" required>{{roleOptions}}</select></label>
+            <div class="employee-form-actions">
+                <button class="btn primary" type="submit">Crear empleado</button>
+                <button class="btn" type="button" data-cancel-employee-edit hidden>Cancelar edición</button>
+            </div>
+        </form>
+        <p class="message" data-employee-message aria-live="polite"></p>
+    </section>
+    <section class="section-panel">
+        <div class="module-panel-heading"><div><span class="module-kicker">PERSONAL</span><h3>Empleados registrados</h3></div></div>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead>
+                <tbody>{{employeeRows}}</tbody>
+            </table>
+        </div>
+    </section>
+</template>
