@@ -6,7 +6,7 @@ export const administracionPanel = {
         const [pedidos, ordenes, chat] = await Promise.all([
             this.api.get("pedidos_list"),
             this.api.get("ordenes_list"),
-            ["cliente", "gerencia", "administracion", "administrador", "supervisor_administracion"].includes(role)
+            ["cliente", "gerencia", "administracion", "administrador", "administrador_global", "supervisor_administracion"].includes(role)
                 ? this.api.post("chat_list")
                 : Promise.resolve([])
         ]);
@@ -45,10 +45,13 @@ export const administracionPanel = {
             adminNavigation: this.administrationNavigation("pedidos"),
             clients: clientes.map(c => `<option value="${this.escape(c.id_cliente)}">${this.escape(c.razon_social)}</option>`).join(""),
             materials: materiales.map(m => `<option value="${this.escape(m.nombre)}">${this.escape(m.nombre)}</option>`).join(""),
-            orders: this.simpleTable(rows, ["id_pedido", "razon_social", "descripcion", "cantidad", "material", "fecha_entrega", "estado"])
+            orders: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(rows, ["id_pedido", "razon_social", "descripcion", "cantidad", "material", "fecha_entrega", "estado"], "pedido", "id_pedido", "pedidos")
+                : this.simpleTable(rows, ["id_pedido", "razon_social", "descripcion", "cantidad", "material", "fecha_entrega", "estado"])
         }));
         this.bindAdministrationNavigation();
         this.bindPostForm("#pedidoForm", "pedidos_create", () => this.pedidosView());
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.pedidosView());
     },
 
     async ordenesView() {
@@ -57,20 +60,26 @@ export const administracionPanel = {
             adminNavigation: this.administrationNavigation("ordenes"),
             ordersForSelect: pedidos.map(p => `<option value="${this.escape(p.id_pedido)}">#${this.escape(p.id_pedido)} - ${this.escape(p.razon_social)} - ${this.escape(p.descripcion)}</option>`).join(""),
             userId: this.escape(this.session.user.id_usuario),
-            ordersTable: this.simpleTable(ordenes, ["id_orden", "id_pedido", "razon_social", "material", "prioridad", "estado", "avance", "fecha_prevista"])
+            ordersTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(ordenes, ["id_orden", "id_pedido", "razon_social", "material", "prioridad", "estado", "avance", "fecha_prevista", "observaciones"], "orden", "id_orden", "órdenes")
+                : this.simpleTable(ordenes, ["id_orden", "id_pedido", "razon_social", "material", "prioridad", "estado", "avance", "fecha_prevista"])
         }));
         this.bindAdministrationNavigation();
         this.bindPostForm("#ordenForm", "ordenes_create", () => this.ordenesView());
         this.bindPostForm("#estadoOrdenForm", "orden_update_status", () => this.ordenesView());
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.ordenesView());
     },
 
     async clientesView() {
         const rows = await this.api.get("clientes_list");
         this.content(await this.moduleTemplate("administracion", "clientes", {
             adminNavigation: this.administrationNavigation("clientes"),
-            clientsTable: this.simpleTable(rows, ["id_cliente", "razon_social", "cuit", "email", "direccion"])
+            clientsTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(rows, ["id_cliente", "razon_social", "cuit", "email", "direccion"], "cliente", "id_cliente", "clientes")
+                : this.simpleTable(rows, ["id_cliente", "razon_social", "cuit", "email", "direccion"])
         }));
         this.bindAdministrationNavigation();
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.clientesView());
         this.root.querySelector("#clienteForm").addEventListener("submit", event => {
             event.preventDefault();
             const data = Object.fromEntries(new FormData(event.currentTarget));
@@ -91,23 +100,37 @@ export const administracionPanel = {
             throw new Error(roles.message || "No se pudieron cargar los roles de empleados.");
         }
         const employeeRows = employees.length
-            ? employees.map(employee => `
+            ? employees.map(employee => {
+                const protectedRole = ["administrador", "administrador_global", "gerencia"].includes(this.normalizeRole(employee.rol));
+                const canManageEmployee = this.isGlobalAdministrator() || !protectedRole;
+                return `
                 <tr>
                     <td>${this.escape(employee.nombre)} ${this.escape(employee.apellido)}</td>
                     <td>${this.escape(employee.usuario)}</td>
                     <td>${this.escape(employee.rol)}</td>
-                    <td class="employee-actions">
+                    <td>
+                        <div class="employee-actions">
+                        ${canManageEmployee ? `
                         <button class="btn" type="button" data-edit-employee="${this.escape(employee.id_usuario)}"
                             data-nombre="${this.escape(employee.nombre)}" data-apellido="${this.escape(employee.apellido)}"
                             data-usuario="${this.escape(employee.usuario)}" data-id-rol="${this.escape(employee.id_rol)}">Editar</button>
                         <button class="btn warn" type="button" data-delete-employee="${this.escape(employee.id_usuario)}">Eliminar</button>
+                        ` : '<span class="muted">Protegido</span>'}
+                        </div>
                     </td>
-                </tr>`).join("")
+                </tr>`;
+            }).join("")
             : '<tr><td colspan="4">Todavía no hay empleados registrados.</td></tr>';
+        const employeesTable = `
+            <table class="employee-table">
+                <thead><tr><th>Nombre</th><th>Usuario</th><th>Rol</th><th>Acciones</th></tr></thead>
+                <tbody>${employeeRows}</tbody>
+            </table>
+        `;
         this.content(await this.moduleTemplate("administracion", "empleados", {
             adminNavigation: this.administrationNavigation("empleados"),
             roleOptions: roles.map(role => `<option value="${this.escape(role.id_rol)}">${this.escape(role.nombre)}</option>`).join(""),
-            employeeRows
+            employeesTable
         }));
         this.bindAdministrationNavigation();
 
@@ -196,7 +219,7 @@ export const administracionPanel = {
             ["ordenes", "Órdenes"],
             ["clientes", "Clientes"]
         ];
-        if (this.isGlobalAdministrator()) links.push(["empleados", "Empleados"]);
+        if (this.canManageEmployees()) links.push(["empleados", "Empleados"]);
         return `<nav class="admin-subnav" aria-label="Secciones de administración">${links.map(([view, label]) =>
             `<button class="btn ${view === activeView ? "primary" : ""}" type="button" data-admin-view="${view}">${label}</button>`
         ).join("")}</nav>`;

@@ -187,13 +187,49 @@
 
 #content[data-module="administracion"] .employee-actions {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
     gap: 8px;
+    min-width: 150px;
 }
 
 #content[data-module="administracion"] .employee-actions .btn {
+    flex: 0 0 auto;
     min-height: 34px;
     padding: 7px 11px;
     font-size: 10px;
+}
+
+#content[data-module="administracion"] .employee-table {
+    width: 100%;
+    min-width: 690px;
+    table-layout: fixed;
+}
+
+#content[data-module="administracion"] .employee-table th,
+#content[data-module="administracion"] .employee-table td {
+    vertical-align: middle;
+}
+
+#content[data-module="administracion"] .employee-table th:first-child,
+#content[data-module="administracion"] .employee-table td:first-child {
+    width: 25%;
+}
+
+#content[data-module="administracion"] .employee-table th:nth-child(2),
+#content[data-module="administracion"] .employee-table td:nth-child(2) {
+    width: 24%;
+    overflow-wrap: anywhere;
+}
+
+#content[data-module="administracion"] .employee-table th:nth-child(3),
+#content[data-module="administracion"] .employee-table td:nth-child(3) {
+    width: 25%;
+}
+
+#content[data-module="administracion"] .employee-table th:last-child,
+#content[data-module="administracion"] .employee-table td:last-child {
+    width: 26%;
 }
 
 #content[data-module="administracion"] [data-employee-message]:empty {
@@ -249,6 +285,7 @@
 
     #content[data-module="administracion"] .employee-actions {
         flex-direction: column;
+        align-items: flex-start;
     }
 }
 

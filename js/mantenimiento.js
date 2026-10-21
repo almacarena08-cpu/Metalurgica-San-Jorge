@@ -1,6 +1,10 @@
 export const mantenimientoPanel = {
     async mantenimientoView() {
-        const [rows, maquinas] = await Promise.all([this.api.get("mantenimientos_list"), this.api.get("maquinas_list")]);
+        if (this.isDepartmentSupervisor()) return this.supervisorMantenimientoView();
+        const [rows, maquinas] = await Promise.all([
+            this.api.get("mantenimientos_list"),
+            this.api.get("maquinas_list")
+        ]);
         this.content(await this.moduleTemplate("mantenimiento", "mantenimiento", {
             employeeName: this.escape(this.session.user.nombre || this.session.user.razon_social || "equipo"),
             machines: maquinas.map(m => `<option value="${this.escape(m.id_maquina)}">${this.escape(`${m.marca} ${m.modelo}`)}</option>`).join(""),
@@ -12,11 +16,14 @@ export const mantenimientoPanel = {
             maintenanceChart: this.moduleStatusDonutChart(rows, "estado", "Intervenciones de mantenimiento", {
                 "Pendiente": "#dfbb66", "En proceso": "#7d9fe5", "Resuelta": "#71b98a"
             }),
-            maintenanceTable: this.simpleTable(rows, ["id_mantenimiento", "numero_identificacion", "tipo", "problema", "reparacion", "repuestos", "estado"])
+            maintenanceTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(rows, ["id_mantenimiento", "numero_identificacion", "tipo", "problema", "reparacion", "repuestos", "estado"], "mantenimiento", "id_mantenimiento", "intervenciones")
+                : this.simpleTable(rows, ["id_mantenimiento", "numero_identificacion", "tipo", "problema", "reparacion", "repuestos", "estado"])
         }));
         this.bindModuleIndexNavigation();
         this.bindPostForm("#preventivoForm", "mantenimiento_preventivo_create", () => this.mantenimientoView());
         this.bindPostForm("#mantenimientoForm", "mantenimiento_update", () => this.mantenimientoView());
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.mantenimientoView());
     }
 
 };

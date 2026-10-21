@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-10-2026 a las 01:27:36
+-- Tiempo de generación: 21-10-2026 a las 02:02:55
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -45,7 +45,11 @@ INSERT INTO `chat_adjunto` (`id_adjunto`, `id_mensaje`, `nombre_original`, `clav
 (7, 15, 'ACTIVIDAD 2.pdf', 'a5d32a63e226679d485b32095b7ffba774f21277a097d7e4.pdf', 'application/pdf', 868014, '2026-10-14 19:30:40'),
 (8, 16, 'TP_ La ética de Aristóteles.pdf', 'e5b882fbe0367f4e3871ab76d2ee4cf42dc4b649ffab725c.pdf', 'application/pdf', 1033215, '2026-10-14 19:34:51'),
 (9, 17, 'EXTINCIÓN DEL CONTRATO DE TRABAJO_Actividad N°1.pdf', '107d4f17e3395480e117de12bcf43747fe971c9c12cbf282.pdf', 'application/pdf', 59426, '2026-10-14 20:22:05'),
-(10, 19, 'MetalGest-browser-attachment-test.pdf', 'ebe69378ba649b3b827247ee10b959362d6b7f457eaedc80.pdf', 'application/pdf', 46, '2026-10-14 20:25:49');
+(10, 19, 'MetalGest-browser-attachment-test.pdf', 'ebe69378ba649b3b827247ee10b959362d6b7f457eaedc80.pdf', 'application/pdf', 46, '2026-10-14 20:25:49'),
+(11, 24, 'actividades interes simple y compuesto.pdf', 'a5213cae87020dfb26f8b08d5c75e080f4e9afd38e0d6823.pdf', 'application/pdf', 103623, '2026-10-14 20:53:00'),
+(12, 29, 'imagen_2026-10-19_154923976.png', 'cb901ca1c8de21fe8dac706e899ad0fa47d27b151b34863b.png', 'image/png', 182762, '2026-10-19 15:49:25'),
+(13, 32, 'WIN_20250519_13_42_41_Pro.jpg', '85741af15f9c60572196532c0693d5a34dfe2a785a9a9ad7.jpg', 'image/jpeg', 207839, '2026-10-19 20:24:06'),
+(14, 33, 'actividades interes simple y compuesto.pdf', 'cac5155852027e866726cba4a4b6bb5e0bd4f401d7a3ac57.pdf', 'application/pdf', 103623, '2026-10-19 20:28:48');
 
 -- --------------------------------------------------------
 
@@ -71,8 +75,11 @@ INSERT INTO `chat_conversacion` (`id_chat`, `id_cliente`, `asunto`, `estado`, `f
 (2, 12, 'hplaa', 'Respondido', '2026-10-14 00:24:59', '2026-10-14 16:06:00'),
 (3, 31, 'Consulta a administracion', 'Abierto', '2026-10-14 18:37:05', '2026-10-14 18:37:18'),
 (4, 31, 'Consulta de presupuesto', 'Abierto', '2026-10-14 18:37:12', '2026-10-14 18:37:12'),
-(7, 39, 'Consulta a administracion', 'Abierto', '2026-10-14 19:30:40', '2026-10-14 20:22:05'),
-(8, 45, 'Consulta a administracion', 'Abierto', '2026-10-14 20:25:03', '2026-10-14 20:25:49');
+(7, 39, 'Consulta a administracion', 'Respondido', '2026-10-14 19:30:40', '2026-10-19 13:11:42'),
+(8, 45, 'Consulta a administracion', 'Respondido', '2026-10-14 20:25:03', '2026-10-19 20:24:06'),
+(9, 46, 'rulemanes para tirolesas', 'Abierto', '2026-10-14 20:40:21', '2026-10-19 15:49:25'),
+(10, 46, 'parte metalica para toboganes', 'Abierto', '2026-10-19 15:52:43', '2026-10-19 16:01:55'),
+(11, 46, 'rulemanes para tirolesas', 'Respondido', '2026-10-19 20:28:48', '2026-10-19 20:36:42');
 
 -- --------------------------------------------------------
 
@@ -137,7 +144,22 @@ INSERT INTO `chat_mensaje_web` (`id_mensaje`, `id_chat`, `id_usuario`, `autor_ti
 (16, 7, NULL, 'Cliente', 'hola', '2026-10-14 19:34:51'),
 (17, 7, NULL, 'Cliente', 'Holaaa, quiero saber cuanto sale el diamamte', '2026-10-14 20:22:05'),
 (18, 8, NULL, 'Cliente', 'Prueba de chat desde navegador', '2026-10-14 20:25:03'),
-(19, 8, NULL, 'Cliente', 'Envio de prueba con archivo', '2026-10-14 20:25:49');
+(19, 8, NULL, 'Cliente', 'Envio de prueba con archivo', '2026-10-14 20:25:49'),
+(20, 9, NULL, 'Cliente', 'holaaa', '2026-10-14 20:40:21'),
+(21, 8, 1, 'Administracion', 'hola', '2026-10-14 20:52:10'),
+(22, 9, 1, 'Administracion', 'hola', '2026-10-14 20:52:32'),
+(23, 9, 1, 'Administracion', 'sui', '2026-10-14 20:52:34'),
+(24, 9, NULL, 'Cliente', 'imprimi esto', '2026-10-14 20:53:00'),
+(25, 7, 1, 'Administracion', 'holaa', '2026-10-19 13:11:42'),
+(26, 9, NULL, 'Cliente', 'PORFAVORRR', '2026-10-19 15:48:42'),
+(27, 9, NULL, 'Cliente', 'LO NECESITO ya', '2026-10-19 15:48:57'),
+(28, 9, 1, 'Administracion', 'ahi voy, pelotudo', '2026-10-19 15:49:17'),
+(29, 9, NULL, 'Cliente', '', '2026-10-19 15:49:25'),
+(30, 10, NULL, 'Cliente', 'hola quiero saber cuanto estárian 500 piezas', '2026-10-19 15:52:43'),
+(31, 10, NULL, 'Cliente', 'hace un dab', '2026-10-19 16:01:55'),
+(32, 8, 1, 'Administracion', 'holas', '2026-10-19 20:24:06'),
+(33, 11, NULL, 'Cliente', 'hola', '2026-10-19 20:28:48'),
+(34, 11, 1, 'Administracion', 'no podemos hacer eso', '2026-10-19 20:36:42');
 
 -- --------------------------------------------------------
 
@@ -182,7 +204,8 @@ INSERT INTO `cliente` (`id_cliente`, `razon_social`, `cuit`, `email`, `direccion
 (30, 'opoo', '6899', '900@gmail.com', '800platanos', '$2y$10$hUH.Zeiy7ElnBivi10fTn.oGjmaF9GtTsT4IJY/ApgVIwJpWisIhC', 0, '3c8d6c1e27e8735258b440cf75429acbe965bb1990fdd8001b854031c3c10394', '2026-10-14 18:28:58', 1, 0, 'registro', NULL, NULL),
 (31, 'isaurralde', '789', 'isaurralde@gmail.com', 'popo90', '$2y$10$guw8q4v8Y2uZ04eUyEDmnu9uo8LSV99MlEPnvw5vzpUZE6JYBjkiC', 0, '7e27c02299ab9010f61e1da5f37d9b5efd348e11101f8144b425f9d05f3d986b', '2026-10-14 18:30:13', 0, 0, 'registro', NULL, NULL),
 (39, 'Pop', '678', 'po@gmail.com', '8900plata', '$2y$10$i/FNL3aSrTKuWVhN8WxUluGZiGQmAvNS3ofShzQvGnGoQtUGlmJ6O', 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
-(45, 'MetalGest prueba navegador', NULL, 'mg-browser-efb4da1e8b124a699635ce63ed7772a7@example.invalid', NULL, '$2y$10$gcc/L0lvj4SpPK78FNy.MO1hAEZelBrjRO/nxaHe4qVbdMK3J7MaW', 0, NULL, NULL, 1, 0, NULL, NULL, NULL);
+(45, 'MetalGest prueba navegador', NULL, 'mg-browser-efb4da1e8b124a699635ce63ed7772a7@example.invalid', NULL, '$2y$10$gcc/L0lvj4SpPK78FNy.MO1hAEZelBrjRO/nxaHe4qVbdMK3J7MaW', 0, NULL, NULL, 1, 0, NULL, NULL, NULL),
+(46, 'Molino eventos2', '12312312', 'augusto.kurtz.t1vl@gmail.com', '1213123', '$2y$10$r1NRZxgfzOEIUvb0ANqAXeLWHaz2BnpcA89StQMGMNSxv2KLQwJHS', 0, NULL, NULL, 1, 0, NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -242,7 +265,10 @@ INSERT INTO `compra` (`id_compra`, `id_proveedor`, `fecha`, `total`, `estado`) V
 (37, 17, '2026-04-01', 390000.00, 'Recibida'),
 (38, 18, '2026-04-05', 250000.00, 'Recibida'),
 (39, 19, '2026-04-10', 310000.00, 'Pendiente'),
-(40, 20, '2026-04-15', 520000.00, 'Recibida');
+(40, 20, '2026-04-15', 520000.00, 'Recibida'),
+(41, 1, '2026-10-19', 840000.00, 'Pendiente'),
+(42, 5, '2026-10-19', 525000.00, 'Recibida'),
+(43, 6, '2026-10-20', 187500.00, 'Recibida');
 
 -- --------------------------------------------------------
 
@@ -283,7 +309,13 @@ INSERT INTO `control_calidad` (`id_control`, `id_orden`, `id_usuario`, `fecha`, 
 (37, 1, 6, '2026-04-01', 'Rechazado', 'Pintura'),
 (38, 1, 6, '2026-04-05', 'Aprobado', 'Corregido'),
 (39, 1, 6, '2026-04-10', 'Aprobado', 'OK'),
-(40, 1, 6, '2026-04-15', 'Aprobado', 'OK');
+(40, 1, 6, '2026-04-15', 'Aprobado', 'OK'),
+(41, 2, 6, '2026-10-21', 'Aprobado', 'Dimensiones de los primeros bastidores verificadas dentro de tolerancia.'),
+(42, 2, 6, '2026-10-23', 'Pendiente', 'Inspección visual de cordones de soldadura programada para el lote siguiente.'),
+(43, 3, 6, '2026-10-22', 'Aprobado', 'Material e identificación de barras cotejados con la orden.'),
+(44, 4, 6, '2026-10-27', 'Pendiente', 'Control inicial pendiente hasta el comienzo de fabricación.'),
+(45, 1, 6, '2026-10-19', 'Aprobado', 'MEDIDAS BIEN Y FUNCIONAMIENTO EXCEPCIONAL'),
+(46, 1, 6, '2026-10-19', 'Observado', 'las piezas realizadas cumplen con el pedido');
 
 -- --------------------------------------------------------
 
@@ -343,7 +375,10 @@ INSERT INTO `detalle_compra` (`id_detalle`, `id_compra`, `id_material`, `cantida
 (37, 17, 2, 270.00, 825.00),
 (38, 18, 3, 35.00, 1520.00),
 (39, 19, 1, 500.00, 700.00),
-(40, 20, 2, 300.00, 820.00);
+(40, 20, 2, 300.00, 820.00),
+(41, 41, 1, 600.00, 700.00),
+(42, 42, 2, 350.00, 1500.00),
+(43, 43, 3, 125.00, 1500.00);
 
 -- --------------------------------------------------------
 
@@ -386,7 +421,11 @@ INSERT INTO `entrega` (`id_entrega`, `id_orden`, `fecha_programada`, `fecha_desp
 (17, 1, '2026-09-15', NULL, NULL, 'Rosario', 'Camion', 'Pendiente'),
 (18, 1, '2026-10-01', '2026-09-30', '2026-10-01', 'Cordoba', 'Camion', 'Entregado'),
 (19, 1, '2026-10-15', NULL, NULL, 'Santa Fe', 'Camion', 'Pendiente'),
-(20, 1, '2026-11-01', NULL, NULL, 'Rosario', 'Camion', 'Pendiente');
+(20, 1, '2026-11-01', NULL, NULL, 'Rosario', 'Camion', 'Pendiente'),
+(21, 2, '2026-11-20', NULL, NULL, 'Rosario, Santa Fe', 'Camión con plataforma', 'Programada'),
+(22, 3, '2026-11-28', NULL, NULL, 'Paraná, Entre Ríos', 'Camión sider', 'Pendiente'),
+(23, 4, '2026-12-05', NULL, NULL, 'Rosario, Santa Fe', 'Camión con hidrogrúa', 'Pendiente'),
+(24, 5, '2026-12-10', NULL, NULL, 'Paraná, Entre Ríos', 'Transporte a coordinar', 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -428,7 +467,11 @@ INSERT INTO `factura` (`id_factura`, `id_cliente`, `id_pedido`, `fecha`, `numero
 (17, 1, 1, '2026-08-01', 'A-0001-00000017', 510000.00, 'Pagada'),
 (18, 2, 2, '2026-08-10', 'A-0001-00000018', 440000.00, 'Pendiente'),
 (19, 1, 1, '2026-09-01', 'A-0001-00000019', 590000.00, 'Pagada'),
-(20, 2, 2, '2026-09-10', 'A-0001-00000020', 400000.00, 'Pendiente');
+(20, 2, 2, '2026-09-10', 'A-0001-00000020', 400000.00, 'Pendiente'),
+(21, 1, 4, '2026-10-19', 'A-0001-00000021', 6250000.00, 'Pendiente'),
+(22, 2, 5, '2026-10-19', 'A-0001-00000022', 3180000.00, 'Pendiente'),
+(23, 1, 6, '2026-10-19', 'A-0001-00000023', 4720000.00, 'Pendiente'),
+(24, 2, 7, '2026-10-19', 'A-0001-00000024', 3890000.00, 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -492,7 +535,11 @@ INSERT INTO `mantenimiento` (`id_mantenimiento`, `id_maquina`, `id_usuario`, `fe
 (37, 2, 3, '2026-04-20', 'Preventivo', 'Control', 'Lubricacion', 'Grasa', 'Finalizado'),
 (38, 3, 3, '2026-04-25', 'Correctivo', 'Cable', 'Cambio', 'Cable', 'Finalizado'),
 (39, 1, 3, '2026-05-01', 'Preventivo', 'Revision', 'Limpieza', 'Aceite', 'Finalizado'),
-(40, 2, 3, '2026-05-05', 'Correctivo', 'Rodamiento', 'Cambio', 'Rodamiento', 'Finalizado');
+(40, 2, 3, '2026-05-05', 'Correctivo', 'Rodamiento', 'Cambio', 'Rodamiento', 'Finalizado'),
+(41, 2, 3, '2026-10-20', 'Preventivo', 'Revisión programada antes del lote de estructuras', 'Limpieza de guías, lubricación y ajuste de tope trasero', 'Grasa industrial', 'Finalizado'),
+(42, 1, 3, '2026-10-22', 'Correctivo', 'Vibración leve detectada durante prueba de giro', 'Verificar alineación del plato y ajustar bancada', 'Rodamiento de repuesto', 'En proceso'),
+(43, 3, 3, '2026-10-23', 'Preventivo', 'Inspección periódica del equipo de soldadura', 'Revisar alimentador, conexiones y calibración', 'Pico de contacto y difusor', 'Resuelta'),
+(44, 3, 2, '2026-10-19', 'Correctivo', 'se quemó el cable', '', '', 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -518,7 +565,7 @@ CREATE TABLE `maquina` (
 INSERT INTO `maquina` (`id_maquina`, `marca`, `modelo`, `numero_identificacion`, `fecha_adquisicion`, `costo`, `ubicacion`, `estado`) VALUES
 (1, 'Cincinnati', 'CL-707', 'TOR-001', '2020-03-15', 4500000.00, 'Sector Torneria', 'Operativa'),
 (2, 'Baykal', 'APH-3100', 'PLE-002', '2021-09-20', 6200000.00, 'Sector Plegado', 'Operativa'),
-(3, 'Lincoln', 'Power MIG 350', 'SOL-003', '2019-06-12', 1800000.00, 'Sector Soldadura', 'Operativa');
+(3, 'Lincoln', 'Power MIG 350', 'SOL-003', '2019-06-12', 1800000.00, 'Sector Soldadura', 'Con falla');
 
 -- --------------------------------------------------------
 
@@ -567,7 +614,7 @@ CREATE TABLE `material` (
 INSERT INTO `material` (`id_material`, `nombre`, `tipo`, `unidad`, `espesor`, `stock`, `stock_minimo`, `stock_maximo`) VALUES
 (1, 'Acero estructural', 'Chapa', 'kg', '6 mm', 1450.00, 300.00, 1450.00),
 (2, 'Acero SAE 1010', 'Barra', 'kg', '25 mm', 820.00, 250.00, 820.00),
-(3, 'Electrodo E6013', 'Consumible', 'kg', NULL, 95.00, 40.00, 95.00);
+(3, 'Electrodo E6013', 'Consumible', 'kg', NULL, 35.00, 40.00, 95.00);
 
 -- --------------------------------------------------------
 
@@ -629,7 +676,11 @@ INSERT INTO `material_movimiento` (`id_movimiento`, `id_material`, `tipo`, `cant
 (37, 2, 'Salida', 95.00, 'Produccion', '2026-03-06 10:00:00', 2),
 (38, 3, 'Salida', 15.00, 'Soldadura', '2026-03-07 10:00:00', 2),
 (39, 1, 'Entrada', 300.00, 'Compra', '2026-04-01 08:00:00', 4),
-(40, 2, 'Salida', 70.00, 'Produccion', '2026-04-02 10:00:00', 2);
+(40, 2, 'Salida', 70.00, 'Produccion', '2026-04-02 10:00:00', 2),
+(41, 1, 'Salida', 420.00, 'Asignación a orden de trabajo 2', '2026-10-20 08:15:00', 4),
+(42, 3, 'Salida', 18.00, 'Consumo de soldadura para orden de trabajo 2', '2026-10-20 08:20:00', 4),
+(43, 2, 'Salida', 280.00, 'Asignación a orden de trabajo 3', '2026-10-21 08:10:00', 4),
+(44, 3, 'Entrada', 125.00, 'Recepción de electrodos según compra 43', '2026-10-20 11:30:00', 4);
 
 -- --------------------------------------------------------
 
@@ -650,7 +701,14 @@ CREATE TABLE `orden_maquina` (
 INSERT INTO `orden_maquina` (`id_orden`, `id_maquina`, `horas_uso`) VALUES
 (1, 1, 8.50),
 (1, 2, 6.00),
-(1, 3, 4.50);
+(1, 3, 4.50),
+(2, 2, 18.00),
+(2, 3, 22.00),
+(3, 1, 16.00),
+(3, 2, 8.00),
+(4, 2, 20.00),
+(4, 3, 28.00),
+(5, 1, 42.00);
 
 -- --------------------------------------------------------
 
@@ -671,7 +729,14 @@ CREATE TABLE `orden_material` (
 INSERT INTO `orden_material` (`id_orden`, `id_material`, `cantidad`) VALUES
 (1, 1, 250.00),
 (1, 2, 120.00),
-(1, 3, 25.00);
+(1, 3, 25.00),
+(2, 1, 420.00),
+(2, 3, 18.00),
+(3, 2, 280.00),
+(3, 3, 12.00),
+(4, 1, 360.00),
+(4, 3, 25.00),
+(5, 2, 315.00);
 
 -- --------------------------------------------------------
 
@@ -696,7 +761,11 @@ CREATE TABLE `orden_trabajo` (
 --
 
 INSERT INTO `orden_trabajo` (`id_orden`, `id_pedido`, `fecha_inicio`, `fecha_prevista`, `fecha_finalizacion`, `prioridad`, `estado`, `observaciones`, `id_usuario`) VALUES
-(1, 2, '2026-09-23', '2026-10-03', NULL, 'Alta', 'En produccion', 'Priorizar corte y mecanizado por fecha de entrega comprometida.', 1);
+(1, 2, '2026-09-23', '2026-10-03', NULL, 'Alta', 'En produccion', 'Priorizar corte y mecanizado por fecha de entrega comprometida.', 1),
+(2, 4, '2026-10-20', '2026-11-17', NULL, 'Alta', 'En producción', 'Corte de perfiles completado; soldadura de módulos en curso. Realizar control dimensional antes de pintura.', 2),
+(3, 5, '2026-10-21', '2026-11-25', NULL, 'Media', 'Preparación de materiales', 'Material reservado. Confirmar medidas de perforación con plano de cliente antes del mecanizado.', 2),
+(4, 6, '2026-10-27', '2026-12-02', NULL, 'Alta', 'Pendiente', 'Programar corte, armado y soldadura de pasarelas. Requiere inspección de calidad previa al despacho.', 2),
+(5, 7, '2026-10-28', '2026-12-07', NULL, 'Urgente', 'Pendiente', 'Preparar barras y reservar torno para mecanizado de ejes; verificar tolerancias según plano.', 2);
 
 -- --------------------------------------------------------
 
@@ -721,8 +790,12 @@ CREATE TABLE `pedido` (
 
 INSERT INTO `pedido` (`id_pedido`, `id_cliente`, `fecha`, `descripcion`, `cantidad`, `material`, `fecha_entrega`, `estado`) VALUES
 (1, 1, '2026-09-23', 'Estructuras metalicas livianas para cerramiento industrial', 12, 'Acero estructural', '2026-10-14', 'Pendiente'),
-(2, 2, '2026-09-23', 'Soportes mecanizados para linea de sembradoras', 80, 'Acero SAE 1010', '2026-10-07', 'Con orden de trabajo'),
-(3, 3, '2026-09-28', 'Rulemanes', 500, 'acero galvanizado', '2026-10-12', 'Pendiente');
+(2, 2, '2026-09-23', 'Soportes mecanizados para linea de sembradoras', 80, 'Acero SAE 1010', '2026-10-07', 'En produccion'),
+(3, 3, '2026-09-28', 'Rulemanes', 500, 'acero galvanizado', '2026-10-12', 'Pendiente'),
+(4, 1, '2026-10-19', 'Estructuras modulares para ampliación de nave industrial', 24, 'Acero estructural', '2026-11-20', 'En producción'),
+(5, 2, '2026-10-19', 'Soportes reforzados para tolvas de cosechadora', 60, 'Acero SAE 1010', '2026-11-28', 'Con orden de trabajo'),
+(6, 1, '2026-10-19', 'Pasarelas y barandas de seguridad para planta', 16, 'Acero estructural y electrodos', '2026-12-05', 'Pendiente'),
+(7, 2, '2026-10-19', 'Ejes mecanizados para maquinaria agrícola', 35, 'Acero SAE 1010', '2026-12-10', 'Pendiente');
 
 -- --------------------------------------------------------
 
@@ -741,8 +814,12 @@ CREATE TABLE `preferencias_usuario` (
 --
 
 INSERT INTO `preferencias_usuario` (`id_usuario`, `modo_oscuro`, `tamano_texto`) VALUES
-(1, 1, 12),
-(5, 1, 12);
+(1, 0, 12),
+(2, 0, 12),
+(3, 0, 12),
+(4, 0, 12),
+(5, 0, 12),
+(6, 0, 10);
 
 -- --------------------------------------------------------
 
@@ -765,7 +842,12 @@ CREATE TABLE `produccion` (
 --
 
 INSERT INTO `produccion` (`id_produccion`, `id_orden`, `fecha_inicio`, `fecha_fin`, `cantidad_producida`, `avance`, `observaciones`) VALUES
-(1, 1, '2026-09-23 18:36:58', NULL, 25, 35, 'Corte inicial completado. Pendiente mecanizado final.');
+(1, 1, '2026-09-23 18:36:58', NULL, 25, 35, 'Corte inicial completado. Pendiente mecanizado final.'),
+(2, 2, '2026-10-20 07:30:00', NULL, 9, 38, 'Se cortaron perfiles para nueve módulos y se inició el punteo de bastidores.'),
+(3, 3, '2026-10-21 08:00:00', NULL, 0, 10, 'Orden liberada; materiales separados en depósito y a la espera de mecanizado.'),
+(4, 4, '2026-10-27 07:30:00', NULL, 0, 0, 'Producción programada para la próxima semana.'),
+(5, 5, '2026-10-28 07:00:00', NULL, 0, 0, 'Orden prioritaria; barras identificadas y torno reservado.'),
+(6, 1, '2026-10-19 13:54:58', NULL, 40, 50, 'llegará bien');
 
 -- --------------------------------------------------------
 
@@ -830,6 +912,19 @@ INSERT INTO `proveedor` (`id_proveedor`, `razon_social`, `cuit`, `telefono`, `em
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `registro_creacion`
+--
+
+CREATE TABLE `registro_creacion` (
+  `entidad` varchar(40) NOT NULL,
+  `id_registro` int(11) NOT NULL,
+  `id_usuario` int(11) NOT NULL,
+  `fecha` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `rol`
 --
 
@@ -851,13 +946,12 @@ INSERT INTO `rol` (`id_rol`, `nombre`) VALUES
 (6, 'Compras'),
 (7, 'Calidad'),
 (8, 'Cliente'),
-(9, 'Administrador'),
-(10, 'Supervisor Administración'),
-(11, 'Supervisor Producción'),
-(12, 'Supervisor Mantenimiento'),
-(13, 'Supervisor Depósito'),
-(14, 'Supervisor Compras'),
-(15, 'Supervisor Calidad');
+(9, 'Supervisor Produccion'),
+(10, 'Supervisor Mantenimiento'),
+(11, 'Supervisor Deposito'),
+(12, 'Supervisor Compras'),
+(13, 'Supervisor Calidad'),
+(14, 'Administrador Global');
 
 -- --------------------------------------------------------
 
@@ -887,7 +981,13 @@ INSERT INTO `usuario` (`id_usuario`, `nombre`, `apellido`, `usuario`, `contrasen
 (5, 'Compras', 'San Jorge', 'compras', '1234', 6, NULL),
 (6, 'Calidad', 'San Jorge', 'calidad', '1234', 7, NULL),
 (8, 'Gerencia', 'San Jorge', 'gerencia', '1234', 1, NULL),
-(295, 'Molino eventos', '', 'molinoev', '1234', 8, 4);
+(295, 'Molino eventos', '', 'molinoev', '1234', 8, 4),
+(569, 'Administrador', 'Global', 'admin_global', '1234', 14, NULL),
+(570, 'Supervisor', 'Produccion', 'supervisor_produccion', '1234', 9, NULL),
+(571, 'Supervisor', 'Mantenimiento', 'supervisor_mantenimiento', '1234', 10, NULL),
+(572, 'Supervisor', 'Deposito', 'supervisor_deposito', '1234', 11, NULL),
+(573, 'Supervisor', 'Compras', 'supervisor_compras', '1234', 12, NULL),
+(574, 'Supervisor', 'Calidad', 'supervisor_calidad', '1234', 13, NULL);
 
 --
 -- Índices para tablas volcadas
@@ -1052,6 +1152,13 @@ ALTER TABLE `proveedor`
   ADD PRIMARY KEY (`id_proveedor`);
 
 --
+-- Indices de la tabla `registro_creacion`
+--
+ALTER TABLE `registro_creacion`
+  ADD PRIMARY KEY (`entidad`,`id_registro`),
+  ADD KEY `id_usuario` (`id_usuario`);
+
+--
 -- Indices de la tabla `rol`
 --
 ALTER TABLE `rol`
@@ -1074,13 +1181,13 @@ ALTER TABLE `usuario`
 -- AUTO_INCREMENT de la tabla `chat_adjunto`
 --
 ALTER TABLE `chat_adjunto`
-  MODIFY `id_adjunto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id_adjunto` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `chat_conversacion`
 --
 ALTER TABLE `chat_conversacion`
-  MODIFY `id_chat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id_chat` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT de la tabla `chat_mensaje`
@@ -1092,49 +1199,49 @@ ALTER TABLE `chat_mensaje`
 -- AUTO_INCREMENT de la tabla `chat_mensaje_web`
 --
 ALTER TABLE `chat_mensaje_web`
-  MODIFY `id_mensaje` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
+  MODIFY `id_mensaje` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=35;
 
 --
 -- AUTO_INCREMENT de la tabla `cliente`
 --
 ALTER TABLE `cliente`
-  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=46;
+  MODIFY `id_cliente` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT de la tabla `compra`
 --
 ALTER TABLE `compra`
-  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_compra` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT de la tabla `control_calidad`
 --
 ALTER TABLE `control_calidad`
-  MODIFY `id_control` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_control` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=47;
 
 --
 -- AUTO_INCREMENT de la tabla `detalle_compra`
 --
 ALTER TABLE `detalle_compra`
-  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_detalle` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=44;
 
 --
 -- AUTO_INCREMENT de la tabla `entrega`
 --
 ALTER TABLE `entrega`
-  MODIFY `id_entrega` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_entrega` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT de la tabla `factura`
 --
 ALTER TABLE `factura`
-  MODIFY `id_factura` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_factura` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT de la tabla `mantenimiento`
 --
 ALTER TABLE `mantenimiento`
-  MODIFY `id_mantenimiento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_mantenimiento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT de la tabla `maquina`
@@ -1152,25 +1259,25 @@ ALTER TABLE `material`
 -- AUTO_INCREMENT de la tabla `material_movimiento`
 --
 ALTER TABLE `material_movimiento`
-  MODIFY `id_movimiento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id_movimiento` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- AUTO_INCREMENT de la tabla `orden_trabajo`
 --
 ALTER TABLE `orden_trabajo`
-  MODIFY `id_orden` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_orden` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT de la tabla `pedido`
 --
 ALTER TABLE `pedido`
-  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id_pedido` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
 
 --
 -- AUTO_INCREMENT de la tabla `produccion`
 --
 ALTER TABLE `produccion`
-  MODIFY `id_produccion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_produccion` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT de la tabla `proveedor`
@@ -1182,13 +1289,13 @@ ALTER TABLE `proveedor`
 -- AUTO_INCREMENT de la tabla `rol`
 --
 ALTER TABLE `rol`
-  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id_rol` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT de la tabla `usuario`
 --
 ALTER TABLE `usuario`
-  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=303;
+  MODIFY `id_usuario` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=601;
 
 --
 -- Restricciones para tablas volcadas
@@ -1311,6 +1418,12 @@ ALTER TABLE `preferencias_usuario`
 --
 ALTER TABLE `produccion`
   ADD CONSTRAINT `produccion_ibfk_1` FOREIGN KEY (`id_orden`) REFERENCES `orden_trabajo` (`id_orden`);
+
+--
+-- Filtros para la tabla `registro_creacion`
+--
+ALTER TABLE `registro_creacion`
+  ADD CONSTRAINT `registro_creacion_ibfk_1` FOREIGN KEY (`id_usuario`) REFERENCES `usuario` (`id_usuario`);
 
 --
 -- Filtros para la tabla `usuario`

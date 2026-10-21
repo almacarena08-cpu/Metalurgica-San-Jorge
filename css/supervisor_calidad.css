@@ -1,0 +1,5 @@
+.supervisor-panel--calidad {
+    --module-accent: #b58edc;
+    --module-accent-soft: rgba(181, 142, 220, .12);
+    --module-accent-line: rgba(181, 142, 220, .32);
+}

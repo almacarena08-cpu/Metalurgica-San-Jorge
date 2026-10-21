@@ -1,14 +1,20 @@
-import {administracionPanel} from "./administracion.js?v=employee-roles-20261020-2";
-import {produccionPanel} from "./produccion.js?v=pedido-chat-flow-20261019-3";
-import {mantenimientoPanel} from "./mantenimiento.js?v=pedido-chat-flow-20261019-3";
-import {depositoPanel} from "./deposito.js?v=pedido-chat-flow-20261019-3";
-import {comprasPanel} from "./compras.js?v=pedido-chat-flow-20261019-3";
-import {calidadPanel} from "./calidad.js?v=module-index-20261017-3";
+import {administracionPanel} from "./administracion.js?v=supervisor-admin-full-20261021-1";
+import {produccionPanel} from "./produccion.js?v=supervisors-module-20261021-1";
+import {mantenimientoPanel} from "./mantenimiento.js?v=supervisors-module-20261021-1";
+import {depositoPanel} from "./deposito.js?v=supervisors-module-20261021-1";
+import {comprasPanel} from "./compras.js?v=supervisors-module-20261021-1";
+import {calidadPanel} from "./calidad.js?v=supervisors-module-20261021-1";
 import {chatPanel} from "./chat.js?v=pedido-chat-flow-20261019-3";
 import {chartsPanel} from "./charts.js?v=module-index-20261017-3";
 import {seguimientoPanel} from "./seguimiento.js?v=pedido-chat-flow-20261019-3";
+import {supervisoresPanel} from "./supervisores.js?v=supervisors-module-20261021-1";
+import {supervisorProduccionPanel} from "./supervisor_produccion.js?v=supervisors-module-20261021-1";
+import {supervisorMantenimientoPanel} from "./supervisor_mantenimiento.js?v=supervisors-module-20261021-1";
+import {supervisorDepositoPanel} from "./supervisor_deposito.js?v=supervisors-module-20261021-1";
+import {supervisorComprasPanel} from "./supervisor_compras.js?v=supervisors-module-20261021-1";
+import {supervisorCalidadPanel} from "./supervisor_calidad.js?v=supervisors-module-20261021-1";
 
-const panelModules = [chartsPanel, comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel, seguimientoPanel];
+const panelModules = [chartsPanel, comprasPanel, depositoPanel, calidadPanel, mantenimientoPanel, administracionPanel, produccionPanel, seguimientoPanel, supervisoresPanel, supervisorProduccionPanel, supervisorMantenimientoPanel, supervisorDepositoPanel, supervisorComprasPanel, supervisorCalidadPanel];
 
 class ApiService {
     constructor(baseUrl) {
@@ -97,9 +103,9 @@ class App {
 
     async start() {
         try {
-            const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat", "seguimiento"];
+            const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat", "seguimiento", "supervisor_produccion", "supervisor_mantenimiento", "supervisor_deposito", "supervisor_compras", "supervisor_calidad"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=employee-roles-20261019-1`);
+                const response = await fetch(`html/${moduleName}.html?v=supervisors-module-20261021-1`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));
@@ -167,7 +173,7 @@ class App {
             this.refreshStockWarnings();
         }
         const initialRole = this.normalizeRole(this.session.user.rol || "");
-        const initialModule = ["gerencia", "administrador"].includes(initialRole)
+        const initialModule = ["gerencia", "administrador", "administrador_global", "supervisor_administracion"].includes(initialRole)
             ? "administracion"
             : modules[0].id;
         this.openModule(initialModule);
@@ -179,7 +185,39 @@ class App {
     }
 
     isGlobalAdministrator() {
-        return ["administrador", "gerencia"].includes(this.normalizeRole(this.session.user.rol || ""));
+        return ["administrador", "administrador_global", "gerencia"].includes(this.normalizeRole(this.session.user.rol || ""));
+    }
+
+    canManageEmployees() {
+        return this.isGlobalAdministrator() || this.normalizeRole(this.session.user.rol || "") === "supervisor_administracion";
+    }
+
+    canManageAllDepartmentRecords() {
+        return this.normalizeRole(this.session.user.rol || "") === "supervisor_administracion";
+    }
+
+    isDepartmentSupervisor() {
+        const role = this.normalizeRole(this.session.user.rol || "");
+        return role.startsWith("supervisor_") && role !== "supervisor_administracion";
+    }
+
+    moduleForRole(role) {
+        const normalizedRole = this.normalizeRole(role);
+        const supervisorModules = {
+            supervisor_administracion: "administracion",
+            supervisor_produccion: "produccion",
+            supervisor_mantenimiento: "mantenimiento",
+            supervisor_deposito: "deposito",
+            supervisor_compras: "compras",
+            supervisor_calidad: "calidad"
+        };
+        if (supervisorModules[normalizedRole]) return supervisorModules[normalizedRole];
+        if (["gerencia", "administrador", "administrador_global", "administracion"].includes(normalizedRole)) {
+            return "administracion";
+        }
+        return ["produccion", "mantenimiento", "deposito", "compras", "calidad"].includes(normalizedRole)
+            ? normalizedRole
+            : null;
     }
 
     modulesForRole() {
@@ -194,16 +232,12 @@ class App {
             {id: "chat", label: "Chat"}
         ];
         if (role === "cliente") return [{id: "chat", label: "Mensajes"}, {id: "seguimiento", label: "Mis pedidos"}];
-        if (["gerencia", "administrador"].includes(role)) return all;
-        if (role === "administracion") return all.filter(m => ["administracion", "chat"].includes(m.id));
-        const supervisorModule = role.match(/^supervisor_(.+)$/)?.[1];
-        if (supervisorModule === "administracion") {
+        if (["gerencia", "administrador", "administrador_global", "supervisor_administracion"].includes(role)) return all;
+        const module = this.moduleForRole(role);
+        if (module === "administracion") {
             return all.filter(module => ["administracion", "chat"].includes(module.id));
         }
-        if (supervisorModule) return all.filter(module => module.id === supervisorModule);
-        if (["produccion", "mantenimiento", "deposito", "compras", "calidad"].includes(role)) {
-            return all.filter(module => module.id === role);
-        }
+        if (module) return all.filter(item => item.id === module);
         return [{id: "administracion", label: "Administración"}];
     }
 
@@ -813,7 +847,7 @@ for (const module of [...panelModules, chatPanel, PublicModule.prototype, AuthMo
 
 const app = new App(
     document.querySelector("#app"),
-    new ApiService(window.location.port === "5500"
+    new ApiService(["5500", "5501"].includes(window.location.port)
         ? `${window.location.protocol}//${window.location.hostname}/MetalGest/clases/php/api.php`
         : "clases/php/api.php"),
     new SessionStore("metalgest_web_user")

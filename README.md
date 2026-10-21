@@ -4,11 +4,11 @@
 
 La aplicación tiene una única entrada en `index.html` y separa las vistas, los estilos y la lógica en tres carpetas planas:
 
-- `html/`: páginas y plantillas de `inicio`, `chat`, `administracion`, `produccion`, `mantenimiento`, `deposito`, `compras` y `calidad`.
-- `css/`: hojas de estilo del inicio, chat y de cada módulo.
-- `js/`: `inicio.js` inicializa la aplicación y gestiona el acceso; cada módulo y el chat tienen su propio archivo JavaScript.
+- `html/`: páginas y plantillas de `inicio`, `chat`, `administracion`, `produccion`, `mantenimiento`, `deposito`, `compras`, `calidad` y de cada supervisor operativo.
+- `css/`: hojas de estilo del inicio, chat y de cada módulo; `supervisores.css` contiene estilos compartidos y cada supervisor operativo tiene su propia hoja.
+- `js/`: `inicio.js` inicializa la aplicación y gestiona el acceso; cada módulo, cada panel de supervisor y el chat tienen su propio archivo JavaScript.
 
-Las vistas se cargan desde las plantillas HTML al iniciar la aplicación. La portada, el ingreso y el registro comparten `inicio.html`, `inicio.css` e `inicio.js`. La navegación expone los seis módulos de personal solicitados y mantiene el chat como acceso independiente para clientes y personal autorizado. Las funciones de pedidos, órdenes y clientes permanecen dentro de Administración.
+Las vistas se cargan desde las plantillas HTML al iniciar la aplicación. La portada, el ingreso y el registro comparten `inicio.html`, `inicio.css` e `inicio.js`. Cada supervisor operativo de Producción, Mantenimiento, Depósito, Compras y Calidad tiene su propio archivo HTML, CSS y JavaScript; `supervisores.js` centraliza la tabla y las acciones comunes de edición y eliminación. La navegación expone los seis módulos de personal solicitados y mantiene el chat como acceso independiente para clientes y personal autorizado. Las funciones de pedidos, órdenes y clientes permanecen dentro de Administración.
 
 ## Backend y datos
 
@@ -23,6 +23,6 @@ El chat web y el estado actual de los pedidos usan las tablas existentes; los me
 
 ## Roles de empleados
 
-La sección Administración > Empleados está disponible para Administrador y para el rol heredado Gerencia, que permite asignar inicialmente el nuevo rol Administrador desde las cuentas existentes. Desde allí se pueden crear empleados, asignar o cambiar su rol, actualizar sus datos y eliminarlos. El Administrador accede a todos los módulos; los roles Supervisor habilitan únicamente el módulo indicado. Las rutas de la API también validan esos permisos.
+La sección Administración > Empleados está disponible para Administrador, Gerencia y Supervisor de Administración. Este último ve todos los módulos, puede crear registros en todas las áreas y editar o eliminar registros de cada área; también puede crear, editar y eliminar empleados, excepto las cuentas de Administrador o Gerencia, que permanecen protegidas. Los supervisores operativos de Producción, Mantenimiento, Depósito, Compras y Calidad acceden únicamente a su área y pueden editar o eliminar registros existentes, sin formularios de alta. En Compras y Depósito, cada categoría se muestra en una solapa independiente. La edición se abre con el botón correspondiente o haciendo doble clic en la fila. La interfaz y las rutas de la API validan esos permisos.
 
-Al actualizar una base existente, ejecutar una vez `sql/roles_administrador_supervisores.sql` en la base `metalurgica_san_jorge`. Las nuevas importaciones pueden usar los roles ya incluidos en `sql/metalurgica_san_jorge (1).sql`. Las contraseñas de empleados nuevos se guardan con hash; las contraseñas existentes se convierten automáticamente al hash seguro cuando el empleado inicia sesión correctamente.
+En una base existente que ya tiene los roles de supervisión, ejecutar `sql/usuarios_supervisores_iniciales.sql` en `metalurgica_san_jorge` para crear las cuentas de supervisores y Administrador Global que falten. Las nuevas importaciones pueden usar los roles y las cuentas incluidos en `sql/metalurgica_san_jorge (1).sql`. La contraseña inicial de esas cuentas es `1234`; al iniciar sesión correctamente se convierte automáticamente al hash seguro, por lo que debe cambiarse después.

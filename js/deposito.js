@@ -1,6 +1,11 @@
 export const depositoPanel = {
     async depositoView() {
-        const [materiales, movimientos, ordenes] = await Promise.all([this.api.get("materiales_list"), this.api.get("deposito_movimientos_list"), this.api.get("ordenes_list")]);
+        if (this.isDepartmentSupervisor()) return this.supervisorDepositoView();
+        const [materiales, movimientos, ordenes] = await Promise.all([
+            this.api.get("materiales_list"),
+            this.api.get("deposito_movimientos_list"),
+            this.api.get("ordenes_list")
+        ]);
         this.content(await this.moduleTemplate("deposito", "deposito", {
             employeeName: this.escape(this.session.user.nombre || this.session.user.razon_social || "equipo"),
             materials: materiales.map(m => `<option value="${this.escape(m.id_material)}">${this.escape(m.nombre)}</option>`).join(""),
@@ -17,12 +22,17 @@ export const depositoPanel = {
             inventoryChart: this.moduleValueBarChart(materiales, "nombre", "stock", "Existencias por material", {
                 referenceField: "stock_minimo", color: "#7d9fe5"
             }),
-            inventoryTable: this.simpleTable(materiales, ["id_material", "nombre", "tipo", "unidad", "stock", "stock_minimo", "stock_maximo"]),
-            movementsTable: this.simpleTable(movimientos, ["id_movimiento", "material", "tipo", "cantidad", "motivo", "fecha"])
+            inventoryTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(materiales, ["id_material", "nombre", "tipo", "unidad", "stock", "stock_minimo", "stock_maximo"], "material", "id_material", "materiales")
+                : this.simpleTable(materiales, ["id_material", "nombre", "tipo", "unidad", "stock", "stock_minimo", "stock_maximo"]),
+            movementsTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(movimientos, ["id_movimiento", "material", "tipo", "cantidad", "motivo", "fecha"], "movimiento", "id_movimiento", "movimientos")
+                : this.simpleTable(movimientos, ["id_movimiento", "material", "tipo", "cantidad", "motivo", "fecha"])
         }));
         this.bindModuleIndexNavigation();
         this.refreshStockWarnings(materiales);
         this.bindPostForm("#movimientoForm", "deposito_movimiento_create", () => this.depositoView());
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.depositoView());
     }
 
 };

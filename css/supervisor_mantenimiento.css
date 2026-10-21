@@ -1,0 +1,5 @@
+.supervisor-panel--mantenimiento {
+    --module-accent: #8fa9e5;
+    --module-accent-soft: rgba(143, 169, 229, .12);
+    --module-accent-line: rgba(143, 169, 229, .32);
+}

@@ -1,6 +1,11 @@
 <?php
 $apiOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
-$allowedApiOrigins = ['http://127.0.0.1:5500', 'http://localhost:5500'];
+$allowedApiOrigins = [
+    'http://127.0.0.1:5500',
+    'http://localhost:5500',
+    'http://127.0.0.1:5501',
+    'http://localhost:5501'
+];
 if (in_array($apiOrigin, $allowedApiOrigins, true)) {
     header('Access-Control-Allow-Origin: ' . $apiOrigin);
     header('Vary: Origin');
@@ -213,7 +218,9 @@ function api_date($value) {
 
 function api_chat_require_staff() {
     $user = $_SESSION['metalgest_user'] ?? null;
-    if (!$user || !in_array(strtolower($user['rol'] ?? ''), ['administrador', 'gerencia', 'administracion'], true)) {
+    $role = api_normalize_role($user['rol'] ?? '');
+    $allowedRoles = ['administrador', 'administrador_global', 'gerencia', 'administracion', 'supervisor_administracion'];
+    if (!$user || !in_array($role, $allowedRoles, true)) {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta autorizada para acceder al chat.'], 401);
     }
     return $user;
@@ -233,8 +240,11 @@ function api_require_employee_roles(array $roles) {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta de empleado.'], 401);
     }
     $role = api_normalize_role($user['rol'] ?? '');
+    if ($role === 'supervisor_administracion') {
+        return $user;
+    }
     $allowedRoles = array_map('api_normalize_role', $roles);
-    $isAdministrator = $role === 'administrador';
+    $isAdministrator = in_array($role, ['administrador', 'administrador_global'], true);
     $isSupervisorForAllowedModule = preg_match('/^supervisor_(.+)$/', $role, $matches)
         && in_array($matches[1], $allowedRoles, true);
     if (!$isAdministrator && !$isSupervisorForAllowedModule && !in_array($role, $allowedRoles, true)) {
@@ -244,7 +254,11 @@ function api_require_employee_roles(array $roles) {
 }
 
 function api_normalize_role($role) {
-    $asciiRole = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', (string)$role);
+    $role = strtr((string)$role, [
+        'á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ñ' => 'n',
+        'Á' => 'A', 'É' => 'E', 'Í' => 'I', 'Ó' => 'O', 'Ú' => 'U', 'Ñ' => 'N'
+    ]);
+    $asciiRole = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $role);
     $normalizedRole = strtolower($asciiRole === false ? (string)$role : $asciiRole);
     return trim(preg_replace('/[^a-z0-9]+/', '_', $normalizedRole), '_');
 }
@@ -260,7 +274,85 @@ function api_employee_role($idRole) {
 }
 
 function api_employee_is_administrator($roleName) {
-    return api_normalize_role($roleName) === 'administrador';
+    return in_array(api_normalize_role($roleName), ['administrador', 'administrador_global'], true);
+}
+
+function api_is_administration_supervisor() {
+    $user = $_SESSION['metalgest_user'] ?? null;
+    return api_normalize_role($user['rol'] ?? '') === 'supervisor_administracion';
+}
+
+function api_validate_supervisor_employee_role($roleName) {
+    if (api_is_administration_supervisor() && api_employee_role_is_protected($roleName)) {
+        api_json(['success' => false, 'message' => 'El supervisor de Administración no puede asignar roles de Administrador o Gerencia.'], 403);
+    }
+}
+
+function api_employee_role_is_protected($roleName) {
+    return in_array(
+        api_normalize_role($roleName),
+        ['administrador', 'administrador_global', 'gerencia'],
+        true
+    );
+}
+
+function api_department_supervisor_module() {
+    $user = $_SESSION['metalgest_user'] ?? null;
+    if (!$user || ($user['tipo'] ?? '') !== 'empleado') {
+        api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta de empleado.'], 401);
+    }
+    $role = api_normalize_role($user['rol'] ?? '');
+    if (!preg_match('/^supervisor_(administracion|produccion|mantenimiento|deposito|compras|calidad)$/', $role, $matches)) {
+        api_json(['success' => false, 'message' => 'Esta acción está reservada a supervisores de área.'], 403);
+    }
+    return $matches[1];
+}
+
+function api_require_no_department_supervisor() {
+    $user = $_SESSION['metalgest_user'] ?? null;
+    $role = api_normalize_role($user['rol'] ?? '');
+    if (in_array($role, [
+        'supervisor_produccion',
+        'supervisor_mantenimiento',
+        'supervisor_deposito',
+        'supervisor_compras',
+        'supervisor_calidad'
+    ], true)) {
+        api_json(['success' => false, 'message' => 'Los supervisores solo pueden editar o eliminar registros existentes.'], 403);
+    }
+}
+
+function api_sync_production_order(PDO $pdo, int $idOrden) {
+    $latest = $pdo->prepare('SELECT avance FROM produccion WHERE id_orden = :id_orden ORDER BY id_produccion DESC LIMIT 1');
+    $latest->execute([':id_orden' => $idOrden]);
+    $avance = $latest->fetchColumn();
+    $estado = $avance === false ? 'Pendiente' : ((int)$avance >= 100 ? 'Finalizada' : 'En produccion');
+    $updateOrder = $pdo->prepare(
+        'UPDATE orden_trabajo
+         SET estado = :estado, fecha_finalizacion = CASE WHEN :estado_fin = "Finalizada" THEN COALESCE(fecha_finalizacion, CURDATE()) ELSE NULL END
+         WHERE id_orden = :id_orden'
+    );
+    $updateOrder->execute([':estado' => $estado, ':estado_fin' => $estado, ':id_orden' => $idOrden]);
+    $updatePedido = $pdo->prepare(
+        'UPDATE pedido p INNER JOIN orden_trabajo ot ON ot.id_pedido = p.id_pedido
+         SET p.estado = :estado WHERE ot.id_orden = :id_orden'
+    );
+    $updatePedido->execute([':estado' => $estado, ':id_orden' => $idOrden]);
+}
+
+function api_adjust_stock(PDO $pdo, int $idMaterial, float $delta) {
+    $statement = $pdo->prepare('SELECT stock FROM material WHERE id_material = :id_material FOR UPDATE');
+    $statement->execute([':id_material' => $idMaterial]);
+    $stock = $statement->fetchColumn();
+    if ($stock === false) {
+        throw new InvalidArgumentException('No se encontró el material relacionado.');
+    }
+    $updatedStock = (float)$stock + $delta;
+    if ($updatedStock < 0) {
+        throw new InvalidArgumentException('El cambio dejaría el stock en negativo; revisá los movimientos asociados.');
+    }
+    $update = $pdo->prepare('UPDATE material SET stock = :stock WHERE id_material = :id_material');
+    $update->execute([':stock' => $updatedStock, ':id_material' => $idMaterial]);
 }
 
 function api_require_client() {
@@ -473,13 +565,18 @@ if ($action === 'login') {
 }
 
 if ($action === 'empleados_roles_list') {
-    api_require_employee_roles(['administrador', 'gerencia']);
+    api_require_employee_roles(['administrador', 'gerencia', 'administracion']);
     $roles = api_db()->query("SELECT id_rol, nombre FROM rol WHERE LOWER(nombre) <> 'cliente' ORDER BY nombre")->fetchAll();
+    if (api_is_administration_supervisor()) {
+        $roles = array_values(array_filter($roles, static function ($role) {
+            return !in_array(api_normalize_role($role['nombre']), ['administrador', 'administrador_global', 'gerencia'], true);
+        }));
+    }
     api_json($roles);
 }
 
 if ($action === 'empleados_list') {
-    api_require_employee_roles(['administrador', 'gerencia']);
+    api_require_employee_roles(['administrador', 'gerencia', 'administracion']);
     $employees = api_db()->query(
         "SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.id_rol, r.nombre AS rol
          FROM usuario u
@@ -491,7 +588,7 @@ if ($action === 'empleados_list') {
 }
 
 if ($action === 'empleados_create') {
-    api_require_employee_roles(['administrador', 'gerencia']);
+    api_require_employee_roles(['administrador', 'gerencia', 'administracion']);
     try {
         $nombre = api_required('nombre');
         $apellido = api_input('apellido', '');
@@ -501,6 +598,7 @@ if ($action === 'empleados_create') {
             api_json(['success' => false, 'message' => 'La contraseña debe tener al menos 4 caracteres.'], 422);
         }
         $role = api_employee_role(api_int('id_rol'));
+        api_validate_supervisor_employee_role($role['nombre']);
         $statement = api_db()->prepare(
             'INSERT INTO usuario (nombre, apellido, usuario, contrasena, id_rol, id_cliente)
              VALUES (:nombre, :apellido, :usuario, :contrasena, :id_rol, NULL)'
@@ -525,13 +623,14 @@ if ($action === 'empleados_create') {
 }
 
 if ($action === 'empleados_update') {
-    api_require_employee_roles(['administrador', 'gerencia']);
+    api_require_employee_roles(['administrador', 'gerencia', 'administracion']);
     $idUsuario = api_int('id_usuario');
     if ($idUsuario <= 0) {
         api_json(['success' => false, 'message' => 'Seleccioná un empleado válido.'], 422);
     }
     try {
         $role = api_employee_role(api_int('id_rol'));
+        api_validate_supervisor_employee_role($role['nombre']);
         $fields = [
             'nombre' => api_required('nombre'),
             'apellido' => api_input('apellido', ''),
@@ -557,7 +656,15 @@ if ($action === 'empleados_update') {
             $pdo->rollBack();
             api_json(['success' => false, 'message' => 'No se encontró el empleado.'], 404);
         }
+        if (api_is_administration_supervisor() && api_employee_role_is_protected($currentEmployee['rol'])) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'El supervisor de Administración no puede modificar cuentas de Administrador o Gerencia.'], 403);
+        }
         $isSelf = $idUsuario === (int)($_SESSION['metalgest_user']['id_usuario'] ?? 0);
+        if (api_is_administration_supervisor() && $isSelf && (int)$role['id_rol'] !== (int)$currentEmployee['id_rol']) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'No podés cambiar tu propio rol.'], 409);
+        }
         $isChangingOwnRole = $isSelf && (int)$role['id_rol'] !== (int)$currentEmployee['id_rol'];
         if ($isChangingOwnRole && !api_employee_is_administrator($role['nombre'])) {
             $pdo->rollBack();
@@ -566,7 +673,7 @@ if ($action === 'empleados_update') {
         if (api_employee_is_administrator($currentEmployee['rol']) && !api_employee_is_administrator($role['nombre'])) {
             $countStatement = $pdo->query(
                 "SELECT COUNT(*) FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
-                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) = 'administrador'"
+                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) IN ('administrador', 'administrador global')"
             );
             if ((int)$countStatement->fetchColumn() <= 1) {
                 $pdo->rollBack();
@@ -601,7 +708,7 @@ if ($action === 'empleados_update') {
 }
 
 if ($action === 'empleados_delete') {
-    api_require_employee_roles(['administrador', 'gerencia']);
+    api_require_employee_roles(['administrador', 'gerencia', 'administracion']);
     $idUsuario = api_int('id_usuario');
     if ($idUsuario <= 0) {
         api_json(['success' => false, 'message' => 'Seleccioná un empleado válido.'], 422);
@@ -622,10 +729,14 @@ if ($action === 'empleados_delete') {
             $pdo->rollBack();
             api_json(['success' => false, 'message' => 'No se encontró el empleado.'], 404);
         }
+        if (api_is_administration_supervisor() && api_employee_role_is_protected($employee['rol'])) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'El supervisor de Administración no puede eliminar cuentas de Administrador o Gerencia.'], 403);
+        }
         if (api_employee_is_administrator($employee['rol'])) {
             $administratorCount = (int)$pdo->query(
                 "SELECT COUNT(*) FROM usuario u INNER JOIN rol r ON r.id_rol = u.id_rol
-                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) = 'administrador'"
+                 WHERE u.id_cliente IS NULL AND LOWER(r.nombre) IN ('administrador', 'administrador global')"
             )->fetchColumn();
             if ($administratorCount <= 1) {
                 $pdo->rollBack();
@@ -1293,6 +1404,7 @@ if ($action === 'produccion_list') {
 
 if ($action === 'produccion_register') {
     $user = api_require_employee_roles(['gerencia', 'produccion']);
+    api_require_no_department_supervisor();
     $cantidad = api_int('cantidad_producida');
     $avance = api_int('avance');
     if (api_int('id_orden') <= 0 || $cantidad < 0 || $avance < 0 || $avance > 100) {
@@ -1320,6 +1432,7 @@ if ($action === 'maquinas_list') {
 if ($action === 'mantenimiento_report') {
     try {
         $user = api_require_employee_roles(['gerencia', 'produccion', 'mantenimiento']);
+        api_require_no_department_supervisor();
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
@@ -1357,6 +1470,7 @@ if ($action === 'mantenimientos_list') {
 if ($action === 'mantenimiento_preventivo_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'mantenimiento']);
+        api_require_no_department_supervisor();
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
@@ -1405,6 +1519,7 @@ if ($action === 'materiales_list') {
 if ($action === 'materiales_create') {
     try {
         api_require_employee_roles(['gerencia', 'compras']);
+        api_require_no_department_supervisor();
         $stockMinimo = (float)api_input('stock_minimo', '0');
         $stockMaximo = (float)api_input('stock_maximo', '0');
         if ($stockMinimo < 0 || $stockMaximo < $stockMinimo) {
@@ -1463,6 +1578,7 @@ if ($action === 'deposito_movimientos_list') {
 if ($action === 'deposito_movimiento_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'deposito']);
+        api_require_no_department_supervisor();
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
         $tipo = api_required('tipo');
@@ -1514,6 +1630,7 @@ if ($action === 'proveedores_list') {
 if ($action === 'proveedores_create') {
     try {
         api_require_employee_roles(['gerencia', 'compras']);
+        api_require_no_department_supervisor();
         $idProveedor = $comprasDAO->crearProveedor([
             'razon_social' => api_required('razon_social'),
             'cuit' => api_input('cuit', ''),
@@ -1534,6 +1651,7 @@ if ($action === 'compras_list') {
 if ($action === 'compras_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'compras']);
+        api_require_no_department_supervisor();
         $idProveedor = api_int('id_proveedor');
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
@@ -1590,6 +1708,7 @@ if ($action === 'calidad_list') {
 if ($action === 'calidad_register') {
     try {
         $user = api_require_employee_roles(['gerencia', 'calidad']);
+        api_require_no_department_supervisor();
         $idOrden = api_int('id_orden');
         $resultado = api_required('resultado');
         if ($idOrden <= 0 || !in_array($resultado, ['Aprobado', 'Observado', 'Rechazado'], true)) {
@@ -1605,6 +1724,330 @@ if ($action === 'calidad_register') {
         api_json(['success' => true, 'id_control' => $idControl]);
     } catch (Throwable $e) {
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+}
+
+if ($action === 'supervisor_record_update' || $action === 'supervisor_record_delete') {
+    $supervisorModule = api_department_supervisor_module();
+    $entity = api_required('entity');
+    $id = api_int('id');
+    $entityModules = [
+        'cliente' => ['administracion'],
+        'pedido' => ['administracion'],
+        'orden' => ['administracion'],
+        'produccion' => ['produccion'],
+        'mantenimiento' => ['mantenimiento'],
+        'material' => ['deposito', 'compras'],
+        'movimiento' => ['deposito'],
+        'proveedor' => ['compras'],
+        'compra' => ['compras'],
+        'calidad' => ['calidad']
+    ];
+    $idFields = [
+        'cliente' => 'id_cliente',
+        'pedido' => 'id_pedido',
+        'orden' => 'id_orden',
+        'produccion' => 'id_produccion',
+        'mantenimiento' => 'id_mantenimiento',
+        'material' => 'id_material',
+        'movimiento' => 'id_movimiento',
+        'proveedor' => 'id_proveedor',
+        'compra' => 'id_compra',
+        'calidad' => 'id_control'
+    ];
+    if (!isset($entityModules[$entity]) || (
+        !api_is_administration_supervisor() && !in_array($supervisorModule, $entityModules[$entity], true)
+    )) {
+        api_json(['success' => false, 'message' => 'Tu rol no puede modificar registros de esta área.'], 403);
+    }
+    if ($id <= 0) {
+        api_json(['success' => false, 'message' => 'Seleccioná un registro válido.'], 422);
+    }
+
+    $pdo = api_db();
+    $idField = $idFields[$entity];
+    $tables = [
+        'cliente' => 'cliente',
+        'pedido' => 'pedido',
+        'orden' => 'orden_trabajo',
+        'produccion' => 'produccion',
+        'mantenimiento' => 'mantenimiento',
+        'material' => 'material',
+        'movimiento' => 'material_movimiento',
+        'proveedor' => 'proveedor',
+        'compra' => 'compra',
+        'calidad' => 'control_calidad'
+    ];
+    try {
+        $pdo->beginTransaction();
+        $existing = $pdo->prepare("SELECT $idField FROM {$tables[$entity]} WHERE $idField = :id FOR UPDATE");
+        $existing->execute([':id' => $id]);
+        if (!$existing->fetchColumn()) {
+            $pdo->rollBack();
+            api_json(['success' => false, 'message' => 'No se encontró el registro.'], 404);
+        }
+
+        if ($action === 'supervisor_record_update') {
+            switch ($entity) {
+                case 'cliente':
+                    $update = $pdo->prepare('UPDATE cliente SET razon_social = :razon_social, cuit = :cuit, email = :email, direccion = :direccion WHERE id_cliente = :id');
+                    $update->execute([
+                        ':razon_social' => api_required('razon_social'),
+                        ':cuit' => api_input('cuit', ''),
+                        ':email' => api_input('email', ''),
+                        ':direccion' => api_input('direccion', ''),
+                        ':id' => $id
+                    ]);
+                    break;
+                case 'pedido':
+                    $quantity = api_int('cantidad', 0);
+                    $deliveryDate = api_input('fecha_entrega');
+                    if ($quantity <= 0 || ($deliveryDate !== null && $deliveryDate !== '' && !DateTime::createFromFormat('Y-m-d', $deliveryDate))) {
+                        throw new InvalidArgumentException('La cantidad o la fecha de entrega no son válidas.');
+                    }
+                    $update = $pdo->prepare('UPDATE pedido SET descripcion = :descripcion, cantidad = :cantidad, material = :material, fecha_entrega = :fecha_entrega WHERE id_pedido = :id');
+                    $update->execute([
+                        ':descripcion' => api_required('descripcion'),
+                        ':cantidad' => $quantity,
+                        ':material' => api_required('material'),
+                        ':fecha_entrega' => $deliveryDate === '' ? null : $deliveryDate,
+                        ':id' => $id
+                    ]);
+                    break;
+                case 'orden':
+                    $priority = api_required('prioridad');
+                    $validPriorities = ['Baja', 'Media', 'Alta', 'Urgente'];
+                    $expectedDate = api_input('fecha_prevista');
+                    if (!in_array($priority, $validPriorities, true)
+                        || ($expectedDate !== null && $expectedDate !== '' && !DateTime::createFromFormat('Y-m-d', $expectedDate))) {
+                        throw new InvalidArgumentException('La prioridad o la fecha prevista no son válidas.');
+                    }
+                    $update = $pdo->prepare('UPDATE orden_trabajo SET fecha_prevista = :fecha_prevista, prioridad = :prioridad, observaciones = :observaciones WHERE id_orden = :id');
+                    $update->execute([
+                        ':fecha_prevista' => $expectedDate === '' ? null : $expectedDate,
+                        ':prioridad' => $priority,
+                        ':observaciones' => api_input('observaciones', ''),
+                        ':id' => $id
+                    ]);
+                    break;
+                case 'produccion':
+                    $cantidad = (int)api_input('cantidad_producida', '-1');
+                    $avance = (int)api_input('avance', '-1');
+                    if ($cantidad < 0 || $avance < 0 || $avance > 100) {
+                        throw new InvalidArgumentException('La cantidad debe ser positiva y el avance debe estar entre 0 y 100.');
+                    }
+                    $update = $pdo->prepare('UPDATE produccion SET cantidad_producida = :cantidad, avance = :avance, observaciones = :observaciones WHERE id_produccion = :id');
+                    $update->execute([':cantidad' => $cantidad, ':avance' => $avance, ':observaciones' => api_input('observaciones', ''), ':id' => $id]);
+                    $orderQuery = $pdo->prepare('SELECT id_orden FROM produccion WHERE id_produccion = :id');
+                    $orderQuery->execute([':id' => $id]);
+                    api_sync_production_order($pdo, (int)$orderQuery->fetchColumn());
+                    break;
+                case 'mantenimiento':
+                    $estado = api_required('estado');
+                    if (!in_array($estado, ['Pendiente', 'En proceso', 'Resuelta'], true)) {
+                        throw new InvalidArgumentException('El estado de mantenimiento no es válido.');
+                    }
+                    $update = $pdo->prepare('UPDATE mantenimiento SET problema = :problema, reparacion = :reparacion, repuestos = :repuestos, estado = :estado WHERE id_mantenimiento = :id');
+                    $update->execute([
+                        ':problema' => api_input('problema', ''),
+                        ':reparacion' => api_input('reparacion', ''),
+                        ':repuestos' => api_input('repuestos', ''),
+                        ':estado' => $estado,
+                        ':id' => $id
+                    ]);
+                    $machineQuery = $pdo->prepare('SELECT id_maquina FROM mantenimiento WHERE id_mantenimiento = :id');
+                    $machineQuery->execute([':id' => $id]);
+                    $idMaquina = (int)$machineQuery->fetchColumn();
+                    $openQuery = $pdo->prepare("SELECT COUNT(*) FROM mantenimiento WHERE id_maquina = :id_maquina AND estado <> 'Resuelta'");
+                    $openQuery->execute([':id_maquina' => $idMaquina]);
+                    $machineUpdate = $pdo->prepare('UPDATE maquina SET estado = :estado WHERE id_maquina = :id_maquina');
+                    $machineUpdate->execute([':estado' => (int)$openQuery->fetchColumn() > 0 ? 'Con falla' : 'Operativa', ':id_maquina' => $idMaquina]);
+                    break;
+                case 'material':
+                    $minimum = (float)api_input('stock_minimo', '-1');
+                    $maximum = (float)api_input('stock_maximo', '-1');
+                    if ($minimum < 0 || $maximum < $minimum) {
+                        throw new InvalidArgumentException('Los límites de stock no son válidos.');
+                    }
+                    $update = $pdo->prepare('UPDATE material SET nombre = :nombre, tipo = :tipo, unidad = :unidad, espesor = :espesor, stock_minimo = :minimo, stock_maximo = :maximo WHERE id_material = :id');
+                    $update->execute([
+                        ':nombre' => api_required('nombre'),
+                        ':tipo' => api_input('tipo', ''),
+                        ':unidad' => api_input('unidad', ''),
+                        ':espesor' => api_input('espesor', ''),
+                        ':minimo' => $minimum,
+                        ':maximo' => $maximum,
+                        ':id' => $id
+                    ]);
+                    break;
+                case 'movimiento':
+                    $type = api_required('tipo');
+                    $quantity = (float)api_input('cantidad', '0');
+                    if (!in_array($type, ['Ingreso', 'Salida'], true) || $quantity <= 0) {
+                        throw new InvalidArgumentException('El tipo y la cantidad del movimiento no son válidos.');
+                    }
+                    $currentQuery = $pdo->prepare('SELECT id_material, tipo, cantidad FROM material_movimiento WHERE id_movimiento = :id');
+                    $currentQuery->execute([':id' => $id]);
+                    $current = $currentQuery->fetch();
+                    $sign = static function ($movementType, $movementQuantity) {
+                        return $movementType === 'Salida' ? -(float)$movementQuantity : (float)$movementQuantity;
+                    };
+                    api_adjust_stock($pdo, (int)$current['id_material'], $sign($type, $quantity) - $sign($current['tipo'], $current['cantidad']));
+                    $update = $pdo->prepare('UPDATE material_movimiento SET tipo = :tipo, cantidad = :cantidad, motivo = :motivo WHERE id_movimiento = :id');
+                    $update->execute([':tipo' => $type, ':cantidad' => $quantity, ':motivo' => api_input('motivo', ''), ':id' => $id]);
+                    break;
+                case 'proveedor':
+                    $update = $pdo->prepare('UPDATE proveedor SET razon_social = :razon_social, cuit = :cuit, telefono = :telefono, email = :email WHERE id_proveedor = :id');
+                    $update->execute([
+                        ':razon_social' => api_required('razon_social'),
+                        ':cuit' => api_input('cuit', ''),
+                        ':telefono' => api_input('telefono', ''),
+                        ':email' => api_input('email', ''),
+                        ':id' => $id
+                    ]);
+                    break;
+                case 'compra':
+                    $estado = api_required('estado');
+                    $fecha = api_required('fecha');
+                    if (!in_array($estado, ['Solicitada', 'Recibida', 'Cancelada'], true)
+                        || !DateTime::createFromFormat('Y-m-d', $fecha)) {
+                        throw new InvalidArgumentException('La fecha o el estado de compra no son válidos.');
+                    }
+                    $currentQuery = $pdo->prepare('SELECT estado FROM compra WHERE id_compra = :id');
+                    $currentQuery->execute([':id' => $id]);
+                    $oldState = $currentQuery->fetchColumn();
+                    if (($oldState === 'Recibida') !== ($estado === 'Recibida')) {
+                        $details = $pdo->prepare('SELECT id_material, cantidad FROM detalle_compra WHERE id_compra = :id');
+                        $details->execute([':id' => $id]);
+                        foreach ($details->fetchAll() as $detail) {
+                            $delta = (float)$detail['cantidad'] * ($estado === 'Recibida' ? 1 : -1);
+                            api_adjust_stock($pdo, (int)$detail['id_material'], $delta);
+                        }
+                    }
+                    $update = $pdo->prepare('UPDATE compra SET fecha = :fecha, estado = :estado WHERE id_compra = :id');
+                    $update->execute([':fecha' => $fecha, ':estado' => $estado, ':id' => $id]);
+                    break;
+                case 'calidad':
+                    $resultado = api_required('resultado');
+                    $fecha = api_required('fecha');
+                    if (!in_array($resultado, ['Aprobado', 'Observado', 'Rechazado'], true)
+                        || !DateTime::createFromFormat('Y-m-d', $fecha)) {
+                        throw new InvalidArgumentException('La fecha o el resultado de calidad no son válidos.');
+                    }
+                    $update = $pdo->prepare('UPDATE control_calidad SET fecha = :fecha, resultado = :resultado, observaciones = :observaciones WHERE id_control = :id');
+                    $update->execute([':fecha' => $fecha, ':resultado' => $resultado, ':observaciones' => api_input('observaciones', ''), ':id' => $id]);
+                    break;
+            }
+            $pdo->commit();
+            api_json(['success' => true]);
+        }
+
+        switch ($entity) {
+            case 'cliente':
+                $delete = $pdo->prepare('DELETE FROM cliente WHERE id_cliente = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'pedido':
+                $linkedOrder = $pdo->prepare('SELECT id_orden FROM orden_trabajo WHERE id_pedido = :id LIMIT 1');
+                $linkedOrder->execute([':id' => $id]);
+                if ($linkedOrder->fetchColumn()) {
+                    throw new InvalidArgumentException('No se puede eliminar un pedido que ya tiene una orden de trabajo.');
+                }
+                $delete = $pdo->prepare('DELETE FROM pedido WHERE id_pedido = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'orden':
+                $pedidoQuery = $pdo->prepare('SELECT id_pedido FROM orden_trabajo WHERE id_orden = :id');
+                $pedidoQuery->execute([':id' => $id]);
+                $idPedido = (int)$pedidoQuery->fetchColumn();
+                $childTables = [
+                    ['produccion', 'id_orden'],
+                    ['control_calidad', 'id_orden'],
+                    ['entrega', 'id_orden'],
+                    ['orden_maquina', 'id_orden'],
+                    ['orden_material', 'id_orden']
+                ];
+                foreach ($childTables as [$table, $column]) {
+                    $linkedRecords = $pdo->prepare("SELECT COUNT(*) FROM $table WHERE $column = :id");
+                    $linkedRecords->execute([':id' => $id]);
+                    if ((int)$linkedRecords->fetchColumn() > 0) {
+                        throw new InvalidArgumentException('No se puede eliminar una orden con registros de producción, calidad, entrega o materiales asociados.');
+                    }
+                }
+                $delete = $pdo->prepare('DELETE FROM orden_trabajo WHERE id_orden = :id');
+                $delete->execute([':id' => $id]);
+                $resetPedido = $pdo->prepare("UPDATE pedido SET estado = 'Pendiente' WHERE id_pedido = :id_pedido");
+                $resetPedido->execute([':id_pedido' => $idPedido]);
+                break;
+            case 'produccion':
+                $orderQuery = $pdo->prepare('SELECT id_orden FROM produccion WHERE id_produccion = :id');
+                $orderQuery->execute([':id' => $id]);
+                $idOrden = (int)$orderQuery->fetchColumn();
+                $delete = $pdo->prepare('DELETE FROM produccion WHERE id_produccion = :id');
+                $delete->execute([':id' => $id]);
+                api_sync_production_order($pdo, $idOrden);
+                break;
+            case 'mantenimiento':
+                $machineQuery = $pdo->prepare('SELECT id_maquina FROM mantenimiento WHERE id_mantenimiento = :id');
+                $machineQuery->execute([':id' => $id]);
+                $idMaquina = (int)$machineQuery->fetchColumn();
+                $delete = $pdo->prepare('DELETE FROM mantenimiento WHERE id_mantenimiento = :id');
+                $delete->execute([':id' => $id]);
+                $openQuery = $pdo->prepare("SELECT COUNT(*) FROM mantenimiento WHERE id_maquina = :id_maquina AND estado <> 'Resuelta'");
+                $openQuery->execute([':id_maquina' => $idMaquina]);
+                $machineUpdate = $pdo->prepare('UPDATE maquina SET estado = :estado WHERE id_maquina = :id_maquina');
+                $machineUpdate->execute([':estado' => (int)$openQuery->fetchColumn() > 0 ? 'Con falla' : 'Operativa', ':id_maquina' => $idMaquina]);
+                break;
+            case 'material':
+                $delete = $pdo->prepare('DELETE FROM material WHERE id_material = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'movimiento':
+                $currentQuery = $pdo->prepare('SELECT id_material, tipo, cantidad FROM material_movimiento WHERE id_movimiento = :id');
+                $currentQuery->execute([':id' => $id]);
+                $current = $currentQuery->fetch();
+                $delta = $current['tipo'] === 'Salida' ? (float)$current['cantidad'] : -(float)$current['cantidad'];
+                api_adjust_stock($pdo, (int)$current['id_material'], $delta);
+                $delete = $pdo->prepare('DELETE FROM material_movimiento WHERE id_movimiento = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'proveedor':
+                $delete = $pdo->prepare('DELETE FROM proveedor WHERE id_proveedor = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'compra':
+                $currentQuery = $pdo->prepare('SELECT estado FROM compra WHERE id_compra = :id');
+                $currentQuery->execute([':id' => $id]);
+                if ($currentQuery->fetchColumn() === 'Recibida') {
+                    $details = $pdo->prepare('SELECT id_material, cantidad FROM detalle_compra WHERE id_compra = :id');
+                    $details->execute([':id' => $id]);
+                    foreach ($details->fetchAll() as $detail) {
+                        api_adjust_stock($pdo, (int)$detail['id_material'], -(float)$detail['cantidad']);
+                    }
+                }
+                $deleteDetails = $pdo->prepare('DELETE FROM detalle_compra WHERE id_compra = :id');
+                $deleteDetails->execute([':id' => $id]);
+                $delete = $pdo->prepare('DELETE FROM compra WHERE id_compra = :id');
+                $delete->execute([':id' => $id]);
+                break;
+            case 'calidad':
+                $delete = $pdo->prepare('DELETE FROM control_calidad WHERE id_control = :id');
+                $delete->execute([':id' => $id]);
+                break;
+        }
+        $pdo->commit();
+        api_json(['success' => true]);
+    } catch (InvalidArgumentException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        api_json(['success' => false, 'message' => $e->getMessage()], 409);
+    } catch (PDOException $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('MetalGest supervisor record change failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se puede eliminar el registro porque tiene datos asociados.'], 409);
+    } catch (Throwable $e) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        error_log('MetalGest supervisor record change failed: ' . $e->getMessage());
+        api_json(['success' => false, 'message' => 'No se pudo guardar el cambio.'], 500);
     }
 }
 

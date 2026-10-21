@@ -1,6 +1,12 @@
 export const comprasPanel = {
     async comprasView() {
-        const [proveedores, materiales, compras, ordenes] = await Promise.all([this.api.get("proveedores_list"), this.api.get("materiales_list"), this.api.get("compras_list"), this.api.get("ordenes_list")]);
+        if (this.isDepartmentSupervisor()) return this.supervisorComprasView();
+        const [proveedores, materiales, compras, ordenes] = await Promise.all([
+            this.api.get("proveedores_list"),
+            this.api.get("materiales_list"),
+            this.api.get("compras_list"),
+            this.api.get("ordenes_list")
+        ]);
         const activePurchases = compras.filter(purchase => String(purchase.estado || "").toLocaleLowerCase() !== "cancelada");
         const purchaseTotal = activePurchases.reduce((total, purchase) => {
             const amount = Number(purchase.total);
@@ -24,13 +30,19 @@ export const comprasPanel = {
             purchaseStatusChart: this.moduleStatusDonutChart(compras, "estado", "Órdenes de compra", {
                 "Solicitada": "#e8753e", "Recibida": "#71b98a", "Cancelada": "#d15e5e"
             }),
+            suppliersTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(proveedores, ["id_proveedor", "razon_social", "cuit", "telefono", "email"], "proveedor", "id_proveedor", "proveedores")
+                : this.simpleTable(proveedores, ["id_proveedor", "razon_social", "cuit", "telefono", "email"]),
             materialsTable: this.inventoryTable(materiales),
-            purchasesTable: this.simpleTable(compras, ["id_compra", "proveedor", "detalle", "total", "estado"])
+            purchasesTable: this.canManageAllDepartmentRecords()
+                ? this.supervisorRecordsTable(compras, ["id_compra", "fecha", "proveedor", "detalle", "total", "estado"], "compra", "id_compra", "compras")
+                : this.simpleTable(compras, ["id_compra", "fecha", "proveedor", "detalle", "total", "estado"])
         }));
         this.bindModuleIndexNavigation();
         this.refreshStockWarnings(materiales);
         this.bindPostForm("#proveedorForm", "proveedores_create", () => this.comprasView());
         this.bindPostForm("#compraForm", "compras_create", () => this.comprasView());
+        if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.comprasView());
     },
 
     inventoryTable(materiales) {
@@ -58,6 +70,9 @@ export const comprasPanel = {
                 </tr>`;
             }).join("")}</tbody>
         </table><p class="table-no-results" data-table-empty hidden>No se encontraron materiales con ese criterio.</p></div>`;
+        if (this.canManageAllDepartmentRecords()) {
+            return this.supervisorRecordsTable(materiales, ["id_material", "nombre", "tipo", "unidad", "stock", "stock_minimo", "stock_maximo"], "material", "id_material", "materiales");
+        }
         return this.searchableTable(table, materiales.length, "materiales");
     },
 

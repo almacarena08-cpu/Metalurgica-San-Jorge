@@ -1,0 +1,255 @@
+.supervisor-record-dialog {
+    width: min(540px, calc(100vw - 32px));
+    max-width: none;
+    max-height: min(86vh, 680px);
+    overflow: auto;
+    padding: 0;
+    border: 1px solid #343b3e;
+    border-radius: 10px;
+    color: #e9edeb;
+    background: #171c1e;
+    box-shadow: 0 22px 64px rgba(0, 0, 0, .48);
+}
+
+.supervisor-record-dialog::backdrop {
+    background: rgba(4, 7, 8, .72);
+    backdrop-filter: blur(2px);
+}
+
+.supervisor-record-form {
+    display: grid;
+    gap: 0;
+}
+
+.supervisor-dialog-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 20px 22px;
+    border-bottom: 1px solid #303739;
+}
+
+.supervisor-dialog-kicker {
+    color: #d98660;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .12em;
+}
+
+.supervisor-dialog-header h2 {
+    margin: 5px 0 0;
+    color: #f1f3f1;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+.supervisor-dialog-header p {
+    margin: 7px 0 0;
+    color: #929c9e;
+    font-size: 11px;
+}
+
+.supervisor-dialog-header p span {
+    color: #cbd1ce;
+    font-weight: 700;
+}
+
+.supervisor-dialog-close {
+    display: grid;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #aab3b3;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.supervisor-dialog-close:hover {
+    border-color: #3a4144;
+    background: #23292b;
+    color: #ffffff;
+}
+
+.supervisor-dialog-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px 16px;
+    padding: 20px 22px;
+}
+
+.supervisor-dialog-field {
+    display: grid;
+    min-width: 0;
+    gap: 6px;
+    color: #b9c1c0;
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.supervisor-dialog-field.full {
+    grid-column: 1 / -1;
+}
+
+.supervisor-dialog-field input,
+.supervisor-dialog-field select,
+.supervisor-dialog-field textarea {
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 11px;
+    border: 1px solid #343d40;
+    border-radius: 5px;
+    outline: 0;
+    background: #111618;
+    color: #ecefed;
+    font-size: 11px;
+    transition: border-color .15s ease;
+}
+
+.supervisor-dialog-field textarea {
+    min-height: 78px;
+    resize: vertical;
+}
+
+.supervisor-dialog-field input:focus,
+.supervisor-dialog-field select:focus,
+.supervisor-dialog-field textarea:focus {
+    border-color: #d98660;
+    box-shadow: 0 0 0 2px rgba(217, 107, 59, .12);
+}
+
+.supervisor-dialog-message {
+    margin: 0 22px 14px;
+    padding: 9px 11px;
+    border: 1px solid rgba(211, 69, 52, .3);
+    border-radius: 5px;
+    background: rgba(211, 69, 52, .08);
+    color: #f1a49b;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.supervisor-dialog-message[hidden] {
+    display: none;
+}
+
+.supervisor-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 22px 18px;
+    border-top: 1px solid #303739;
+}
+
+.supervisor-dialog-actions .btn {
+    min-width: 112px;
+    min-height: 38px;
+    padding: 8px 13px;
+    border-radius: 5px;
+    font-size: 10px;
+}
+
+.supervisor-dialog-actions .btn:disabled {
+    cursor: wait;
+    opacity: .7;
+}
+
+.supervisor-record-row {
+    cursor: pointer;
+}
+
+.supervisor-record-row:hover td {
+    background: rgba(255, 255, 255, .025);
+}
+
+#content .supervisor-records-tabs {
+    display: flex;
+    gap: 8px;
+    margin: 0 0 16px;
+    padding: 7px;
+    overflow-x: auto;
+    border: 1px solid var(--workspace-line);
+    border-radius: 9px;
+    background: #121618;
+}
+
+#content .supervisor-record-tab {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 9px 15px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: #aeb7b9;
+    font-size: 12px;
+    font-weight: 650;
+    cursor: pointer;
+}
+
+#content .supervisor-record-tab:hover {
+    background: #1b2123;
+    color: #f2f3f1;
+}
+
+#content .supervisor-record-tab.active[aria-selected="true"] {
+    border-color: var(--module-accent-line, rgba(232, 108, 54, .32));
+    background: var(--module-accent-soft, rgba(232, 108, 54, .12));
+    color: var(--module-accent, #ffb18b);
+}
+
+#content .supervisor-records-section[hidden] {
+    display: none;
+}
+
+@media (max-width: 620px) {
+    #content .supervisor-records-tabs {
+        gap: 5px;
+        margin-bottom: 12px;
+        padding: 5px;
+    }
+
+    #content .supervisor-record-tab {
+        min-height: 36px;
+        padding: 8px 11px;
+    }
+}
+
+@media (max-width: 560px) {
+    .supervisor-record-dialog {
+        width: calc(100vw - 22px);
+        max-height: 90vh;
+    }
+
+    .supervisor-dialog-header {
+        padding: 17px 16px;
+    }
+
+    .supervisor-dialog-fields {
+        grid-template-columns: 1fr;
+        gap: 12px;
+        padding: 16px;
+    }
+
+    .supervisor-dialog-field.full {
+        grid-column: auto;
+    }
+
+    .supervisor-dialog-message {
+        margin-right: 16px;
+        margin-left: 16px;
+    }
+
+    .supervisor-dialog-actions {
+        padding: 12px 16px 16px;
+    }
+
+    .supervisor-dialog-actions .btn {
+        min-width: 0;
+        flex: 1;
+    }
+}

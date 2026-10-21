@@ -34,7 +34,7 @@
     </section>
     </div>
     <section data-module-panel="proveedores" class="section-panel module-index-section" hidden>
-        <div class="module-panel-heading"><div><span class="module-kicker">RED DE ABASTECIMIENTO</span><h3>Registrar proveedor</h3></div><span class="module-panel-note">Mantené actualizados los datos de contacto</span></div>
+        <div class="module-panel-heading"><div><span class="module-kicker">RED DE ABASTECIMIENTO</span><h3>Proveedores</h3></div><span class="module-panel-note">Mantené actualizados los datos de contacto</span></div>
         <form id="proveedorForm" class="form-grid">
             <label>Razón social<input name="razon_social" required></label>
             <label>CUIT<input name="cuit"></label>
@@ -42,6 +42,7 @@
             <label>Email<input name="email"></label>
             <button class="btn primary">Crear proveedor</button>
         </form>
+        {{suppliersTable}}
         <div class="message"></div>
     </section>
     <section data-module-panel="nueva-compra" class="section-panel module-index-section" hidden>
