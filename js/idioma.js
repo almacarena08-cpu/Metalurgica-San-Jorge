@@ -505,7 +505,74 @@ const englishTranslations = {
     "órdenes": "work orders",
     "No hay": "No",
     "para mostrar.": "to display.",
-    "Se produjo un error.": "An error occurred."
+    "Se produjo un error.": "An error occurred.",
+    "Indicadores operativos": "Operational metrics",
+    "Análisis de administración": "Administration analytics",
+    "PRODUCCIÓN": "PRODUCTION",
+    "SEGUIMIENTO": "TRACKING",
+    "CHATS ABIERTOS": "OPEN CHATS",
+    "Acciones": "Actions",
+    "Protegido": "Protected",
+    "Todavía no hay empleados registrados.": "No employees have been registered yet.",
+    "Nueva contraseña (opcional)": "New password (optional)",
+    "Empleado actualizado.": "Employee updated.",
+    "Empleado creado.": "Employee created.",
+    "Empleado eliminado.": "Employee deleted.",
+    "Editando a": "Editing",
+    "No se pudo guardar el empleado.": "Could not save the employee.",
+    "No se pudieron cargar las alertas de stock.": "Could not load stock alerts.",
+    "Indicadores de administración": "Administration metrics",
+    "Estado de las órdenes": "Work order status",
+    "Sin nombre": "Unnamed",
+    "Mínimo": "Minimum",
+    "registros": "records",
+    "En producción": "In production",
+    "Pausada": "Paused",
+    "Demorada": "Delayed",
+    "Pendiente por inconveniente": "On hold due to an issue",
+    "Lista para entrega": "Ready for delivery",
+    "Ingreso": "Receipt",
+    "Salida": "Withdrawal",
+    "Sin asociar": "Unlinked",
+    "Falta de materiales": "Materials unavailable",
+    "Material disponible": "Material available",
+    "Material recibido": "Material received",
+    "No publicar novedad": "Do not post an update",
+    "Los cambios aparecen automáticamente mientras tengas esta sección abierta.": "Updates appear automatically while this section is open.",
+    "PDF · JPG · PNG · DXF · DWG · máx. 10 MB": "PDF · JPG · PNG · DXF · DWG · max. 10 MB",
+    "Bandeja de entrada": "Inbox",
+    "Administración San Jorge": "San Jorge Administration",
+    "ATENCIÓN PERSONALIZADA": "PERSONALIZED SUPPORT",
+    "¿En qué podemos ayudarte?": "How can we help?",
+    "Escribinos tu consulta. El equipo de Metalúrgica San Jorge te responderá por este medio.": "Send us your inquiry. The Metalúrgica San Jorge team will reply here.",
+    "Consultas frecuentes": "Frequently asked questions",
+    "Total": "Total",
+    "Este campo es obligatorio.": "This field is required.",
+    "Las contraseñas no coinciden.": "Passwords do not match.",
+    "Enviando código...": "Sending code...",
+    "Estamos enviando el código. Puede tardar unos segundos.": "We are sending the code. This may take a few seconds.",
+    "Enviando...": "Sending...",
+    "Revisá tu correo.": "Check your email.",
+    "Contraseña actualizada.": "Password updated.",
+    "Ingresando...": "Signing in...",
+    "No se pudo ingresar.": "Could not sign in.",
+    "Procesando...": "Processing...",
+    "Registrando...": "Creating account...",
+    "No se pudo registrar la empresa.": "Could not register the company.",
+    "Verificando...": "Verifying...",
+    "El código no es válido.": "The code is invalid.",
+    "No se pudo verificar el correo.": "Could not verify the email.",
+    "Se quitará el acceso. Se conserva el historial de pedidos y chats.": "Access will be removed. Order and chat history will be kept.",
+    "La cuenta y tus credenciales se conservarán, pero no podrás iniciar sesión mientras esté desactivada. Contactá a la empresa para volver a habilitar el acceso.": "Your account and credentials will be kept, but you will not be able to sign in while it is deactivated. Contact the company to restore access.",
+    "¿Eliminar a": "Delete",
+    "Esta acción no se puede deshacer.": "This action cannot be undone.",
+    "No hay": "No",
+    "No se encontraron conversaciones.": "No conversations found.",
+    "No se pudieron actualizar los mensajes.": "Could not refresh messages.",
+    "Atención personalizada": "Personalized support",
+    "Estado actualizado": "Status updated",
+    "Se revisa automáticamente cada": "Automatically checked every",
+    "segundos.": "seconds."
 };
 
 function normalizeTranslationKey(value) {
@@ -531,6 +598,25 @@ export function translateText(value, language) {
         }
     }
     if (!translated) {
+        const editingMatch = source.match(/^Editando a (.+)\.$/i);
+        if (editingMatch) translated = `Editing ${editingMatch[1]}.`;
+    }
+    if (!translated) {
+        const analysisMatch = source.match(/^Todavía no hay (.+) para analizar\.$/i);
+        if (analysisMatch) {
+            const subject = normalizedTranslations.get(normalizeTranslationKey(analysisMatch[1])) || analysisMatch[1];
+            translated = `There are no ${subject.toLocaleLowerCase("en")} to analyze yet.`;
+        }
+    }
+    if (!translated) {
+        const updatedAtMatch = source.match(/^Estado actualizado (.+) · Se revisa automáticamente cada (\d+) segundos\.$/i);
+        if (updatedAtMatch) translated = `Status updated ${updatedAtMatch[1]} · Automatically checked every ${updatedAtMatch[2]} seconds.`;
+    }
+    if (!translated) {
+        const deleteEmployeeMatch = source.match(/^¿Eliminar a (.+)\? Esta acción no se puede deshacer\.$/i);
+        if (deleteEmployeeMatch) translated = `Delete ${deleteEmployeeMatch[1]}? This action cannot be undone.`;
+    }
+    if (!translated) {
         const emptyMatch = source.match(/^No hay (.+) para mostrar\.$/i);
         if (emptyMatch) {
             const noun = normalizedTranslations.get(normalizeTranslationKey(emptyMatch[1]));
@@ -546,7 +632,8 @@ export function translateElement(element, language) {
     if (!element || language !== "en") return;
     if (element.nodeType === Node.TEXT_NODE) {
         if (element.parentElement && !["SCRIPT", "STYLE", "TEXTAREA"].includes(element.parentElement.tagName)) {
-            element.nodeValue = translateText(element.nodeValue, language);
+            const translated = translateText(element.nodeValue, language);
+            if (translated !== element.nodeValue) element.nodeValue = translated;
         }
         return;
     }
@@ -560,7 +647,8 @@ export function translateElement(element, language) {
         if (parent.tagName === "OPTION" && !parent.hasAttribute("value")) {
             parent.value = node.nodeValue.trim();
         }
-        node.nodeValue = translateText(node.nodeValue, language);
+        const translated = translateText(node.nodeValue, language);
+        if (translated !== node.nodeValue) node.nodeValue = translated;
     }
     const translatableAttributes = ["aria-label", "aria-description", "placeholder", "title"];
     for (const descendant of [element, ...element.querySelectorAll("*")]) {

@@ -955,7 +955,7 @@ for (const module of [...panelModules, chatPanel, PublicModule.prototype, AuthMo
 const app = new App(
     document.querySelector("#app"),
     new ApiService(["5500", "5501"].includes(window.location.port)
-        ? `${window.location.protocol}//${window.location.hostname}/MetalGest/clases/php/api.php`
+        ? `${window.location.protocol}//${window.location.hostname}/web/Metalurgica-San-Jorge/clases/php/api.php`
         : "clases/php/api.php"),
     new SessionStore("metalgest_web_user")
 );
