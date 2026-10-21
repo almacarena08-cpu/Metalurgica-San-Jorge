@@ -11,6 +11,13 @@ export const administracionPanel = {
                 : Promise.resolve([])
         ]);
         if (this.current !== "administracion") return;
+        for (const [rows, label] of [[pedidos, "los pedidos"], [ordenes, "las órdenes de trabajo"]]) {
+            if (!Array.isArray(rows)) {
+                const error = new Error(rows?.message || `No se pudieron cargar ${label}.`);
+                error.authRequired = Boolean(rows?.authRequired);
+                throw error;
+            }
+        }
         const openChats = Array.isArray(chat) ? chat.filter(item => item.estado === "Abierto").length : 0;
         this.content(await this.moduleTemplate("administracion", "dashboard", {
             adminNavigation: this.administrationNavigation("dashboard"),
@@ -18,7 +25,7 @@ export const administracionPanel = {
             pedidosCount: pedidos.length,
             ordenesCount: ordenes.length,
             chatsCount: openChats,
-            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires"}),
+            today: new Date().toLocaleDateString(this.dateLocale(), {timeZone: "America/Argentina/Buenos_Aires"}),
             pedidosChart: this.moduleMonthlyChart(pedidos, "fecha", null, "Pedidos registrados por mes"),
             ordenesChart: this.moduleStatusDonutChart(ordenes, "estado", "Órdenes de trabajo"),
             recentOrders: this.simpleTable(pedidos.slice(0, 6), ["id_pedido", "razon_social", "descripcion", "estado"])

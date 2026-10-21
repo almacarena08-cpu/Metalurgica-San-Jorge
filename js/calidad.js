@@ -1,6 +1,5 @@
 export const calidadPanel = {
     async calidadView() {
-        if (this.isDepartmentSupervisor()) return this.supervisorCalidadView();
         const [rows, ordenes] = await Promise.all([
             this.api.get("calidad_list"),
             this.api.get("ordenes_list")
@@ -9,7 +8,7 @@ export const calidadPanel = {
             employeeName: this.escape(this.session.user.nombre || this.session.user.razon_social || "equipo"),
             orders: ordenes.map(o => `<option value="${this.escape(o.id_orden)}">#${this.escape(o.id_orden)} - ${this.escape(o.razon_social)}</option>`).join(""),
             userId: this.escape(this.session.user.id_usuario),
-            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
+            today: new Date().toLocaleDateString(this.dateLocale(), {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
             controlCount: rows.length,
             approvedCount: rows.filter(row => String(row.resultado || "").toLocaleLowerCase() === "aprobado").length,
             reviewCount: rows.filter(row => ["observado", "rechazado"].includes(String(row.resultado || "").toLocaleLowerCase())).length,

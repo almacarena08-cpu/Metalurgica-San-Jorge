@@ -26,7 +26,7 @@ export const chartsPanel = {
     },
 
     formatChartCurrency(amount) {
-        return new Intl.NumberFormat("es-AR", {
+        return new Intl.NumberFormat(this.dateLocale(), {
             style: "currency",
             currency: "ARS",
             maximumFractionDigits: amount >= 1000000 ? 1 : 0,
@@ -50,7 +50,7 @@ export const chartsPanel = {
             const parts = monthParts(date);
             months.push({
                 key: `${parts.year}-${parts.month}`,
-                label: date.toLocaleDateString("es-AR", {month: "short", timeZone})
+                label: date.toLocaleDateString(this.dateLocale(), {month: "short", timeZone})
             });
         }
         const totals = new Map(months.map(month => [month.key, 0]));

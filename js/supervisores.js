@@ -1,3 +1,5 @@
+import {translateElement} from "./idioma.js?v=language-settings-20261021-1";
+
 const supervisorRecordFields = {
     cliente: [
         {key: "razon_social", label: "Razón social", type: "text"},
@@ -207,7 +209,8 @@ export const supervisoresPanel = {
                         </footer>
                     </form>
                 `;
-                document.body.append(dialog);
+                this.root.append(dialog);
+                translateElement(dialog, this.language);
                 dialog.querySelectorAll("[data-close-dialog]").forEach(closeButton => closeButton.addEventListener("click", () => dialog.close()));
                 dialog.addEventListener("close", () => dialog.remove(), {once: true});
                 dialog.querySelector("form").addEventListener("submit", async event => {

@@ -1,6 +1,5 @@
 export const mantenimientoPanel = {
     async mantenimientoView() {
-        if (this.isDepartmentSupervisor()) return this.supervisorMantenimientoView();
         const [rows, maquinas] = await Promise.all([
             this.api.get("mantenimientos_list"),
             this.api.get("maquinas_list")
@@ -9,7 +8,7 @@ export const mantenimientoPanel = {
             employeeName: this.escape(this.session.user.nombre || this.session.user.razon_social || "equipo"),
             machines: maquinas.map(m => `<option value="${this.escape(m.id_maquina)}">${this.escape(`${m.marca} ${m.modelo}`)}</option>`).join(""),
             userId: this.escape(this.session.user.id_usuario),
-            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
+            today: new Date().toLocaleDateString(this.dateLocale(), {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
             maintenanceCount: rows.length,
             openMaintenance: rows.filter(row => ["pendiente", "en proceso"].includes(String(row.estado || "").toLocaleLowerCase())).length,
             machineCount: maquinas.length,

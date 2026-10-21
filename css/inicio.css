@@ -607,6 +607,106 @@ tr.selected td {
     background: rgba(8, 10, 12, .68);
 }
 
+.language-settings-dialog {
+    width: min(390px, calc(100vw - 32px));
+    max-width: none;
+    padding: 22px;
+    border: 1px solid #343b3e;
+    border-radius: 9px;
+    color: #e9edeb;
+    background: #171c1e;
+    box-shadow: 0 22px 64px rgba(0, 0, 0, .48);
+}
+
+.language-settings-dialog::backdrop {
+    background: rgba(4, 7, 8, .72);
+    backdrop-filter: blur(2px);
+}
+
+.language-settings-form {
+    display: grid;
+    gap: 12px;
+}
+
+.language-settings-form header h2 {
+    margin: 4px 0 6px;
+    color: #f1f3f1;
+    font-size: 20px;
+}
+
+.language-settings-form label {
+    color: #b9c1c0;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.language-settings-form select {
+    min-height: 42px;
+    padding: 9px 11px;
+    border: 1px solid #343d40;
+    border-radius: 5px;
+    background: #111618;
+    color: #ecefed;
+}
+
+.language-settings-form footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.language-settings-button {
+    white-space: nowrap;
+}
+
+.language-toggle {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 3px;
+    padding: 3px;
+    border: 1px solid #454b4e;
+    border-radius: 999px;
+    background: #171b1d;
+}
+
+.language-toggle button {
+    min-width: 34px;
+    min-height: 29px;
+    padding: 5px 8px;
+    border-radius: 999px;
+    background: transparent;
+    color: #aeb5bb;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: .04em;
+}
+
+.language-toggle button[aria-pressed="true"] {
+    background: var(--orange);
+    color: #17191a;
+}
+
+.language-toggle button:focus-visible {
+    outline: 2px solid #ff9a60;
+    outline-offset: 2px;
+}
+
+.landing-site .language-toggle {
+    border-color: #d5dadd;
+    background: #eceff1;
+}
+
+.landing-site .language-toggle button {
+    color: #535c61;
+}
+
+.landing-site .language-toggle button[aria-pressed="true"] {
+    background: #d85a27;
+    color: #fff;
+}
+
 .client-account-dialog h2 {
     margin: 0 0 8px;
     font-family: "Barlow Condensed", sans-serif;

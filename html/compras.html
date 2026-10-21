@@ -60,6 +60,20 @@
         </form>
         <div class="message"></div>
     </section>
-    <section data-module-panel="inventario" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">DISPONIBILIDAD</span><h3>Inventario de materiales</h3></div></div>{{materialsTable}}</section>
+    <section data-module-panel="inventario" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">DISPONIBILIDAD</span><h3>Inventario de materiales</h3></div></div>
+        <form id="materialForm" class="form-grid">
+            <label>Nombre<input name="nombre" required></label>
+            <label>Tipo<input name="tipo"></label>
+            <label>Unidad<input name="unidad"></label>
+            <label>Espesor<input name="espesor"></label>
+            <label>Stock inicial<input name="stock" type="number" min="0" step="0.01" value="0"></label>
+            <label>Stock mínimo<input name="stock_minimo" type="number" min="0" step="0.01" value="0"></label>
+            <label>Stock máximo<input name="stock_maximo" type="number" min="0" step="0.01" value="0"></label>
+            <button class="btn primary">Crear material</button>
+        </form>
+        <div class="message"></div>
+        {{materialsTable}}
+    </section>
     <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">HISTORIAL</span><h3>Órdenes de compra</h3></div></div>{{purchasesTable}}</section>
 </template>

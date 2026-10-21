@@ -1,6 +1,5 @@
 export const comprasPanel = {
     async comprasView() {
-        if (this.isDepartmentSupervisor()) return this.supervisorComprasView();
         const [proveedores, materiales, compras, ordenes] = await Promise.all([
             this.api.get("proveedores_list"),
             this.api.get("materiales_list"),
@@ -17,7 +16,7 @@ export const comprasPanel = {
             suppliers: proveedores.map(p => `<option value="${this.escape(p.id_proveedor)}">${this.escape(p.razon_social)}</option>`).join(""),
             materials: materiales.map(m => `<option value="${this.escape(m.id_material)}">${this.escape(m.nombre)}</option>`).join(""),
             orders: ordenes.filter(o => !["Finalizada", "Entregada"].includes(o.estado)).map(o => `<option value="${this.escape(o.id_pedido)}">#${this.escape(o.id_pedido)} · ${this.escape(o.razon_social)} · ${this.escape(o.descripcion)}</option>`).join(""),
-            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
+            today: new Date().toLocaleDateString(this.dateLocale(), {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
             supplierCount: proveedores.length,
             purchaseCount: compras.length,
             purchaseTotal: this.formatChartCurrency(purchaseTotal),
@@ -42,6 +41,7 @@ export const comprasPanel = {
         this.refreshStockWarnings(materiales);
         this.bindPostForm("#proveedorForm", "proveedores_create", () => this.comprasView());
         this.bindPostForm("#compraForm", "compras_create", () => this.comprasView());
+        this.bindPostForm("#materialForm", "materiales_create", () => this.comprasView());
         if (this.canManageAllDepartmentRecords()) this.bindSupervisorRecordActions(() => this.comprasView());
     },
 

@@ -239,8 +239,25 @@ function api_require_employee_roles(array $roles) {
     if (!$user || ($user['tipo'] ?? '') !== 'empleado') {
         api_json(['success' => false, 'message' => 'Iniciá sesión con una cuenta de empleado.'], 401);
     }
+    global $action;
     $role = api_normalize_role($user['rol'] ?? '');
     if ($role === 'supervisor_administracion') {
+        return $user;
+    }
+    $supervisorActions = [
+        'clientes_list', 'clientes_create', 'clientes_update', 'clientes_delete',
+        'pedidos_list', 'pedidos_create',
+        'ordenes_list', 'ordenes_create', 'orden_update_status',
+        'produccion_list', 'produccion_register', 'maquinas_list', 'mantenimiento_report',
+        'mantenimientos_list', 'mantenimiento_preventivo_create', 'mantenimiento_update',
+        'materiales_list', 'materiales_create', 'materiales_update', 'materiales_delete',
+        'deposito_movimientos_list', 'deposito_movimiento_create',
+        'proveedores_list', 'proveedores_create', 'compras_list', 'compras_create',
+        'calidad_list', 'calidad_register',
+        'supervisor_record_update', 'supervisor_record_delete'
+    ];
+    if (preg_match('/^supervisor_(produccion|mantenimiento|deposito|compras|calidad)$/', $role)
+        && in_array($action, $supervisorActions, true)) {
         return $user;
     }
     $allowedRoles = array_map('api_normalize_role', $roles);
@@ -306,20 +323,6 @@ function api_department_supervisor_module() {
         api_json(['success' => false, 'message' => 'Esta acción está reservada a supervisores de área.'], 403);
     }
     return $matches[1];
-}
-
-function api_require_no_department_supervisor() {
-    $user = $_SESSION['metalgest_user'] ?? null;
-    $role = api_normalize_role($user['rol'] ?? '');
-    if (in_array($role, [
-        'supervisor_produccion',
-        'supervisor_mantenimiento',
-        'supervisor_deposito',
-        'supervisor_compras',
-        'supervisor_calidad'
-    ], true)) {
-        api_json(['success' => false, 'message' => 'Los supervisores solo pueden editar o eliminar registros existentes.'], 403);
-    }
 }
 
 function api_sync_production_order(PDO $pdo, int $idOrden) {
@@ -1382,13 +1385,14 @@ if ($action === 'orden_update_status') {
             api_json(['success' => false, 'message' => 'El estado del pedido no es válido.'], 422);
         }
         $observaciones = api_input('observaciones', '');
+        $actorRole = preg_replace('/^supervisor_/', '', api_normalize_role($user['rol'] ?? ''));
         $ordenTrabajoDAO->actualizarEstado([
             'id_orden' => $idOrden,
             'estado' => $estado,
             'observaciones' => $observaciones,
             'seguimiento_estado' => $estado === 'Finalizada' ? 'Pedido finalizado' : ($estado === 'Lista para entrega' ? 'Listo para su entrega' : $estado),
-            'seguimiento_descripcion' => $observaciones !== '' ? $observaciones : 'El área de ' . ucfirst($user['rol']) . ' actualizó el estado del pedido a ' . $estado . '.',
-            'area' => $user['rol'] === 'produccion' ? 'Producción' : 'Administración',
+            'seguimiento_descripcion' => $observaciones !== '' ? $observaciones : 'El área de ' . ucfirst($actorRole) . ' actualizó el estado del pedido a ' . $estado . '.',
+            'area' => $actorRole === 'produccion' ? 'Producción' : 'Administración',
             'id_usuario' => (int)($user['id_usuario'] ?? 0)
         ]);
         api_json(['success' => true]);
@@ -1404,7 +1408,6 @@ if ($action === 'produccion_list') {
 
 if ($action === 'produccion_register') {
     $user = api_require_employee_roles(['gerencia', 'produccion']);
-    api_require_no_department_supervisor();
     $cantidad = api_int('cantidad_producida');
     $avance = api_int('avance');
     if (api_int('id_orden') <= 0 || $cantidad < 0 || $avance < 0 || $avance > 100) {
@@ -1432,7 +1435,6 @@ if ($action === 'maquinas_list') {
 if ($action === 'mantenimiento_report') {
     try {
         $user = api_require_employee_roles(['gerencia', 'produccion', 'mantenimiento']);
-        api_require_no_department_supervisor();
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
@@ -1451,7 +1453,7 @@ if ($action === 'mantenimiento_report') {
             'id_orden' => $idOrden,
             'afecta_plazo' => $afectaPlazo,
             'seguimiento_descripcion' => 'Se informó un problema con una máquina que afecta el plazo del pedido: ' . $problema,
-            'area' => strtolower($user['rol']) === 'mantenimiento' ? 'Mantenimiento' : 'Producción'
+            'area' => preg_replace('/^supervisor_/', '', api_normalize_role($user['rol'] ?? '')) === 'mantenimiento' ? 'Mantenimiento' : 'Producción'
         ]);
         api_json(['success' => true, 'id_mantenimiento' => $idMantenimiento]);
     } catch (Throwable $e) {
@@ -1470,7 +1472,6 @@ if ($action === 'mantenimientos_list') {
 if ($action === 'mantenimiento_preventivo_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'mantenimiento']);
-        api_require_no_department_supervisor();
         $idMaquina = api_int('id_maquina');
         if ($idMaquina <= 0) {
             api_json(['success' => false, 'message' => 'La mÃ¡quina debe ser vÃ¡lida'], 422);
@@ -1519,7 +1520,6 @@ if ($action === 'materiales_list') {
 if ($action === 'materiales_create') {
     try {
         api_require_employee_roles(['gerencia', 'compras']);
-        api_require_no_department_supervisor();
         $stockMinimo = (float)api_input('stock_minimo', '0');
         $stockMaximo = (float)api_input('stock_maximo', '0');
         if ($stockMinimo < 0 || $stockMaximo < $stockMinimo) {
@@ -1578,7 +1578,6 @@ if ($action === 'deposito_movimientos_list') {
 if ($action === 'deposito_movimiento_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'deposito']);
-        api_require_no_department_supervisor();
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
         $tipo = api_required('tipo');
@@ -1630,7 +1629,6 @@ if ($action === 'proveedores_list') {
 if ($action === 'proveedores_create') {
     try {
         api_require_employee_roles(['gerencia', 'compras']);
-        api_require_no_department_supervisor();
         $idProveedor = $comprasDAO->crearProveedor([
             'razon_social' => api_required('razon_social'),
             'cuit' => api_input('cuit', ''),
@@ -1651,7 +1649,6 @@ if ($action === 'compras_list') {
 if ($action === 'compras_create') {
     try {
         $user = api_require_employee_roles(['gerencia', 'compras']);
-        api_require_no_department_supervisor();
         $idProveedor = api_int('id_proveedor');
         $idMaterial = api_int('id_material');
         $cantidad = (float)api_input('cantidad', '0');
@@ -1708,7 +1705,6 @@ if ($action === 'calidad_list') {
 if ($action === 'calidad_register') {
     try {
         $user = api_require_employee_roles(['gerencia', 'calidad']);
-        api_require_no_department_supervisor();
         $idOrden = api_int('id_orden');
         $resultado = api_required('resultado');
         if ($idOrden <= 0 || !in_array($resultado, ['Aprobado', 'Observado', 'Rechazado'], true)) {
@@ -1728,21 +1724,10 @@ if ($action === 'calidad_register') {
 }
 
 if ($action === 'supervisor_record_update' || $action === 'supervisor_record_delete') {
-    $supervisorModule = api_department_supervisor_module();
+    api_department_supervisor_module();
     $entity = api_required('entity');
     $id = api_int('id');
-    $entityModules = [
-        'cliente' => ['administracion'],
-        'pedido' => ['administracion'],
-        'orden' => ['administracion'],
-        'produccion' => ['produccion'],
-        'mantenimiento' => ['mantenimiento'],
-        'material' => ['deposito', 'compras'],
-        'movimiento' => ['deposito'],
-        'proveedor' => ['compras'],
-        'compra' => ['compras'],
-        'calidad' => ['calidad']
-    ];
+    $entities = ['cliente', 'pedido', 'orden', 'produccion', 'mantenimiento', 'material', 'movimiento', 'proveedor', 'compra', 'calidad'];
     $idFields = [
         'cliente' => 'id_cliente',
         'pedido' => 'id_pedido',
@@ -1755,9 +1740,7 @@ if ($action === 'supervisor_record_update' || $action === 'supervisor_record_del
         'compra' => 'id_compra',
         'calidad' => 'id_control'
     ];
-    if (!isset($entityModules[$entity]) || (
-        !api_is_administration_supervisor() && !in_array($supervisorModule, $entityModules[$entity], true)
-    )) {
+    if (!in_array($entity, $entities, true)) {
         api_json(['success' => false, 'message' => 'Tu rol no puede modificar registros de esta área.'], 403);
     }
     if ($id <= 0) {

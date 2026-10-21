@@ -58,14 +58,14 @@ export const seguimientoPanel = {
             </article>`;
         }).join("");
         const status = this.root.querySelector("[data-tracking-sync]");
-        if (status) status.textContent = `Estado actualizado ${new Date().toLocaleTimeString("es-AR", {hour: "2-digit", minute: "2-digit"})} · Se revisa automáticamente cada 7 segundos.`;
+        if (status) status.textContent = `Estado actualizado ${new Date().toLocaleTimeString(this.dateLocale(), {hour: "2-digit", minute: "2-digit"})} · Se revisa automáticamente cada 7 segundos.`;
     },
 
     formatTrackingDate(value, dateOnly = false) {
         if (!value) return "";
         const date = new Date(String(value).replace(" ", "T"));
         if (Number.isNaN(date.getTime())) return this.escape(value);
-        return date.toLocaleString("es-AR", dateOnly
+        return date.toLocaleString(this.dateLocale(), dateOnly
             ? {timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "short", year: "numeric"}
             : {timeZone: "America/Argentina/Buenos_Aires", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"});
     }

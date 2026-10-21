@@ -1,6 +1,5 @@
 export const produccionPanel = {
     async produccionView() {
-        if (this.isDepartmentSupervisor()) return this.supervisorProduccionView();
         const [produccion, ordenes, maquinas] = await Promise.all([
             this.api.get("produccion_list"),
             this.api.get("ordenes_list"),
@@ -12,7 +11,7 @@ export const produccionPanel = {
             affectedOrders: ordenes.filter(o => !["Finalizada", "Entregada"].includes(o.estado)).map(o => `<option value="${this.escape(o.id_orden)}">#${this.escape(o.id_orden)} - ${this.escape(o.razon_social)} · ${this.escape(o.descripcion)}</option>`).join(""),
             machines: maquinas.map(m => `<option value="${this.escape(m.id_maquina)}">${this.escape(`${m.marca} ${m.modelo} - ${m.numero_identificacion}`)}</option>`).join(""),
             userId: this.escape(this.session.user.id_usuario),
-            today: new Date().toLocaleDateString("es-AR", {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
+            today: new Date().toLocaleDateString(this.dateLocale(), {timeZone: "America/Argentina/Buenos_Aires", weekday: "long", day: "numeric", month: "long", year: "numeric"}),
             productionCount: produccion.length,
             activeOrders: ordenes.filter(order => String(order.estado || "").toLocaleLowerCase() !== "finalizada").length,
             machineCount: maquinas.length,
