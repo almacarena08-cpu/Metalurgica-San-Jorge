@@ -17,6 +17,8 @@ Las vistas se cargan desde las plantillas HTML al iniciar la aplicación. La por
 - `sql/`: esquema y migraciones de base de datos.
 - `vendor/`: dependencias de terceros.
 
+La conexión admite variables de entorno `METALGEST_DB_HOST`, `METALGEST_DB_PORT`, `METALGEST_DB_NAME`, `METALGEST_DB_USER` y `METALGEST_DB_PASSWORD`. Para desarrollo local se puede crear `clases/php/database.local.php` con esos valores; el archivo está excluido de Git para no publicar credenciales.
+
 El envío de verificación y recuperación usa una única cuenta SMTP de la empresa. Se puede configurar con las variables `METALGEST_SMTP_HOST`, `METALGEST_SMTP_PORT`, `METALGEST_SMTP_SECURE`, `METALGEST_SMTP_USER`, `METALGEST_SMTP_PASS` y `METALGEST_MAIL_FROM`; en XAMPP, si no están definidas, se leen los datos SMTP de `sendmail.ini`. Los clientes pueden registrarse con cualquier dirección de correo válida y no necesitan configurar el envío.
 
 El chat web y el estado actual de los pedidos usan las tablas existentes; los mensajes se actualizan por sondeo y no requieren una migración. Con el esquema actual no es posible guardar una relación entre una conversación y su pedido, un historial independiente de estados ni la asociación de una falla de mantenimiento con un pedido. Por eso, el alta de pedidos sigue disponible desde Administración, pero no desde una conversación; el seguimiento muestra el estado actual y no simula un historial. Como tampoco existe un campo de presencia del cliente, se intenta enviar el aviso de correo en cada respuesta de Administración. El correo contiene solo el aviso, nunca el contenido del chat.
