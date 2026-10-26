@@ -1,0 +1,361 @@
+#content[data-module="administracion"] .admin-subnav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0 0 22px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #292d31;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn {
+    min-height: 37px;
+    padding: 8px 15px;
+    border: 1px solid #30363a;
+    border-radius: 4px;
+    background: #15191b;
+    color: #b9c0c4;
+    font-size: 11px;
+    letter-spacing: .025em;
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn:hover {
+    border-color: #7a462c;
+    color: #fff;
+}
+
+#content[data-module="administracion"] .admin-subnav .btn.primary {
+    border-color: #d95e2a;
+    background: #d95e2a;
+    color: #fff;
+}
+
+#content[data-module="administracion"] .admin-overview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 17px;
+    padding: 23px 25px;
+    border: 1px solid rgba(255,255,255,.06);
+    border-left: 3px solid #e7652b;
+    background: linear-gradient(135deg, rgba(22,26,29,.98), rgba(14,17,20,.98) 70%);
+    border-radius: 14px;
+    box-shadow: 0 18px 38px rgba(0,0,0,.12);
+}
+
+#content[data-module="administracion"] .admin-kicker {
+    color: #e98251;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+}
+
+#content[data-module="administracion"] .admin-overview h3,
+#content[data-module="administracion"] .admin-section-heading h3 {
+    margin: 5px 0 0;
+    color: #f4f4f2;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.025em;
+}
+
+#content[data-module="administracion"] .admin-overview p {
+    margin: 6px 0 0;
+    color: #a1a7aa;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+#content[data-module="administracion"] .admin-overview-date {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    flex: 0 0 auto;
+    padding: 9px 12px;
+    border: 1px solid #30363a;
+    background: #101315;
+    color: #d7dadd;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+#content[data-module="administracion"] .admin-overview-date span {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #70b987;
+    box-shadow: 0 0 0 3px rgba(112, 185, 135, .12);
+}
+
+#content[data-module="administracion"] .admin-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 17px;
+}
+
+#content[data-module="administracion"] .admin-metric {
+    display: grid;
+    min-height: 132px;
+    align-content: start;
+    gap: 7px;
+    padding: 17px 19px;
+    border: 1px solid rgba(255,255,255,.06);
+    background: linear-gradient(180deg, rgba(22,27,30,.98), rgba(14,18,21,.98));
+    border-radius: 12px;
+    box-shadow: 0 12px 24px rgba(0,0,0,.08);
+}
+
+#content[data-module="administracion"] .admin-metric-label {
+    color: #9da4a8;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .09em;
+}
+
+#content[data-module="administracion"] .admin-metric strong {
+    color: #f5f5f3;
+    font-size: 31px;
+    font-weight: 700;
+    line-height: 1;
+}
+
+#content[data-module="administracion"] .admin-metric-note {
+    color: #858d91;
+    font-size: 10px;
+}
+
+#content[data-module="administracion"] .admin-activity {
+    padding: 19px;
+}
+
+#content[data-module="administracion"] .admin-section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+}
+
+#content[data-module="administracion"] .admin-section-heading h3 {
+    font-size: 17px;
+}
+
+#content[data-module="administracion"] .admin-section-caption {
+    color: #858d91;
+    font-size: 10px;
+}
+
+#content[data-module="administracion"] .admin-dashboard-status {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    justify-items: end;
+    gap: 7px;
+}
+
+#content[data-module="administracion"] [data-dashboard-sync] {
+    color: #7f898d;
+    font-size: 9px;
+    text-align: right;
+}
+
+#content[data-module="administracion"] [data-dashboard-sync].is-error {
+    color: #e68c81;
+}
+
+#content[data-module="administracion"] .employee-role-help {
+    margin: -4px 0 18px;
+    color: #a1a7aa;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+#content[data-module="administracion"] .employee-form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 8px;
+}
+
+#content[data-module="administracion"] .employee-form-actions .btn {
+    min-height: 40px;
+}
+
+#content[data-module="administracion"] .employee-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-width: 150px;
+}
+
+#content[data-module="administracion"] .employee-actions .btn {
+    flex: 0 0 auto;
+    min-height: 34px;
+    padding: 7px 11px;
+    font-size: 10px;
+}
+
+#content[data-module="administracion"] .employee-table {
+    width: 100%;
+    min-width: 690px;
+    table-layout: fixed;
+}
+
+#content[data-module="administracion"] .employee-table th,
+#content[data-module="administracion"] .employee-table td {
+    vertical-align: middle;
+}
+
+#content[data-module="administracion"] .employee-table th:first-child,
+#content[data-module="administracion"] .employee-table td:first-child {
+    width: 25%;
+}
+
+#content[data-module="administracion"] .employee-table th:nth-child(2),
+#content[data-module="administracion"] .employee-table td:nth-child(2) {
+    width: 24%;
+    overflow-wrap: anywhere;
+}
+
+#content[data-module="administracion"] .employee-table th:nth-child(3),
+#content[data-module="administracion"] .employee-table td:nth-child(3) {
+    width: 25%;
+}
+
+#content[data-module="administracion"] .employee-table th:last-child,
+#content[data-module="administracion"] .employee-table td:last-child {
+    width: 26%;
+}
+
+#content[data-module="administracion"] [data-employee-message]:empty {
+    display: none;
+}
+
+#content[data-module="administracion"] [data-employee-message].is-error {
+    color: #e68c81;
+}
+
+@media (max-width: 920px) {
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    #content[data-module="administracion"] .admin-dashboard-status {
+        justify-items: start;
+    }
+
+    #content[data-module="administracion"] [data-dashboard-sync] {
+        text-align: left;
+    }
+
+    #content[data-module="administracion"] .admin-subnav .btn {
+        flex: 1 1 calc(50% - 8px);
+    }
+
+    #content[data-module="administracion"] .admin-overview {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 14px;
+        padding: 18px;
+    }
+
+    #content[data-module="administracion"] .admin-metrics {
+        grid-template-columns: 1fr;
+    }
+
+    #content[data-module="administracion"] .admin-metric {
+        min-height: 110px;
+    }
+
+    #content[data-module="administracion"] .admin-section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    #content[data-module="administracion"] .employee-actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+#content[data-module="administracion"] .admin-overview {
+    min-height: 148px;
+    border-radius: 9px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, .18);
+}
+
+#content[data-module="administracion"] .admin-overview h3 {
+    margin-top: 8px;
+    font-size: clamp(21px, 2.2vw, 27px);
+    letter-spacing: -.04em;
+}
+
+#content[data-module="administracion"] .admin-overview p {
+    max-width: 620px;
+    font-size: 12px;
+    line-height: 1.65;
+}
+
+#content[data-module="administracion"] .admin-overview-date {
+    border-radius: 6px;
+    font-size: 10px;
+    text-transform: capitalize;
+}
+
+#content[data-module="administracion"] .module-chart-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(270px, .9fr);
+    gap: 16px;
+    align-items: stretch;
+    margin-bottom: 18px;
+}
+
+#content[data-module="administracion"] .module-chart-grid .module-chart-wide {
+    grid-column: auto;
+}
+
+#content[data-module="administracion"] .module-chart-grid .module-chart-card {
+    margin-bottom: 0;
+    min-height: 392px;
+    border-radius: 14px;
+}
+
+@media (max-width: 760px) {
+    #content[data-module="administracion"] .module-chart-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+#content[data-module="administracion"] .admin-metric {
+    min-height: 126px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #171b1d, #121517);
+    box-shadow: 0 7px 20px rgba(0, 0, 0, .12);
+}
+
+#content[data-module="administracion"] .admin-metric-label {
+    letter-spacing: .1em;
+}
+
+#content[data-module="administracion"] .admin-metric strong {
+    font-size: 31px;
+    letter-spacing: -.045em;
+}
+
+#content[data-module="administracion"] .admin-activity {
+    padding: 20px;
+    border-radius: 8px;
+    background: linear-gradient(145deg, #161a1c, #111416);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .12);
+}

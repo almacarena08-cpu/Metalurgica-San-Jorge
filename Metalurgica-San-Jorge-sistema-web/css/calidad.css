@@ -1,0 +1,7 @@
+#content[data-module="calidad"] #calidadForm {
+    align-items: end;
+}
+
+#content[data-module="calidad"] #calidadForm .btn {
+    align-self: end;
+}

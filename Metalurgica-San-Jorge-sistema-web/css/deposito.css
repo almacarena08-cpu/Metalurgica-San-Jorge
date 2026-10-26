@@ -1,0 +1,7 @@
+#content[data-module="deposito"] #movimientoForm {
+    align-items: end;
+}
+
+#content[data-module="deposito"] #movimientoForm .btn {
+    align-self: end;
+}

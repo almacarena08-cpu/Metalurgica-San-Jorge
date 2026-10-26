@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 460" role="img" aria-labelledby="title desc">
+  <title id="title">Metalúrgica San Jorge</title>
+  <desc id="desc">Logotipo industrial con monograma SJ en un emblema hexagonal naranja y el nombre Metalúrgica San Jorge.</desc>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M62 142 177 76h174l115 66v176l-115 66H177L62 318z" fill="#171c1f" stroke="#e7652b" stroke-width="12"/>
+    <path d="M269 164h-93c-22 0-39 17-39 39s17 39 39 39h69c22 0 39 17 39 39s-17 39-39 39H150" stroke="#f2eee8" stroke-width="24"/>
+    <path d="M302 164v117c0 22-17 39-39 39h-35" stroke="#e7652b" stroke-width="24"/>
+    <path d="M112 364h280" stroke="#e7652b" stroke-width="8"/>
+  </g>
+  <text x="520" y="202" fill="#202629" font-family="Manrope, Arial, sans-serif" font-size="65" font-weight="700" letter-spacing="8">METALÚRGICA</text>
+  <text x="514" y="318" fill="#15191b" font-family="Manrope, Arial, sans-serif" font-size="104" font-weight="800" letter-spacing="3">SAN JORGE</text>
+  <path d="M520 361h128" stroke="#e7652b" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="671" cy="361" r="5" fill="#e7652b"/>
+</svg>

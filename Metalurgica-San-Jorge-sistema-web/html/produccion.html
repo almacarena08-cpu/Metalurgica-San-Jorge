@@ -1,0 +1,54 @@
+<template data-view="produccion">
+    <section class="module-overview">
+        <div>
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="module-kicker">OPERACIÓN · PLANTA</span>
+            <h3>Centro de producción</h3>
+            <p>Seguimiento de órdenes, avances y novedades de planta desde un solo lugar.</p>
+        </div>
+        <span class="module-date"><span></span>{{today}}</span>
+    </section>
+    <section class="module-metrics" aria-label="Indicadores de producción">
+        <article class="module-metric"><span>AVANCES REGISTRADOS</span><strong>{{productionCount}}</strong><small>Registros de producción</small></article>
+        <article class="module-metric"><span>ÓRDENES EN SEGUIMIENTO</span><strong>{{activeOrders}}</strong><small>Órdenes aún no finalizadas</small></article>
+        <article class="module-metric"><span>MÁQUINAS</span><strong>{{machineCount}}</strong><small>Equipos en el registro</small></article>
+    </section>
+    <nav class="module-index" aria-label="Secciones de producción">
+        <span class="module-index-title">Secciones</span>
+        <button type="button" class="active" data-module-index="avances" aria-pressed="true">Avance por orden</button>
+        <button type="button" data-module-index="registrar" aria-pressed="false">Registrar avance</button>
+        <button type="button" data-module-index="incidencia" aria-pressed="false">Avisar a mantenimiento</button>
+        <button type="button" data-module-index="historial" aria-pressed="false">Registros</button>
+    </nav>
+    <div data-module-panel="avances" class="module-index-section">
+    <section class="section-panel module-chart-card">
+        <div class="module-panel-heading"><div><span class="module-kicker">PROGRESO PRODUCTIVO</span><h3>Avance por orden</h3></div><span class="module-panel-note">Último avance registrado para cada orden</span></div>
+        {{productionChart}}
+    </section>
+    </div>
+    <section data-module-panel="registrar" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">ACTUALIZACIÓN</span><h3>Registrar avance</h3></div><span class="module-panel-note">Cargá el progreso de una orden</span></div>
+        <form id="produccionForm" class="form-grid">
+            <label class="field full">Orden<select name="id_orden">{{orders}}</select></label>
+            <label>Cantidad producida<input name="cantidad_producida" type="number" min="0" value="0"></label>
+            <label>Avance %<input name="avance" type="number" min="0" max="100" value="0"></label>
+            <label class="field full">Observaciones<textarea name="observaciones"></textarea></label>
+            <button class="btn primary">Registrar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section data-module-panel="incidencia" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">CONTINUIDAD OPERATIVA</span><h3>Aviso a mantenimiento</h3></div><span class="module-panel-note">Reportá una incidencia de planta</span></div>
+        <form id="fallaForm" class="form-grid">
+            <label>Máquina<select name="id_maquina">{{machines}}</select></label>
+            <label>Tipo<select name="tipo"><option>Correctivo</option><option>Preventivo</option></select></label>
+            <label>Pedido afectado<select name="id_orden"><option value="">Sin pedido asociado</option>{{affectedOrders}}</select></label>
+            <label class="field full"><span><input type="checkbox" name="afecta_plazo" value="1"> Informar al cliente que este problema demora su pedido</span></label>
+            <label class="field full">Problema<textarea name="problema" required></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Reportar falla</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">TRAZABILIDAD</span><h3>Últimos registros de producción</h3></div></div>{{productionTable}}</section>
+</template>

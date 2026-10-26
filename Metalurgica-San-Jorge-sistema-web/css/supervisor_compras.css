@@ -1,0 +1,5 @@
+.supervisor-panel--compras {
+    --module-accent: #d99b6c;
+    --module-accent-soft: rgba(217, 155, 108, .12);
+    --module-accent-line: rgba(217, 155, 108, .32);
+}

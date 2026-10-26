@@ -1,0 +1,12 @@
+<template data-view="seguimiento">
+    <section class="tracking-overview">
+        <div>
+            <span class="module-kicker">CLIENTES · MIS PEDIDOS</span>
+            <h3>Seguimiento de pedidos</h3>
+            <p>Consultá el estado y cada novedad que la empresa registre sobre tus pedidos.</p>
+        </div>
+        <span class="tracking-live"><i></i>Actualización automática</span>
+    </section>
+    <div class="tracking-orders" data-tracking-orders aria-live="polite">{{orders}}</div>
+    <p class="tracking-sync" data-tracking-sync>Los cambios aparecen automáticamente mientras tengas esta sección abierta.</p>
+</template>

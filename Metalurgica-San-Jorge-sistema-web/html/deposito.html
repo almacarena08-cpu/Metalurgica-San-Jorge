@@ -1,0 +1,45 @@
+<template data-view="deposito">
+    <section class="module-overview">
+        <div>
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="module-kicker">OPERACIÓN · INVENTARIO</span>
+            <h3>Centro de depósito</h3>
+            <p>Controlá existencias y registrá cada ingreso o salida de materiales.</p>
+        </div>
+        <span class="module-date"><span></span>{{today}}</span>
+    </section>
+    <section class="module-metrics" aria-label="Indicadores de depósito">
+        <article class="module-metric"><span>MATERIALES</span><strong>{{materialCount}}</strong><small>Ítems en inventario</small></article>
+        <article class="module-metric"><span>ALERTA DE STOCK</span><strong>{{lowStockCount}}</strong><small>En el mínimo o cerca del mínimo</small></article>
+        <article class="module-metric"><span>MOVIMIENTOS</span><strong>{{movementCount}}</strong><small>Registros disponibles</small></article>
+    </section>
+    <nav class="module-index" aria-label="Secciones de depósito">
+        <span class="module-index-title">Secciones</span>
+        <button type="button" class="active" data-module-index="stock" aria-pressed="true">Stock por material</button>
+        <button type="button" data-module-index="movimiento" aria-pressed="false">Registrar movimiento</button>
+        <button type="button" data-module-index="inventario" aria-pressed="false">Inventario</button>
+        <button type="button" data-module-index="historial" aria-pressed="false">Movimientos</button>
+    </nav>
+    <div data-module-panel="stock" class="module-index-section">
+    <section class="section-panel module-chart-card">
+        <div class="module-panel-heading"><div><span class="module-kicker">NIVELES DE EXISTENCIA</span><h3>Stock por material</h3></div><span class="module-panel-note">La marca indica el stock mínimo</span></div>
+        {{inventoryChart}}
+    </section>
+    </div>
+    <section data-module-panel="movimiento" class="section-panel module-index-section" hidden>
+        <div class="module-panel-heading"><div><span class="module-kicker">OPERACIÓN DE STOCK</span><h3>Registrar movimiento</h3></div><span class="module-panel-note">Ingresos y salidas de materiales</span></div>
+        <form id="movimientoForm" class="form-grid">
+            <label>Material<select name="id_material">{{materials}}</select></label>
+            <label>Tipo<select name="tipo"><option>Ingreso</option><option>Salida</option></select></label>
+            <label>Cantidad<input name="cantidad" type="number" min="0.01" step="0.01"></label>
+            <label>Motivo<input name="motivo"></label>
+            <label>Pedido relacionado<select name="id_pedido"><option value="">Sin asociar</option>{{orders}}</select></label>
+            <label>Novedad para seguimiento<select name="seguimiento_estado"><option value="">No publicar novedad</option><option value="Falta de materiales">Falta de materiales (demora)</option><option value="Material disponible">Material disponible</option></select></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Registrar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section data-module-panel="inventario" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">EXISTENCIAS</span><h3>Inventario actual</h3></div></div>{{inventoryTable}}</section>
+    <section data-module-panel="historial" class="section-panel module-index-section" hidden><div class="module-panel-heading"><div><span class="module-kicker">TRAZABILIDAD</span><h3>Últimos movimientos</h3></div></div>{{movementsTable}}</section>
+</template>

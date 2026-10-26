@@ -1,0 +1,149 @@
+<template data-view="dashboard">
+    {{adminNavigation}}
+    <section class="admin-overview">
+        <div class="admin-overview-copy">
+            <span class="employee-greeting">Hola, {{employeeName}}</span>
+            <span class="admin-kicker">CENTRO DE CONTROL</span>
+            <h3>Resumen operativo</h3>
+            <p>Pedidos, órdenes de trabajo y consultas en seguimiento.</p>
+        </div>
+        <div class="admin-dashboard-status">
+            <span class="admin-overview-date"><span></span> {{today}}</span>
+            <small data-dashboard-sync>Actualización automática cada minuto</small>
+        </div>
+    </section>
+    <section class="admin-metrics" aria-label="Indicadores operativos">
+        <article class="admin-metric">
+            <span class="admin-metric-label">PEDIDOS</span>
+            <strong>{{pedidosCount}}</strong>
+            <span class="admin-metric-note">Solicitudes de clientes</span>
+        </article>
+        <article class="admin-metric">
+            <span class="admin-metric-label">ÓRDENES DE TRABAJO</span>
+            <strong>{{ordenesCount}}</strong>
+            <span class="admin-metric-note">Seguimiento productivo</span>
+        </article>
+        <article class="admin-metric">
+            <span class="admin-metric-label">CHATS ABIERTOS</span>
+            <strong>{{chatsCount}}</strong>
+            <span class="admin-metric-note">Consultas por responder</span>
+        </article>
+    </section>
+    <section class="module-chart-grid" aria-label="Análisis de administración">
+        <article class="section-panel module-chart-card module-chart-wide">
+            <div class="admin-section-heading">
+                <div><span class="admin-kicker">ACTIVIDAD COMERCIAL</span><h3>Pedidos por mes</h3></div>
+                <span class="admin-section-caption">Registros de los últimos 6 meses</span>
+            </div>
+            {{pedidosChart}}
+        </article>
+        <article class="section-panel module-chart-card">
+            <div class="admin-section-heading">
+                <div><span class="admin-kicker">PRODUCCIÓN</span><h3>Órdenes de trabajo por estado</h3></div>
+            </div>
+            {{ordenesChart}}
+        </article>
+    </section>
+    <section class="section-panel admin-activity">
+        <div class="admin-section-heading">
+            <div><span class="admin-kicker">SEGUIMIENTO</span><h3>Pedidos recientes</h3></div>
+            <span class="admin-section-caption">Últimos registros del sistema</span>
+        </div>
+        {{recentOrders}}
+    </section>
+</template>
+<template data-view="pedidos">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <h3>Nuevo pedido</h3>
+        <form id="pedidoForm" class="form-grid">
+            <label>Cliente<select name="id_cliente">{{clients}}</select></label>
+            <label>Material<select name="material">{{materials}}</select></label>
+            <label class="field full">Descripcion<input name="descripcion" required></label>
+            <label>Cantidad<input name="cantidad" type="number" min="1" value="1"></label>
+            <label>Entrega<input name="fecha_entrega" type="date"></label>
+            <button class="btn primary">Crear pedido</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{orders}}</section>
+</template>
+<template data-view="ordenes">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <h3>Generar orden de trabajo</h3>
+        <form id="ordenForm" class="form-grid">
+            <label class="field full">Pedido<select name="id_pedido">{{ordersForSelect}}</select></label>
+            <label>Inicio<input name="fecha_inicio" type="date"></label>
+            <label>Fecha prevista<input name="fecha_prevista" type="date"></label>
+            <label>Prioridad<select name="prioridad"><option>Media</option><option>Alta</option><option>Baja</option></select></label>
+            <label class="field full">Observaciones<textarea name="observaciones"></textarea></label>
+            <input type="hidden" name="id_usuario" value="{{userId}}">
+            <button class="btn primary">Generar orden</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <h3>Actualizar estado</h3>
+        <form id="estadoOrdenForm" class="toolbar">
+            <label>ID orden<input name="id_orden" type="number" required></label>
+            <label>Estado<select name="estado"><option>Pendiente</option><option>En producción</option><option>Pausada</option><option>Demorada</option><option>Pendiente por inconveniente</option><option>Lista para entrega</option><option>Finalizada</option></select></label>
+            <label>Observacion<input name="observaciones"></label>
+            <button class="btn primary">Actualizar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">{{ordersTable}}</section>
+</template>
+<template data-view="clientes">
+    {{adminNavigation}}
+    <section class="section-panel">
+        <div class="module-panel-heading"><div><span class="module-kicker">GESTIÓN COMERCIAL</span><h3>Clientes</h3></div><span class="module-panel-note">Buscá, registrá y actualizá tus contactos</span></div>
+        <form id="clienteForm" class="form-grid">
+            <label>ID para editar<input name="id_cliente" type="number" placeholder="Solo si editas"></label>
+            <label>Razon social<input name="razon_social" required></label>
+            <label>CUIT<input name="cuit"></label>
+            <label>Email<input name="email" type="email"></label>
+            <label>Direccion<input name="direccion"></label>
+            <button class="btn primary">Guardar cliente</button>
+        </form>
+        <form id="deleteClienteForm" class="toolbar">
+            <label>ID cliente a eliminar<input name="id_cliente" type="number" required></label>
+            <button class="btn warn">Eliminar</button>
+        </form>
+        <div class="message"></div>
+    </section>
+    <section class="section-panel">
+        <div class="module-panel-heading"><div><span class="module-kicker">DIRECTORIO</span><h3>Listado de clientes</h3></div></div>
+        <div id="clientsTable">{{clientsTable}}</div>
+    </section>
+</template>
+<template data-view="empleados">
+    {{adminNavigation}}
+    <section class="section-panel employee-management">
+        <div class="module-panel-heading">
+            <div><span class="module-kicker">ACCESO AL SISTEMA</span><h3>Empleados y roles</h3></div>
+            <span class="module-panel-note">Administrá cuentas y permisos por módulo</span>
+        </div>
+        <p class="employee-role-help">El Supervisor de Administración puede gestionar empleados y asignar roles operativos. Las cuentas de Administrador y Gerencia están protegidas.</p>
+        <form id="employeeForm" class="form-grid">
+            <input type="hidden" name="id_usuario">
+            <label>Nombre<input name="nombre" maxlength="50" required></label>
+            <label>Apellido<input name="apellido" maxlength="50"></label>
+            <label>Usuario<input name="usuario" maxlength="50" required autocomplete="off"></label>
+            <label><span data-password-label>Contraseña</span><input name="contrasena" type="password" minlength="4" required autocomplete="new-password"></label>
+            <label>Rol<select name="id_rol" required>{{roleOptions}}</select></label>
+            <div class="employee-form-actions">
+                <button class="btn primary" type="submit">Crear empleado</button>
+                <button class="btn" type="button" data-cancel-employee-edit hidden>Cancelar edición</button>
+            </div>
+        </form>
+        <p class="message" data-employee-message aria-live="polite"></p>
+    </section>
+    <section class="section-panel">
+        <div class="module-panel-heading"><div><span class="module-kicker">PERSONAL</span><h3>Empleados registrados</h3></div></div>
+        <div class="table-wrap employee-table-wrap">
+            {{employeesTable}}
+        </div>
+    </section>
+</template>

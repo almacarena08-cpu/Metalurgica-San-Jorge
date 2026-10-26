@@ -1,0 +1,5 @@
+.supervisor-panel--produccion {
+    --module-accent: #e89558;
+    --module-accent-soft: rgba(232, 149, 88, .12);
+    --module-accent-line: rgba(232, 149, 88, .32);
+}

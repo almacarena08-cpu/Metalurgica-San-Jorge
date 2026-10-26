@@ -1,0 +1,5 @@
+.supervisor-panel--deposito {
+    --module-accent: #70c5b4;
+    --module-accent-soft: rgba(112, 197, 180, .12);
+    --module-accent-line: rgba(112, 197, 180, .32);
+}
