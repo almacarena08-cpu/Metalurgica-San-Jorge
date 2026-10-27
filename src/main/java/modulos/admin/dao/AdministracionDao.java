@@ -8,20 +8,16 @@ import modulos.common.JsonUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.ArrayList;
 import java.io.File;
 
 public class AdministracionDao extends BaseApiDao {
-    private static final String WEB_API = System.getProperty(
-            "metalgest.web.api.url",
-            ApiClient.API_BASE);
     private volatile int chatUserId;
     public List<Map<String,String>> listarEmpleados(int adminId) throws IOException { Map<String,String>d=new java.util.LinkedHashMap<>(); d.put("id_usuario",String.valueOf(adminId)); return getRows("empleados_list",d); }
     public ApiResult crearEmpleado(Map<String,String> d) throws IOException { return post("empleados_create",d); }
     public ApiResult actualizarEmpleado(Map<String,String> d) throws IOException { return post("empleados_update",d); }
 
-    public String getChatWebApi() {
-        return WEB_API;
+    public String getChatApi() {
+        return ApiClient.API_BASE;
     }
 
     public List<Map<String, String>> listarPedidos() throws IOException {
@@ -63,7 +59,7 @@ public class AdministracionDao extends BaseApiDao {
     public ApiResult responderChat(Map<String, String> datos, List<File> adjuntos) throws IOException {
         datos.putAll(chatIdentity());
         String body = adjuntos.isEmpty()
-                ? ApiClient.postTo(WEB_API, "chat_reply", datos)
+                ? ApiClient.post("chat_reply", datos)
                 : ApiClient.postMultipart("chat_reply", datos, adjuntos);
         return new ApiResult(ApiClient.isSuccess(body), body);
     }
@@ -72,70 +68,59 @@ public class AdministracionDao extends BaseApiDao {
         Map<String, String> datos = new java.util.LinkedHashMap<>();
         datos.put("usuario", usuario);
         datos.put("contrasena", contrasena);
-        return postToWeb("chat_login", datos);
+        String login = ApiClient.post("login", datos);
+        if (!ApiClient.isSuccess(login)) return new ApiResult(false, login);
+        Map<String, String> user = JsonUtil.parseObject(JsonUtil.parseObject(login).get("usuario"));
+        try {
+            chatUserId = Integer.parseInt(user.getOrDefault("id_usuario", "0"));
+        } catch (NumberFormatException error) {
+            chatUserId = 0;
+        }
+        return iniciarSesionChat(chatUserId, user.getOrDefault("rol", ""));
     }
 
     public ApiResult iniciarSesionChat(int idUsuario, String rol) throws IOException {
         this.chatUserId = idUsuario;
-        Map<String, String> datos = new java.util.LinkedHashMap<>();
-        datos.put("id_usuario", String.valueOf(idUsuario));
-        datos.put("rol", rol);
-        return postToWeb("chat_login_app", datos);
+        Map<String, String> data = new java.util.LinkedHashMap<>();
+        data.put("id_usuario", String.valueOf(idUsuario));
+        data.put("rol", rol);
+        String response = ApiClient.post("chat_login_app", data);
+        return new ApiResult(ApiClient.isSuccess(response), response);
     }
 
     public ApiResult cerrarSesionChat() throws IOException {
         chatUserId = 0;
-        return postToWeb("chat_logout", java.util.Collections.emptyMap());
+        String response = ApiClient.post("chat_logout", java.util.Collections.emptyMap());
+        return new ApiResult(ApiClient.isSuccess(response), response);
     }
 
     public boolean sesionChatActiva() throws IOException {
-        Map<String, String> data = JsonUtil.parseObject(ApiClient.postTo(WEB_API, "chat_auth_check", chatIdentity()));
-        return "true".equals(data.get("success"));
+        String response = ApiClient.post("chat_auth_check", chatIdentity());
+        return "true".equals(JsonUtil.parseObject(response).get("success"));
     }
 
-    public List<Map<String, String>> listarChatsWeb() throws IOException {
-        String result = ApiClient.postTo(WEB_API, "chat_list", chatIdentity());
+    public List<Map<String, String>> listarChatsApp() throws IOException {
+        String result = ApiClient.post("chat_list", chatIdentity());
         List<Map<String, String>> rows = JsonUtil.parseArray(result);
         if (!rows.isEmpty() || result.trim().startsWith("[")) return rows;
-        if (result.contains("\"success\":false")) throw new IOException(errorMessage(result));
-        String fallback = ApiClient.getFrom(ApiClient.API_BASE, "chat_list");
-        List<Map<String, String>> localRows = new ArrayList<>();
-        for (Map<String, String> row : JsonUtil.parseArray(fallback)) {
-            row.put("_chat_source", "web");
-            localRows.add(row);
-        }
-        if (localRows.isEmpty() && fallback.contains("\"success\":false")) throw new IOException(errorMessage(fallback));
-        return localRows;
+        throw new IOException(errorMessage(result));
     }
 
     public List<Map<String, String>> listarMensajesChat(int idChat) throws IOException {
-        return listarMensajesChat(idChat, "web");
-    }
-
-    public List<Map<String, String>> listarMensajesChat(int idChat, String source) throws IOException {
         Map<String, String> data = new java.util.LinkedHashMap<>();
         data.put("id_chat", String.valueOf(idChat));
         data.putAll(chatIdentity());
-        if ("local".equals(source)) {
-            String localResult = ApiClient.post("chat_messages", data);
-            List<Map<String, String>> localRows = JsonUtil.parseArray(localResult);
-            if (!localRows.isEmpty() || localResult.trim().startsWith("[")) return localRows;
-        }
-        String result = ApiClient.postTo(WEB_API, "chat_messages", data);
+        String result = ApiClient.post("chat_messages", data);
         List<Map<String, String>> rows = JsonUtil.parseArray(result);
         if (!rows.isEmpty() || result.trim().startsWith("[")) return rows;
-        if (result.contains("\"success\":false")) throw new IOException(errorMessage(result));
-        String fallback = ApiClient.post("chat_messages", data);
-        rows = JsonUtil.parseArray(fallback);
-        if (rows.isEmpty() && fallback.contains("\"success\":false")) throw new IOException(errorMessage(fallback));
-        return rows;
+        throw new IOException(errorMessage(result));
     }
 
     public List<Map<String, String>> listarAdjuntosChat(int idChat) throws IOException {
         Map<String, String> data = new java.util.LinkedHashMap<>();
         data.put("id_chat", String.valueOf(idChat));
         data.putAll(chatIdentity());
-        String result = ApiClient.postTo(WEB_API, "chat_attachments_list", data);
+        String result = ApiClient.post("chat_attachments_list", data);
         List<Map<String, String>> rows = JsonUtil.parseArray(result);
         if (!rows.isEmpty() || result.trim().startsWith("[")) return rows;
         throw new IOException(errorMessage(result));
@@ -156,11 +141,6 @@ public class AdministracionDao extends BaseApiDao {
     private String errorMessage(String json) {
         String message = JsonUtil.parseObject(json).get("message");
         return message == null || message.isEmpty() ? "La API no devolvió una lista de chats." : message;
-    }
-
-    private ApiResult postToWeb(String action, Map<String, String> datos) throws IOException {
-        String body = ApiClient.postTo(WEB_API, action, datos);
-        return new ApiResult(ApiClient.isSuccess(body), body);
     }
 
 }

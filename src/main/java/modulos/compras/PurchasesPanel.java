@@ -265,6 +265,7 @@ public class PurchasesPanel {
         }
         UiTheme.styleButton(crear, true);
         UiTheme.styleButton(guardar, false);
+        guardar.setVisible(EmployeeSession.canEditRecords());
         UiTheme.styleButton(eliminar, false);
         UiTheme.styleButton(recargar, false);
 

@@ -76,6 +76,8 @@ Para compilar la version actual y ejecutarla con doble clic en Windows, iniciar 
 
 El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/Metalurgica-San-Jorge/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 
+En producción, la app usa su propia API en `https://metalurgicasj.cavernservices.org/app/Metalurgica-San-Jorge/clases/php/api.php`; el chat también usa esa API y no depende del sitio web (`/index`). Se puede cambiar la URL con `-Dmetalgest.api.url=...`. Configurá su propia base mediante las variables de entorno `METALGEST_DB_HOST`, `METALGEST_DB_PORT`, `METALGEST_DB_NAME`, `METALGEST_DB_USER` y `METALGEST_DB_PASSWORD`, o con un archivo privado `clases/php/database.local.php` dentro del despliegue de la app. Si la base de la app es nueva, inicializala con `sql/metalgest.sql` y `sql/alter_modulos_faltantes.sql`; para el chat, aplicá también `sql/alter_chat_mensajes_cliente.sql`.
+
 ## Acceso por rol
 
 El login solicita usuario y contrasena. Segun el rol del usuario, la aplicacion abre automaticamente el modulo correspondiente:
@@ -100,4 +102,19 @@ Luego del acceso, la cabecera muestra `Hola, Nombre!`.
 
 ## Chat de Administración
 
-El chat usa por defecto la misma API que el resto de la aplicación (configurada con `metalgest.api.url`). Si el sitio web está publicado en otra ruta, iniciar Java con `-Dmetalgest.web.api.url=http://localhost/ruta-del-sitio/clases/php/api.php`. Para entrar al chat se usa una cuenta de Administración o Gerencia. Si la base se creó desde el SQL de esta aplicación, aplicar una vez `sql/alter_chat_mensajes_cliente.sql` para permitir mensajes de clientes sin usuario interno asociado.
+El chat usa la misma API y la misma base de datos propias de la app. Para entrar se usa una cuenta de Administración o Gerencia. Si la base se creó desde el SQL de esta aplicación, aplicar una vez `sql/alter_chat_mensajes_cliente.sql` para permitir mensajes de clientes sin usuario interno asociado.
+
+La app no lee la API ni la configuración de base de datos de la web (`/index`). Sin variables de entorno ni archivo local, PHP usa los valores predeterminados de XAMPP (`127.0.0.1`, puerto `3306`, base `metalurgica_san_jorge`, usuario `root` y contraseña vacía). En un servidor, creá el archivo privado `clases/php/database.local.php` con este formato y reemplazá los valores localmente:
+
+```php
+<?php
+return [
+    'host' => 'HOST_DE_MYSQL',
+    'port' => '3306',
+    'database' => 'BASE_DE_LA_APP',
+    'username' => 'USUARIO_DE_LA_APP',
+    'password' => 'CONTRASENA_DE_LA_APP',
+];
+```
+
+Ese archivo está excluido de Git; no lo subas al repositorio.

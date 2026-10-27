@@ -11,8 +11,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.JOptionPane;
-import javax.swing.JTable;
 import javax.swing.UIManager;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.AbstractButton;
@@ -24,10 +22,9 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
+import javax.swing.BoxLayout;
 import java.awt.GridLayout;
 import java.awt.Component;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.List;
@@ -107,9 +104,13 @@ public final class UiTheme {
     }
 
     public static JPanel shell(String module, String section, String employeeName, Consumer<String> onNavigate, Runnable onLogout) {
+        return shell(module, section, employeeName, onNavigate, onLogout, false);
+    }
+
+    public static JPanel shell(String module, String section, String employeeName, Consumer<String> onNavigate, Runnable onLogout, boolean globalAdmin) {
         JPanel shell = new JPanel(new BorderLayout());
         shell.setBackground(BACKGROUND);
-        JPanel sidebar = sidebar(module, onNavigate, onLogout);
+        JPanel sidebar = sidebar(module, onNavigate, onLogout, globalAdmin);
         shell.putClientProperty(SIDEBAR_PROPERTY, sidebar);
         shell.add(sidebar, BorderLayout.WEST);
         JPanel content = new JPanel(new BorderLayout(0, 18));
@@ -135,6 +136,10 @@ public final class UiTheme {
     }
 
     public static JPanel sidebar(String selected, Consumer<String> onNavigate, Runnable onLogout) {
+        return sidebar(selected, onNavigate, onLogout, false);
+    }
+
+    public static JPanel sidebar(String selected, Consumer<String> onNavigate, Runnable onLogout, boolean globalAdmin) {
         JPanel sidebar = new JPanel(new BorderLayout(0, 20));
         sidebar.setPreferredSize(new Dimension(190, 0));
         sidebar.setBackground(NAVY);
@@ -147,10 +152,11 @@ public final class UiTheme {
         brand.setBorder(BorderFactory.createEmptyBorder(4, 8, 16, 0));
         sidebar.add(brand, BorderLayout.NORTH);
 
-        JPanel menu = new JPanel(new GridLayout(0, 1, 0, 6));
+        JPanel menu = new JPanel();
+        menu.setLayout(new BoxLayout(menu, BoxLayout.Y_AXIS));
         menu.setOpaque(false);
         sidebar.putClientProperty(MENU_PROPERTY, menu);
-        String[] entries = menuEntries(selected);
+        String[] entries = menuEntries(selected, globalAdmin);
         for (String entry : entries) {
             JButton item = new JButton(entry);
             item.setHorizontalAlignment(SwingConstants.LEFT);
@@ -170,7 +176,9 @@ public final class UiTheme {
             if (active) {
                 sidebar.putClientProperty(ACTIVE_NAVIGATION_PROPERTY, item);
             }
-            item.setBorder(BorderFactory.createEmptyBorder(10, 9, 10, 6));
+            item.setBorder(BorderFactory.createEmptyBorder(7, 9, 7, 6));
+            item.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+            item.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
             String action = entry;
             if ("Ordenes".equals(action)) {
                 action = "Ordenes de trabajo";
@@ -179,6 +187,8 @@ public final class UiTheme {
             item.addActionListener(event -> {
                 selectSidebarItem(sidebar, item);
                 onNavigate.accept(navigationAction);
+                java.awt.Window window = javax.swing.SwingUtilities.getWindowAncestor(sidebar);
+                if (window instanceof javax.swing.JFrame) AppLanguage.apply(((javax.swing.JFrame) window).getContentPane());
             });
             menu.add(item);
         }
@@ -242,8 +252,11 @@ public final class UiTheme {
         sidebar.putClientProperty(ACTIVE_NAVIGATION_PROPERTY, item);
     }
 
-    private static String[] menuEntries(String module) {
+    private static String[] menuEntries(String module, boolean globalAdmin) {
         if ("Administracion".equals(module)) {
+            if (!globalAdmin) {
+                return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat"};
+            }
             return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat", "Empleados", "Produccion", "Mantenimiento", "Deposito", "Compras", "Calidad"};
         }
         if ("Produccion".equals(module)) {
@@ -349,24 +362,6 @@ public final class UiTheme {
     }
 
     public static JScrollPane tableScroll(JTable table) {
-        table.addMouseListener(new MouseAdapter() {
-            @Override public void mouseClicked(MouseEvent event) {
-                if (event.getClickCount() != 2) return;
-                int viewRow = table.rowAtPoint(event.getPoint());
-                if (viewRow < 0) return;
-                int row = table.convertRowIndexToModel(viewRow);
-                JPanel details = new JPanel(new GridLayout(0, 2, 12, 8));
-                details.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
-                for (int col = 0; col < table.getColumnCount(); col++) {
-                    details.add(new JLabel(table.getColumnName(col) + ":"));
-                    Object value = table.getModel().getValueAt(row, table.convertColumnIndexToModel(col));
-                    JTextArea text = new JTextArea(value == null ? "" : value.toString(), 2, 24);
-                    text.setLineWrap(true); text.setWrapStyleWord(true); text.setEditable(false);
-                    details.add(new JScrollPane(text));
-                }
-                JOptionPane.showMessageDialog(table, details, "Detalle de fila", JOptionPane.INFORMATION_MESSAGE);
-            }
-        });
         for (int col = 0; col < table.getColumnCount(); col++) {
             table.getColumnModel().getColumn(col).setCellRenderer(new DefaultTableCellRenderer() {
                 @Override public Component getTableCellRendererComponent(JTable t, Object value, boolean selected, boolean focus, int row, int column) {

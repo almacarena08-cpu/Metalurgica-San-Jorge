@@ -24,7 +24,7 @@ import java.util.List;
 public class ApiClient {
     public static final String API_BASE = System.getProperty(
             "metalgest.api.url",
-            "http://localhost/Metalurgica-San-Jorge/clases/php/api.php");
+            "https://metalurgicasj.cavernservices.org/app/Metalurgica-San-Jorge/clases/php/api.php");
 
     static {
         ensureCookieHandler();
@@ -63,7 +63,11 @@ public class ApiClient {
     }
 
     public static String post(String action, Map<String, String> data) throws IOException {
+        ensureCookieHandler();
         URL url = URI.create(API_BASE + "?action=" + encode(action)).toURL();
+        if ("chat_logout".equals(action)) {
+            clearCookies(url.getHost());
+        }
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("POST");
         conn.setDoOutput(true);
@@ -81,31 +85,6 @@ public class ApiClient {
             body.append(encode(entry.getValue() == null ? "" : entry.getValue()));
         }
 
-        try (OutputStream os = conn.getOutputStream()) {
-            os.write(body.toString().getBytes(StandardCharsets.UTF_8));
-        }
-        return readResponse(conn);
-    }
-
-    public static String postTo(String base, String action, Map<String, String> data) throws IOException {
-        ensureCookieHandler();
-        URL url = URI.create(base + "?action=" + encode(action)).toURL();
-        if ("chat_logout".equals(action)) {
-            clearCookies(url.getHost());
-        }
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("POST");
-        conn.setDoOutput(true);
-        conn.setConnectTimeout(4000);
-        conn.setReadTimeout(4000);
-        conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");
-        StringBuilder body = new StringBuilder();
-        for (Map.Entry<String, String> entry : data.entrySet()) {
-            if (body.length() > 0) {
-                body.append('&');
-            }
-            body.append(encode(entry.getKey())).append('=').append(encode(entry.getValue() == null ? "" : entry.getValue()));
-        }
         try (OutputStream os = conn.getOutputStream()) {
             os.write(body.toString().getBytes(StandardCharsets.UTF_8));
         }
@@ -150,6 +129,7 @@ public class ApiClient {
     }
 
     public static byte[] download(String action, Map<String, String> parameters) throws IOException {
+        ensureCookieHandler();
         StringBuilder query = new StringBuilder();
         query.append("action=").append(encode(action));
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
@@ -167,16 +147,6 @@ public class ApiClient {
             while ((read = stream.read(buffer)) != -1) output.write(buffer, 0, read);
             return output.toByteArray();
         }
-    }
-
-    public static String getFrom(String base, String action) throws IOException {
-        ensureCookieHandler();
-        URL url = URI.create(base + "?action=" + encode(action)).toURL();
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setConnectTimeout(4000);
-        conn.setReadTimeout(4000);
-        return readResponse(conn);
     }
 
     public static boolean isSuccess(String json) {

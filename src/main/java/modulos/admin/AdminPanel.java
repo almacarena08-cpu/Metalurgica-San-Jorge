@@ -139,7 +139,7 @@ public class AdminPanel {
             else if (!"Administracion".equals(entry)) {
                 JOptionPane.showMessageDialog(null, "Este módulo pertenece a otra aplicación.", "MetalGest", JOptionPane.INFORMATION_MESSAGE);
             }
-        }, onLogout);
+        }, onLogout, "Administrador Global".equalsIgnoreCase(session.getRol()));
         UiTheme.content(shell).add(pages, BorderLayout.CENTER);
         return shell;
     }
@@ -551,11 +551,14 @@ public class AdminPanel {
         UiTheme.styleButton(recargar, false);
         UiTheme.styleInput(estado);
         UiTheme.styleInput(observaciones);
-        acciones.add(new JLabel("Estado"));
-        acciones.add(estado);
-        acciones.add(new JLabel("Observacion"));
-        acciones.add(observaciones);
-        acciones.add(actualizar);
+        boolean puedeEditar = EmployeeSession.canEditRecords();
+        if (puedeEditar) {
+            acciones.add(new JLabel("Estado"));
+            acciones.add(estado);
+            acciones.add(new JLabel("Observacion"));
+            acciones.add(observaciones);
+            acciones.add(actualizar);
+        }
         acciones.add(recargar);
         panel.add(acciones, BorderLayout.SOUTH);
 
@@ -584,11 +587,11 @@ public class AdminPanel {
     private static JPanel crearPanelChat(EmployeeSession session, java.util.function.Consumer<String> crearPedido) {
         JPanel container = new JPanel(new BorderLayout());
         container.setBackground(UiTheme.BACKGROUND);
-        if (!chatWebConfigurar()) {
+        if (!chatApiDisponible()) {
             JPanel unavailable = new JPanel(new BorderLayout(8, 8));
             unavailable.setBackground(UiTheme.WHITE);
             unavailable.setBorder(BorderFactory.createEmptyBorder(28, 30, 28, 30));
-            JLabel message = new JLabel("<html><b>Chat web no configurado</b><br>Definí -Dmetalgest.web.api.url con la dirección del API del sitio web para conectar la bandeja con los mensajes de los clientes.</html>");
+            JLabel message = new JLabel("<html><b>Chat no disponible</b><br>Verificá que la API de la app esté activa en la ruta configurada.</html>");
             message.setForeground(UiTheme.INK);
             unavailable.add(message, BorderLayout.CENTER);
             container.add(unavailable, BorderLayout.NORTH);
@@ -810,7 +813,6 @@ public class AdminPanel {
         panel.add(conversation, BorderLayout.CENTER);
         final String[] selectedChat = {""};
         final String[] selectedClient = {""};
-        final String[] chatSource = {"web"};
         final List<File> selectedFiles = new java.util.ArrayList<>();
         final JLabel fileHint = new JLabel(" ");
         fileHint.setForeground(UiTheme.MUTED);
@@ -818,8 +820,7 @@ public class AdminPanel {
         Runnable loadChats = () -> {
             model.setRowCount(0);
             try {
-                List<Map<String, String>> chatRows = administracionDao.listarChatsWeb();
-                chatSource[0] = !chatRows.isEmpty() && "local".equals(chatRows.get(0).get("_chat_source")) ? "local" : "web";
+                List<Map<String, String>> chatRows = administracionDao.listarChatsApp();
                 for (Map<String, String> row : chatRows) {
                     model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado"), row.get("id_cliente")});
                 }
@@ -854,7 +855,7 @@ public class AdminPanel {
             } else {
                 send.setEnabled(true);
                 try {
-                    List<Map<String, String>> chatMessages = administracionDao.listarMensajesChat(Integer.parseInt(selectedChat[0]), chatSource[0]);
+                    List<Map<String, String>> chatMessages = administracionDao.listarMensajesChat(Integer.parseInt(selectedChat[0]));
                     Map<String, List<Map<String, String>>> attachments = new LinkedHashMap<>();
                     for (Map<String, String> attachment : administracionDao.listarAdjuntosChat(Integer.parseInt(selectedChat[0]))) {
                         attachments.computeIfAbsent(attachment.get("id_mensaje"), ignored -> new java.util.ArrayList<>()).add(attachment);
@@ -1030,10 +1031,10 @@ public class AdminPanel {
         }
     }
 
-    private static boolean chatWebConfigurar() {
+    private static boolean chatApiDisponible() {
         try {
             java.net.HttpURLConnection connection = (java.net.HttpURLConnection) java.net.URI.create(
-                    administracionDao.getChatWebApi() + "?action=health").toURL().openConnection();
+                    administracionDao.getChatApi() + "?action=health").toURL().openConnection();
             connection.setConnectTimeout(1500);
             connection.setReadTimeout(1500);
             try (java.io.InputStream stream = connection.getInputStream()) {

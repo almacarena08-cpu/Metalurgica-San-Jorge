@@ -2,6 +2,7 @@ package modulos.common;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
@@ -20,6 +21,11 @@ public class ModuleLoginPanel extends JPanel {
     private final JTextField nombre = new JTextField(22);
     private final JPasswordField contrasena = new JPasswordField(22);
     private final JLabel estado = new JLabel(" ");
+    private final JComboBox<String> idioma = new JComboBox<>(new String[]{"Español", "English"});
+    private final JLabel subtitle = new JLabel();
+    private final JLabel usuarioLabel = new JLabel();
+    private final JLabel contrasenaLabel = new JLabel();
+    private final JButton ingresar = new JButton();
 
     public ModuleLoginPanel(Consumer<EmployeeSession> onSuccess) {
         setLayout(new GridBagLayout());
@@ -41,25 +47,37 @@ public class ModuleLoginPanel extends JPanel {
         title.setFont(new Font("SansSerif", Font.BOLD, 28));
         addToCard(card, new IndustrialBanner(), c, 0);
         addToCard(card, title, c, 1);
-        JLabel subtitle = new JLabel("Acceso seguro al sistema");
         subtitle.setForeground(UiTheme.MUTED);
         addToCard(card, subtitle, c, 2);
-        JLabel usuarioLabel = new JLabel("Usuario");
         usuarioLabel.setForeground(UiTheme.INK);
         addToCard(card, usuarioLabel, c, 3);
         UiTheme.styleInput(nombre);
         addToCard(card, nombre, c, 4);
-        JLabel contrasenaLabel = new JLabel("Contraseña");
         contrasenaLabel.setForeground(UiTheme.INK);
         addToCard(card, contrasenaLabel, c, 5);
         UiTheme.styleInput(contrasena);
         addToCard(card, contrasena, c, 6);
-        JButton ingresar = new JButton("Ingresar");
         UiTheme.styleButton(ingresar, true);
-        addToCard(card, ingresar, c, 7);
+        JLabel idiomaLabel = new JLabel();
+        idiomaLabel.setForeground(UiTheme.INK);
+        addToCard(card, idiomaLabel, c, 7);
+        addToCard(card, idioma, c, 8);
+        addToCard(card, ingresar, c, 9);
         estado.setForeground(UiTheme.YELLOW);
-        addToCard(card, estado, c, 8);
+        addToCard(card, estado, c, 10);
         add(card, new GridBagConstraints());
+
+        idioma.addActionListener(event -> {
+            boolean ingles = idioma.getSelectedIndex() == 1;
+            idiomaLabel.setText(ingles ? "Language" : "Idioma");
+            subtitle.setText(ingles ? "Secure system access" : "Acceso seguro al sistema");
+            usuarioLabel.setText(ingles ? "Username" : "Usuario");
+            contrasenaLabel.setText(ingles ? "Password" : "Contraseña");
+            ingresar.setText(ingles ? "Sign in" : "Ingresar");
+            estado.setText(" ");
+        });
+        idioma.setSelectedIndex(AppLanguage.isEnglish() ? 1 : 0);
+        AppLanguage.setEnglish(idioma.getSelectedIndex() == 1);
 
         ingresar.addActionListener(event -> autenticar(onSuccess));
         contrasena.addActionListener(event -> autenticar(onSuccess));
@@ -72,10 +90,12 @@ public class ModuleLoginPanel extends JPanel {
     }
 
     private void autenticar(Consumer<EmployeeSession> onSuccess) {
+            boolean ingles = idioma.getSelectedIndex() == 1;
+            AppLanguage.setEnglish(ingles);
         String nombreIngresado = nombre.getText().trim();
         String clave = new String(contrasena.getPassword());
         if (nombreIngresado.isEmpty() || clave.isEmpty()) {
-            estado.setText("Completa nombre y contraseña.");
+            estado.setText(ingles ? "Enter your username and password." : "Completa nombre y contraseña.");
             return;
         }
         try {
@@ -84,27 +104,39 @@ public class ModuleLoginPanel extends JPanel {
             datos.put("contrasena", clave);
             String cuerpo = ApiClient.post("login", datos);
             if (cuerpo == null || !cuerpo.trim().startsWith("{")) {
-                estado.setText("No se pudo validar el acceso con la API.");
+                estado.setText(ingles ? "Could not validate access with the API." : "No se pudo validar el acceso con la API.");
                 return;
             }
             Map<String, String> respuesta = JsonUtil.parseObject(cuerpo);
             if (!"true".equals(respuesta.get("success"))) {
-                estado.setText("Nombre o contraseña incorrectos.");
+                String mensaje = respuesta.get("message");
+                if (mensaje == null || mensaje.isEmpty() || "Credenciales incorrectas".equalsIgnoreCase(mensaje)) {
+                    estado.setText(ingles ? "Incorrect username or password." : "Nombre o contraseña incorrectos.");
+                } else {
+                    estado.setText(mensaje);
+                }
                 return;
             }
             Map<String, String> usuario = extraerUsuario(cuerpo);
             if ("Cliente".equalsIgnoreCase(usuario.getOrDefault("rol", ""))) {
-                estado.setText("El acceso de clientes no está disponible en esta aplicación.");
+                estado.setText(ingles ? "Customer access is unavailable in this application." : "El acceso de clientes no está disponible en esta aplicación.");
                 return;
             }
-            onSuccess.accept(new EmployeeSession(
-                    parseInt(usuario.get("id_usuario")),
-                    usuario.getOrDefault("nombre", nombreIngresado),
-                    usuario.getOrDefault("apellido", ""),
-                    usuario.getOrDefault("rol", ""),
-                    usuario.getOrDefault("usuario", nombreIngresado)));
+            try {
+                onSuccess.accept(new EmployeeSession(
+                        parseInt(usuario.get("id_usuario")),
+                        usuario.getOrDefault("nombre", nombreIngresado),
+                        usuario.getOrDefault("apellido", ""),
+                        usuario.getOrDefault("rol", ""),
+                        usuario.getOrDefault("usuario", nombreIngresado)));
+            } catch (RuntimeException error) {
+                error.printStackTrace();
+                estado.setText(ingles ? "Access was validated, but the module could not be opened ("
+                        + error.getClass().getSimpleName() + "). Check the console." : "El acceso fue validado, pero no se pudo abrir el módulo ("
+                        + error.getClass().getSimpleName() + "). Revisá la consola.");
+            }
         } catch (IOException error) {
-            estado.setText("No se pudo conectar con la API.");
+            estado.setText(ingles ? "Could not connect to the API." : "No se pudo conectar con la API.");
         }
     }
 

@@ -69,6 +69,7 @@ public class MaintenancePanel {
         for (JCheckBox check : new JCheckBox[]{pendientes, proceso, resueltas}) { check.setOpaque(false); check.setForeground(UiTheme.INK); }
         JPanel filters = new JPanel(new FlowLayout(FlowLayout.LEFT)); filters.setOpaque(false); filters.add(new JLabel("Mostrar:")); filters.add(pendientes); filters.add(proceso); filters.add(resueltas);
         JButton editar = new JButton("Editar solicitud"), programar = new JButton("Programar preventivo"), recargar = new JButton("Recargar");
+        editar.setVisible(EmployeeSession.canEditRecords());
         UiTheme.styleButton(editar, true); UiTheme.styleButton(programar, true); UiTheme.styleButton(recargar, false);
         JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT)); actions.setOpaque(false);
         if (preventivos) actions.add(programar); else actions.add(editar);

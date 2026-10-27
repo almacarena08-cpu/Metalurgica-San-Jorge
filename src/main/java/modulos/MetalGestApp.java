@@ -4,6 +4,7 @@ import modulos.admin.AdminPanel;
 import modulos.calidad.QualityPanel;
 import modulos.compras.PurchasesPanel;
 import modulos.common.EmployeeSession;
+import modulos.common.AppLanguage;
 import modulos.common.ApiClient;
 import modulos.common.ModuleLogin;
 import modulos.common.ModuleLoginPanel;
@@ -13,6 +14,7 @@ import modulos.mantenimiento.MaintenancePanel;
 import modulos.produccion.ProductionPanel;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.io.IOException;
@@ -21,6 +23,7 @@ import java.util.Collections;
 public class MetalGestApp {
     public static void main(String[] args) {
         UiTheme.installDarkDefaults();
+        AppLanguage.installDialogTranslation();
         SwingUtilities.invokeLater(MetalGestApp::showApplication);
     }
 
@@ -35,7 +38,7 @@ public class MetalGestApp {
     }
 
     private static void showLogin(JFrame ventana) {
-        ventana.setTitle("MetalGest - Acceso");
+        ventana.setTitle(AppLanguage.text("MetalGest - Acceso"));
         ventana.setContentPane(new ModuleLoginPanel(session -> showModule(ventana, session)));
         ventana.revalidate();
         ventana.repaint();
@@ -52,24 +55,33 @@ public class MetalGestApp {
             rol = rol.substring("supervisor ".length()).trim();
         }
         if ("Administracion".equalsIgnoreCase(rol) || "Gerencia".equalsIgnoreCase(rol) || "Administrador Global".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Administracion");
+            ventana.setTitle(AppLanguage.text("MetalGest - Administracion"));
             ventana.setContentPane(AdminPanel.createView(session, () -> cerrarSesion(ventana)));
         } else if ("Produccion".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Produccion");
+            ventana.setTitle(AppLanguage.text("MetalGest - Produccion"));
             ventana.setContentPane(ProductionPanel.createView(session, () -> cerrarSesion(ventana)));
         } else if ("Mantenimiento".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Mantenimiento");
+            ventana.setTitle(AppLanguage.text("MetalGest - Mantenimiento"));
             ventana.setContentPane(MaintenancePanel.createView(session, () -> cerrarSesion(ventana)));
         } else if ("Deposito".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Deposito");
+            ventana.setTitle(AppLanguage.text("MetalGest - Deposito"));
             ventana.setContentPane(DepositPanel.createView(session, () -> cerrarSesion(ventana)));
         } else if ("Compras".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Compras");
+            ventana.setTitle(AppLanguage.text("MetalGest - Compras"));
             ventana.setContentPane(PurchasesPanel.createView(session, () -> cerrarSesion(ventana)));
         } else if ("Calidad".equalsIgnoreCase(rol)) {
-            ventana.setTitle("MetalGest - Calidad");
+            ventana.setTitle(AppLanguage.text("MetalGest - Calidad"));
             ventana.setContentPane(QualityPanel.createView(session, () -> cerrarSesion(ventana)));
+        } else {
+            JOptionPane.showMessageDialog(
+                    ventana,
+                    "El usuario inició sesión, pero no hay un módulo disponible para el rol: "
+                            + (rol == null || rol.isEmpty() ? "(sin rol)" : rol),
+                    "Rol sin módulo",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
         }
+        AppLanguage.apply(ventana.getContentPane());
         ventana.revalidate();
         ventana.repaint();
     }

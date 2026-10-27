@@ -54,6 +54,14 @@ function api_is_global_admin($role) {
     return in_array(strtolower(trim((string)$role)), ['administracion', 'gerencia', 'administrador global'], true);
 }
 
+function api_is_super_admin($role) {
+    return strtolower(trim((string)$role)) === 'administrador global';
+}
+
+function api_is_supervisor($role) {
+    return preg_match('/^supervisor\s+/i', trim((string)$role)) === 1;
+}
+
 function api_json($data, $status = 200) {
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
@@ -92,14 +100,19 @@ function api_ensure_role($nombre) {
 
 $action = $_GET['action'] ?? null;
 $supervisorModules = ['Produccion', 'Mantenimiento', 'Deposito', 'Compras', 'Calidad'];
-foreach ($supervisorModules as $module) api_ensure_role('Supervisor ' . $module);
-api_ensure_role('Administrador Global');
+try {
+    foreach ($supervisorModules as $module) api_ensure_role('Supervisor ' . $module);
+    api_ensure_role('Administrador Global');
+} catch (PDOException $error) {
+    error_log('MetalGest database initialization failed: ' . $error->getMessage());
+    api_json(['success' => false, 'message' => 'No se pudo conectar con la base de datos.'], 503);
+}
 $actionScopes = [
     'empleados_list'=>'admin','empleados_create'=>'admin','empleados_update'=>'admin',
-    'pedidos_list'=>'admin','pedidos_create'=>'admin','ordenes_list'=>'read_orders','ordenes_create'=>'admin','orden_update_status'=>'admin',
+    'pedidos_list'=>'admin','pedidos_create'=>'admin','ordenes_list'=>'read_orders','ordenes_create'=>'admin','orden_update_status'=>'Produccion',
     'produccion_list'=>'Produccion','produccion_register'=>'Produccion','maquinas_list'=>'maintenance','mantenimiento_report'=>'Produccion',
     'mantenimientos_list'=>'Mantenimiento','mantenimiento_preventivo_create'=>'Mantenimiento','mantenimiento_update'=>'Mantenimiento',
-    'materiales_list'=>'materials','materiales_create'=>'Compras','materiales_update'=>'Compras','materiales_delete'=>'Compras',
+    'materiales_list'=>'materials','materiales_create'=>'Compras','materiales_update'=>'materials','materiales_delete'=>'Compras',
     'deposito_movimientos_list'=>'Deposito','deposito_movimiento_create'=>'Deposito',
     'proveedores_list'=>'Compras','proveedores_create'=>'Compras','compras_list'=>'Compras','compras_create'=>'Compras',
     'calidad_list'=>'Calidad','calidad_register'=>'Calidad'
@@ -121,6 +134,10 @@ if (isset($actionScopes[$action])) {
         ($scope === 'maintenance' ? in_array(strtolower($moduleRole), ['mantenimiento','produccion'], true) :
         ($scope === 'materials' ? in_array(strtolower($moduleRole), ['deposito','compras'], true) : strcasecmp($scope, $moduleRole) === 0))));
     if (!$allowed) api_json(['success'=>false,'message'=>'Inicia sesión con un rol autorizado para este módulo.'],403);
+    if (in_array($action, ['record_update','orden_update_status','mantenimiento_update','materiales_update','empleados_update','clientes_update'], true)
+        && !api_is_super_admin($role) && !api_is_supervisor($role)) {
+        api_json(['success'=>false,'message'=>'Solo el Administrador Global y los supervisores pueden editar registros.'],403);
+    }
 }
 $pedidoDAO = new PedidoDAO();
 $ordenTrabajoDAO = new OrdenTrabajoDAO();
@@ -491,25 +508,38 @@ if ($action === 'login') {
         ]);
     }
     $stmt = api_db()->prepare(
-        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.id_cliente, r.nombre AS rol
+        'SELECT u.id_usuario, u.nombre, u.apellido, u.usuario, u.contrasena, u.id_cliente, r.nombre AS rol
          FROM usuario u
          INNER JOIN rol r ON r.id_rol = u.id_rol
          WHERE (u.usuario = :usuario OR u.nombre = :nombre OR CONCAT(u.nombre, " ", u.apellido) = :nombre_completo)
-             AND u.contrasena = :contrasena
          LIMIT 1'
     );
     $stmt->execute([
         ':usuario' => $nombreLogin,
         ':nombre' => $nombreLogin,
-        ':nombre_completo' => $nombreLogin,
-        ':contrasena' => $contrasenaLogin
+        ':nombre_completo' => $nombreLogin
     ]);
     $user = $stmt->fetch();
-    if (!$user) {
+    if (!$user || (!password_verify($contrasenaLogin, $user['contrasena'])
+        && !hash_equals((string)$user['contrasena'], $contrasenaLogin))) {
         api_json(['success' => false, 'message' => 'Credenciales incorrectas'], 401);
     }
+    if (password_get_info($user['contrasena'])['algo'] === null) {
+        $updatePassword = api_db()->prepare('UPDATE usuario SET contrasena = :contrasena WHERE id_usuario = :id_usuario');
+        $updatePassword->execute([
+            ':contrasena' => password_hash($contrasenaLogin, PASSWORD_DEFAULT),
+            ':id_usuario' => (int)$user['id_usuario']
+        ]);
+    }
+    session_regenerate_id(true);
     $_SESSION['metalgest_user_id'] = (int)$user['id_usuario'];
     $_SESSION['metalgest_role'] = $user['rol'];
+    $_SESSION['metalgest_user'] = [
+        'tipo' => 'empleado',
+        'id_usuario' => (int)$user['id_usuario'],
+        'rol' => $user['rol']
+    ];
+    unset($user['contrasena']);
     api_json(['success' => true, 'usuario' => $user]);
 }
 
