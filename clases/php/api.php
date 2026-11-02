@@ -379,8 +379,34 @@ function api_chat_upload_directory() {
     return __DIR__ . DIRECTORY_SEPARATOR . 'private' . DIRECTORY_SEPARATOR . 'chat_uploads';
 }
 
+function api_chat_find_file($key) {
+    $directories = [api_chat_upload_directory()];
+    // MetalGest Java y la web comparten los metadatos del chat en MySQL.
+    // En XAMPP, los adjuntos de la aplicación Java viven en el proyecto hermano.
+    $applicationDirectory = dirname(__DIR__, 4) . DIRECTORY_SEPARATOR . 'Metalurgica-San-Jorge'
+        . DIRECTORY_SEPARATOR . 'clases' . DIRECTORY_SEPARATOR . 'php' . DIRECTORY_SEPARATOR . 'private'
+        . DIRECTORY_SEPARATOR . 'chat_uploads';
+    $directories[] = $applicationDirectory;
+    foreach ($directories as $directory) {
+        $realDirectory = realpath($directory);
+        $file = $realDirectory ? realpath($realDirectory . DIRECTORY_SEPARATOR . basename((string)$key)) : false;
+        if ($file && dirname($file) === $realDirectory && is_file($file)) return $file;
+    }
+    return false;
+}
+
 function api_chat_store_uploads() {
+    $expectedCount = isset($_POST['cantidad_adjuntos']) ? (int)$_POST['cantidad_adjuntos'] : null;
+    if ($expectedCount !== null && ($expectedCount < 0 || $expectedCount > 5)) {
+        api_json(['success' => false, 'message' => 'La cantidad de archivos adjuntos no es válida.'], 422);
+    }
     if (empty($_FILES['adjuntos'])) {
+        if ($expectedCount > 0) {
+            api_json([
+                'success' => false,
+                'message' => 'El servidor no recibió los archivos adjuntos. Verificá que PHP permita subir archivos y que el tamaño esté dentro del límite.'
+            ], 400);
+        }
         return [];
     }
     $files = $_FILES['adjuntos'];
@@ -406,10 +432,15 @@ function api_chat_store_uploads() {
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $validated = [];
     $totalSize = 0;
+    $receivedCount = 0;
     foreach ($names as $index => $name) {
         $error = (int)$errors[$index];
         if ($error === UPLOAD_ERR_NO_FILE) {
             continue;
+        }
+        $receivedCount++;
+        if (in_array($error, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true)) {
+            api_json(['success' => false, 'message' => 'El servidor rechazó un archivo por su tamaño. Reducilo o aumentá el límite de carga de PHP.'], 413);
         }
         if ($error !== UPLOAD_ERR_OK) {
             api_json(['success' => false, 'message' => 'Hubo un error al subir uno de los archivos.'], 400);
@@ -437,6 +468,9 @@ function api_chat_store_uploads() {
             'tipo_mime' => $mime,
             'tamano' => $size
         ];
+    }
+    if ($expectedCount !== null && $receivedCount !== $expectedCount) {
+        api_json(['success' => false, 'message' => 'No se recibieron todos los archivos seleccionados. Volvé a adjuntarlos e intentá nuevamente.'], 400);
     }
     $directory = api_chat_upload_directory();
     if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) {
@@ -492,6 +526,11 @@ $comprasDAO = new ComprasDAO();
 $calidadDAO = new CalidadDAO();
 $clienteDAO = new ClienteDAO();
 $chatDAO = new ChatDAO();
+$facturaDAO = null;
+if (in_array($action, ['facturas_list', 'facturas_create', 'facturas_update', 'facturas_delete', 'facturas_enviar_chat'], true)) {
+    require_once __DIR__ . '/../daos/FacturaDAO.php';
+    $facturaDAO = new FacturaDAO();
+}
 $pedidoSeguimientoDAO = new PedidoSeguimientoDAO();
 
 if ($action === 'health') {
@@ -1207,11 +1246,8 @@ if ($action === 'chat_attachment') {
     } else {
         api_chat_require_staff();
     }
-    $directory = realpath(api_chat_upload_directory());
-    $filePath = $directory
-        ? realpath($directory . DIRECTORY_SEPARATOR . basename($adjunto['clave_archivo']))
-        : false;
-    if (!$directory || !$filePath || dirname($filePath) !== $directory || !is_file($filePath)) {
+    $filePath = api_chat_find_file($adjunto['clave_archivo']);
+    if (!$filePath) {
         api_json(['success' => false, 'message' => 'El archivo adjunto no está disponible.'], 404);
     }
     $safeName = preg_replace('/[^A-Za-z0-9._-]/', '_', $adjunto['nombre_original']);
@@ -1222,6 +1258,20 @@ if ($action === 'chat_attachment') {
     header('Cache-Control: private, no-store');
     readfile($filePath);
     exit;
+}
+
+// PHP leaves both $_POST and $_FILES empty when the whole multipart body
+// exceeds post_max_size. Report that case clearly instead of treating it as
+// an empty message with no attachments.
+if (in_array($action, ['chat_send', 'chat_reply'], true)
+    && ($_SERVER['REQUEST_METHOD'] ?? '') === 'POST'
+    && (int)($_SERVER['CONTENT_LENGTH'] ?? 0) > 0
+    && empty($_POST)
+    && empty($_FILES)) {
+    api_json([
+        'success' => false,
+        'message' => 'El envío supera el límite de tamaño configurado en el servidor. Reducí el tamaño de los archivos o aumentá post_max_size en PHP.'
+    ], 413);
 }
 
 if ($action === 'chat_send') {
@@ -1248,7 +1298,7 @@ if ($action === 'chat_send') {
                 'mensaje' => $mensaje,
                 'adjuntos' => $uploads
             ]);
-            api_json(['success' => true, 'id_chat' => $idChat]);
+            api_json(['success' => true, 'id_chat' => $idChat, 'adjuntos_count' => count($uploads)]);
         }
         $nuevoChat = $chatDAO->crearConversacionCliente([
             'id_cliente' => (int)$user['id_cliente'],
@@ -1256,7 +1306,7 @@ if ($action === 'chat_send') {
             'mensaje' => $mensaje,
             'adjuntos' => $uploads
         ]);
-        api_json(['success' => true, 'id_chat' => $nuevoChat]);
+        api_json(['success' => true, 'id_chat' => $nuevoChat, 'adjuntos_count' => count($uploads)]);
     } catch (Throwable $e) {
         api_chat_remove_uploads($uploads ?? []);
         error_log('MetalGest chat message save failed: ' . $e->getMessage());
@@ -1291,11 +1341,116 @@ if ($action === 'chat_reply') {
         $notificacionEnviada = filter_var($contacto['email'] ?? '', FILTER_VALIDATE_EMAIL)
             ? api_send_new_chat_message_email($contacto['email'])
             : false;
-        api_json(['success' => true, 'notificacion_enviada' => $notificacionEnviada]);
+        api_json(['success' => true, 'notificacion_enviada' => $notificacionEnviada, 'adjuntos_count' => count($uploads)]);
     } catch (Throwable $e) {
         api_chat_remove_uploads($uploads ?? []);
         error_log('MetalGest chat reply save failed: ' . $e->getMessage());
         api_json(['success' => false, 'message' => 'No se pudo guardar la respuesta. Intentá nuevamente.'], 500);
+    }
+}
+
+if ($action === 'facturas_list') {
+    api_require_employee_roles(['gerencia', 'administracion']);
+    try {
+        api_json($facturaDAO->listar());
+    } catch (Throwable $e) {
+        error_log('MetalGest invoice list failed: ' . $e->getMessage());
+        api_json(['success'=>false,'message'=>'No se pudieron cargar las facturas. Verificá que la base compartida tenga aplicada sql/alter_facturas_chat.sql.'], 500);
+    }
+}
+
+if (in_array($action, ['facturas_create', 'facturas_update'], true)) {
+    $user = api_require_employee_roles(['gerencia', 'administracion']);
+    try {
+        $idCliente = api_int('id_cliente');
+        $idChat = api_int('id_chat');
+        $fecha = api_required('fecha');
+        $numero = api_required('numero');
+        $total = api_input('total', '');
+        $tipo = api_input('tipo_comprobante', '');
+        $condicion = api_input('condicion_venta', '');
+        $iva = api_input('iva_alicuota', '');
+        $estado = api_input('estado', '');
+        $partes = explode('-', $fecha);
+        $fechaValida = count($partes) === 3 && checkdate((int)$partes[1], (int)$partes[2], (int)$partes[0]);
+        if ($idCliente <= 0 || $idChat <= 0 || !$fechaValida || !is_numeric($total) || (float)$total < 0
+            || (float)$total > 9999999999.99 || strlen($numero) > 30
+            || !in_array($tipo, ['A','B','C'], true)
+            || !in_array($condicion, ['Contado','Cuenta corriente','Transferencia','Otro'], true)
+            || !in_array($iva, ['0','10.5','21','27'], true)
+            || !in_array($estado, ['Pendiente','Pagada','Vencida','Anulada'], true)) {
+            api_json(['success'=>false,'message'=>'Revisá cliente, conversación, fecha, importe y estado de la factura.'], 422);
+        }
+        $chatStmt = api_db()->prepare('SELECT id_cliente,id_pedido FROM chat_conversacion WHERE id_chat=:id LIMIT 1');
+        $chatStmt->execute([':id'=>$idChat]);
+        $chat = $chatStmt->fetch();
+        if (!$chat || (int)$chat['id_cliente'] !== $idCliente) {
+            api_json(['success'=>false,'message'=>'La conversación no corresponde al cliente seleccionado.'], 422);
+        }
+        $idPedido = (int)($chat['id_pedido'] ?? 0);
+        if ($idPedido > 0) {
+            $pedidoStmt = api_db()->prepare('SELECT 1 FROM pedido WHERE id_pedido=:pedido AND id_cliente=:cliente LIMIT 1');
+            $pedidoStmt->execute([':pedido'=>$idPedido, ':cliente'=>$idCliente]);
+            if (!$pedidoStmt->fetchColumn()) api_json(['success'=>false,'message'=>'El pedido vinculado no corresponde al cliente.'], 422);
+        }
+        $datos = [
+            'id_cliente'=>$idCliente,'id_chat'=>$idChat,'id_pedido'=>$idPedido ?: null,'fecha'=>$fecha,'numero'=>$numero,
+            'total'=>number_format((float)$total, 2, '.', ''),'estado'=>$estado,'tipo_comprobante'=>$tipo,
+            'condicion_venta'=>$condicion,'iva_alicuota'=>$iva
+        ];
+        if ($action === 'facturas_create') {
+            $idFactura = $facturaDAO->crear($datos);
+            api_json(['success'=>true,'id_factura'=>$idFactura]);
+        }
+        $datos['id_factura'] = api_int('id_factura');
+        if ($datos['id_factura'] <= 0) api_json(['success'=>false,'message'=>'La factura seleccionada no es válida.'], 422);
+        $facturaDAO->actualizar($datos);
+        api_json(['success'=>true]);
+    } catch (Throwable $e) {
+        error_log('MetalGest invoice save failed: ' . $e->getMessage());
+        api_json(['success'=>false,'message'=>'No se pudo guardar la factura. Verificá la conexión y la migración compartida.'], 500);
+    }
+}
+
+if ($action === 'facturas_delete') {
+    api_require_employee_roles(['gerencia', 'administracion']);
+    $idFactura = api_int('id_factura');
+    if ($idFactura <= 0) api_json(['success'=>false,'message'=>'La factura seleccionada no es válida.'], 422);
+    try {
+        $facturaDAO->eliminar($idFactura);
+        api_json(['success'=>true]);
+    } catch (Throwable $e) {
+        api_json(['success'=>false,'message'=>'No se pudo eliminar la factura.'], 409);
+    }
+}
+
+if ($action === 'facturas_enviar_chat') {
+    $user = api_chat_require_staff();
+    require_once __DIR__ . '/FacturaPDF.php';
+    $idFactura = api_int('id_factura');
+    $invoice = $idFactura > 0 ? $facturaDAO->obtenerCompleta($idFactura) : false;
+    if (!$invoice || (int)($invoice['id_chat'] ?? 0) <= 0) {
+        api_json(['success'=>false,'message'=>'Editá la factura y vinculala a una conversación antes de enviar el PDF.'], 422);
+    }
+    $uploads = [];
+    try {
+        $directory = api_chat_upload_directory();
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) throw new RuntimeException('No se pudo preparar el almacenamiento de archivos.');
+        if (!is_writable($directory)) throw new RuntimeException('El almacenamiento de archivos no permite guardar el PDF.');
+        $key = bin2hex(random_bytes(24)) . '.pdf';
+        $pdf = (new FacturaPDF())->render($invoice);
+        if (file_put_contents($directory . DIRECTORY_SEPARATOR . $key, $pdf, LOCK_EX) === false) throw new RuntimeException('No se pudo generar el PDF.');
+        $uploads[] = ['nombre_original'=>'Factura-' . preg_replace('/[^A-Za-z0-9_-]/', '-', (string)$invoice['numero']) . '.pdf','clave_archivo'=>$key,'tipo_mime'=>'application/pdf','tamano'=>strlen($pdf)];
+        $referencia = (int)($invoice['id_pedido'] ?? 0) > 0 ? 'del pedido #' . (int)$invoice['id_pedido'] : 'de la conversación «' . ($invoice['asunto_chat'] ?: 'Consulta') . '»';
+        $chatDAO->enviarMensaje([
+            'id_chat'=>(int)$invoice['id_chat'],'id_usuario'=>(int)$user['id_usuario'],'autor_tipo'=>'Administracion',
+            'mensaje'=>'Adjuntamos el borrador de factura ' . $referencia . '. Aún no tiene autorización fiscal CAE de ARCA.','adjuntos'=>$uploads
+        ]);
+        api_json(['success'=>true,'id_chat'=>(int)$invoice['id_chat'],'message'=>'PDF generado y enviado a la conversación.']);
+    } catch (Throwable $e) {
+        api_chat_remove_uploads($uploads);
+        error_log('MetalGest invoice PDF delivery failed: ' . $e->getMessage());
+        api_json(['success'=>false,'message'=>'No se pudo generar o enviar el PDF al chat.'], 500);
     }
 }
 

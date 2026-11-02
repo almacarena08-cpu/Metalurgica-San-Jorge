@@ -221,6 +221,9 @@ export const chatPanel = {
         const formData = new FormData(form);
         const message = String(formData.get("mensaje") || "").trim();
         const files = Array.from(form.querySelector("#chatFiles").files);
+        formData.delete("adjuntos[]");
+        files.forEach(file => formData.append("adjuntos[]", file, file.name));
+        formData.set("cantidad_adjuntos", String(files.length));
         const messageBox = form.parentElement.querySelector(".message");
         if (!message && files.length === 0) {
             messageBox.textContent = "Escribí un mensaje o adjuntá al menos un archivo.";
@@ -258,6 +261,20 @@ export const chatPanel = {
                     return;
                 }
                 messageBox.textContent = result.message || "No se pudo enviar.";
+                return;
+            }
+            const hasAttachmentConfirmation = Object.prototype.hasOwnProperty.call(result, "adjuntos_count");
+            if (files.length > 0 && (!hasAttachmentConfirmation || Number(result.adjuntos_count) !== files.length)) {
+                messageSaved = true;
+                this.activeChat = result.id_chat || this.activeChat;
+                await this.chatView();
+                const feedback = this.root.querySelector(".chat-window > .message");
+                if (feedback) {
+                    const detail = hasAttachmentConfirmation
+                        ? `el servidor confirmó ${result.adjuntos_count} de ${files.length} archivos`
+                        : "el servidor no informó cuántos archivos recibió";
+                    feedback.textContent = `El mensaje se guardó, pero ${detail}. Revisá el chat antes de reenviar los que falten.`;
+                }
                 return;
             }
             messageSaved = true;

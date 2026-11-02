@@ -30,6 +30,34 @@
     color: #fff;
 }
 
+#content[data-module="administracion"] .invoice-panel .module-panel-heading,
+.invoice-dialog-head,
+.invoice-dialog-actions,
+.invoice-row-actions { display:flex; align-items:center; justify-content:space-between; gap:9px; }
+#content[data-module="administracion"] .invoice-draft-note { color:#a1a7aa; font-size:12px; margin:0 0 14px; }
+#content[data-module="administracion"] .invoice-table { width:100%; }
+#content[data-module="administracion"] .invoice-row-actions { justify-content:flex-start; flex-wrap:wrap; }
+#content[data-module="administracion"] .invoice-row-actions .btn { padding:7px 9px; font-size:10px; }
+.invoice-dialog { width:min(760px, calc(100vw - 28px)); max-width:none; max-height:calc(100vh - 28px); padding:0; overflow:auto; border:1px solid #3b4246; border-radius:12px; background:#171b1e; color:#f2f3f3; box-shadow:0 24px 80px #000a; }
+.invoice-dialog::backdrop { background:rgba(0,0,0,.72); backdrop-filter:blur(3px); }
+.invoice-form { padding:22px; }
+.invoice-dialog-head { border-bottom:1px solid #30363a; padding-bottom:14px; }
+.invoice-dialog-head h3 { margin:4px 0 0; font-size:20px; }
+.invoice-close { width:35px; height:35px; border:1px solid #30363a; border-radius:50%; background:#202528; color:#fff; font-size:23px; cursor:pointer; }
+.invoice-dialog-note { margin:13px 0 17px; color:#f0834a; font-size:12px; }
+.invoice-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+.invoice-form-grid label { display:flex; flex-direction:column; gap:6px; color:#c9ced0; font-size:12px; }
+.invoice-form-grid label.full { grid-column:1/-1; }
+.invoice-form-grid input,.invoice-form-grid select { min-height:40px; width:100%; padding:9px 11px; border:1px solid #394145; border-radius:5px; background:#22282c; color:#f6f7f7; font:inherit; }
+.invoice-context { display:flex; flex-direction:column; gap:6px; min-height:57px; padding:10px 12px; border:1px solid #30363a; background:#121618; }
+.invoice-context span { color:#90999e; font-size:10px; text-transform:uppercase; letter-spacing:.08em; }
+.invoice-context strong { overflow-wrap:anywhere; font-size:12px; }
+.invoice-dialog-actions { justify-content:flex-end; flex-wrap:wrap; margin-top:17px; padding-top:14px; border-top:1px solid #30363a; }
+.invoice-dialog-actions .btn { min-height:39px; }
+.invoice-form .message { min-height:18px; margin:10px 0 0; color:#86c899; font-size:12px; }
+.invoice-form .message.is-error { color:#ff9584; }
+@media(max-width:650px) { .invoice-form { padding:16px; } .invoice-form-grid { grid-template-columns:1fr; } .invoice-form-grid label.full { grid-column:auto; } .invoice-dialog-actions { align-items:stretch; flex-direction:column-reverse; } .invoice-dialog-actions .btn { width:100%; } }
+
 #content[data-module="administracion"] .admin-overview {
     display: flex;
     align-items: center;

@@ -95,6 +95,18 @@
     </section>
     <section class="section-panel">{{ordersTable}}</section>
 </template>
+<template data-view="facturacion">
+    {{adminNavigation}}
+    <section class="section-panel invoice-panel">
+        <div class="module-panel-heading">
+            <div><span class="module-kicker">GESTIÓN COMERCIAL</span><h3>Facturación</h3></div>
+            <button class="btn primary" type="button" data-create-invoice>Crear factura</button>
+        </div>
+        <p class="invoice-draft-note">Los PDF generados son borradores internos y se pueden enviar como adjunto a la conversación asociada.</p>
+        {{invoiceTable}}
+        <p class="message" data-invoice-message aria-live="polite"></p>
+    </section>
+</template>
 <template data-view="clientes">
     {{adminNavigation}}
     <section class="section-panel">

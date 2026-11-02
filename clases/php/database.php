@@ -15,11 +15,11 @@ class Database {
                 return $value === false || $value === '' ? (string) $fallback : $value;
             };
 
-            $host = $environmentValue('METALGEST_DB_HOST', $localConfig['host'] ?? '127.0.0.1');
-            $port = $environmentValue('METALGEST_DB_PORT', $localConfig['port'] ?? '');
-            $db = $environmentValue('METALGEST_DB_NAME', $localConfig['database'] ?? 'metalurgica_san_jorge');
-            $user = $environmentValue('METALGEST_DB_USER', $localConfig['username'] ?? 'root');
-            $pass = $environmentValue('METALGEST_DB_PASSWORD', $localConfig['password'] ?? '');
+            $host = $environmentValue('METALGEST_DB_HOST', $localConfig['host'] ?? 'pma.torga.com.ar');
+            $port = $environmentValue('METALGEST_DB_PORT', $localConfig['port'] ?? '3306');
+            $db = $environmentValue('METALGEST_DB_NAME', $localConfig['database'] ?? 's33_metalurgica-san-jorge');
+            $user = $environmentValue('METALGEST_DB_USER', $localConfig['username'] ?? 'u33_DXajMzXZ2y');
+            $pass = $environmentValue('METALGEST_DB_PASSWORD', $localConfig['password'] ?? 'u.T^x.DxW3bmy83=Pu5qlNF5');
             $charset = 'utf8mb4';
             $portDsn = $port === '' ? '' : ";port=$port";
             $dsn = "mysql:host=$host$portDsn;dbname=$db;charset=$charset";

@@ -1,10 +1,10 @@
-import {administracionPanel} from "./administracion.js?v=admin-session-guard-20261021-3";
+import {administracionPanel} from "./administracion.js?v=invoice-table-search-20261102-2";
 import {produccionPanel} from "./produccion.js?v=language-settings-20261021-1";
 import {mantenimientoPanel} from "./mantenimiento.js?v=language-settings-20261021-1";
 import {depositoPanel} from "./deposito.js?v=language-settings-20261021-1";
 import {comprasPanel} from "./compras.js?v=language-settings-20261021-1";
 import {calidadPanel} from "./calidad.js?v=language-settings-20261021-1";
-import {chatPanel} from "./chat.js?v=pedido-chat-flow-20261019-3";
+import {chatPanel} from "./chat.js?v=chat-attachments-confirmation-20261102-2";
 import {chartsPanel} from "./charts.js?v=language-settings-20261021-1";
 import {seguimientoPanel} from "./seguimiento.js?v=language-settings-20261021-1";
 import {supervisoresPanel} from "./supervisores.js?v=language-settings-20261021-1";
@@ -112,7 +112,7 @@ class App {
         try {
             const moduleNames = ["inicio", "administracion", "produccion", "mantenimiento", "deposito", "compras", "calidad", "chat", "seguimiento", "supervisor_produccion", "supervisor_mantenimiento", "supervisor_deposito", "supervisor_compras", "supervisor_calidad"];
             await Promise.all(moduleNames.map(async moduleName => {
-                const response = await fetch(`html/${moduleName}.html?v=language-settings-20261021-1`);
+                const response = await fetch(`html/${moduleName}.html?v=invoice-table-search-20261102-2`);
                 if (!response.ok) throw new Error(`No se pudo cargar html/${moduleName}.html: HTTP ${response.status}.`);
                 this.moduleTemplates.set(moduleName, new DOMParser().parseFromString(await response.text(), "text/html"));
             }));

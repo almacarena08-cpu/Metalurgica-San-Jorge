@@ -1,0 +1,8 @@
+ALTER TABLE chat_conversacion
+    ADD COLUMN IF NOT EXISTS id_pedido INT(11) NULL AFTER id_cliente;
+
+ALTER TABLE factura
+    ADD COLUMN IF NOT EXISTS id_chat INT(11) NULL AFTER id_cliente,
+    ADD COLUMN IF NOT EXISTS tipo_comprobante VARCHAR(5) NOT NULL DEFAULT 'B',
+    ADD COLUMN IF NOT EXISTS condicion_venta VARCHAR(30) NOT NULL DEFAULT 'Contado',
+    ADD COLUMN IF NOT EXISTS iva_alicuota DECIMAL(5,2) NOT NULL DEFAULT 21.00;
