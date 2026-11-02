@@ -14,10 +14,12 @@ import modulos.mantenimiento.MaintenancePanel;
 import modulos.produccion.ProductionPanel;
 
 import javax.swing.JFrame;
+import javax.swing.ImageIcon;
 import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Collections;
 
 public class MetalGestApp {
@@ -29,6 +31,10 @@ public class MetalGestApp {
 
     private static void showApplication() {
         JFrame ventana = new JFrame("MetalGest - Acceso");
+        URL icono = MetalGestApp.class.getResource("/modulos/icono.jpg");
+        if (icono != null) {
+            ventana.setIconImage(new ImageIcon(icono).getImage());
+        }
         UiTheme.configureWindow(ventana);
         ventana.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         ventana.setLocationRelativeTo(null);

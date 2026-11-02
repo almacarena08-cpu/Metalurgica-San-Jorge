@@ -64,6 +64,7 @@ En otra terminal, compilar:
 cd C:\xampp\htdocs\Metalurgica-San-Jorge
 New-Item -ItemType Directory -Force build\classes
 & C:\jdk\bin\javac.exe -encoding UTF-8 -d build\classes (Get-ChildItem src\main\java -Recurse -Filter *.java)
+Copy-Item src\main\resources\modulos\* build\classes\modulos -Recurse -Force
 ```
 
 Ejecutar la aplicacion con un unico login:
@@ -73,6 +74,8 @@ Ejecutar la aplicacion con un unico login:
 ```
 
 Para compilar la version actual y ejecutarla con doble clic en Windows, iniciar `MetalGestApp.bat` desde la carpeta del proyecto con Apache y MySQL de XAMPP iniciados. El lanzador genera `build\MetalGestApp-latest.jar` en cada ejecucion y requiere JDK 17 o superior; al iniciarlo configura la API local de XAMPP. Si se ejecuta el JAR directamente, se usa la API de produccion predeterminada, salvo que se indique `-Dmetalgest.api.url=...`.
+
+El instalador autocontenido para Windows es `build\MetalGestApp-1.0.0.exe`. Incluye el runtime de Java, crea accesos directos en el menu Inicio y no requiere instalar Java en la computadora destino. La aplicacion conserva la URL de produccion predeterminada; la computadora necesita conexion a Internet para acceder al servidor de la API. El logo de la ventana y del instalador se toma de `src\main\resources\modulos\icono.jpg` y `src\main\resources\MetalGestApp.ico`.
 
 El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/Metalurgica-San-Jorge/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 

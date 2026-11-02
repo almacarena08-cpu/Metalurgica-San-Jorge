@@ -1,17 +1,25 @@
 package modulos.common;
 
+import javax.swing.ImageIcon;
 import javax.swing.JPanel;
-import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.net.URL;
 
 public class IndustrialBanner extends JPanel {
+    private static final ImageIcon LOGO = loadLogo();
+
     public IndustrialBanner() {
         setPreferredSize(new Dimension(320, 92));
         setMinimumSize(new Dimension(220, 72));
         setOpaque(false);
+    }
+
+    private static ImageIcon loadLogo() {
+        URL logo = IndustrialBanner.class.getResource("/modulos/icono.jpg");
+        return logo == null ? null : new ImageIcon(logo);
     }
 
     @Override
@@ -23,18 +31,17 @@ public class IndustrialBanner extends JPanel {
         int height = getHeight();
         g.setColor(UiTheme.BLACK);
         g.fillRoundRect(0, 0, width, height, 12, 12);
+        if (LOGO != null) {
+            int logoSize = Math.min(64, height - 16);
+            g.drawImage(LOGO.getImage(), 16, (height - logoSize) / 2, logoSize, logoSize, this);
+        }
         g.setColor(UiTheme.STEEL);
         g.fillRect(0, height - 24, width, 24);
         g.setColor(UiTheme.ORANGE);
-        g.fillRect(18, 18, Math.max(80, width / 3), 10);
-        g.fillRect(18, 36, Math.max(50, width / 5), 6);
-        g.setColor(UiTheme.YELLOW);
-        for (int x = width - 130; x < width + 30; x += 26) {
-            g.fillPolygon(new int[]{x, x + 13, x + 26}, new int[]{height - 24, height - 24, height}, 3);
-        }
+        g.fillRect(0, height - 24, 6, 24);
         g.setColor(UiTheme.WHITE);
-        g.setFont(getFont().deriveFont(14f));
-        g.drawString("⚙  METALGEST", 18, height - 7);
+        g.setFont(getFont().deriveFont(18f));
+        g.drawString("METALGEST", 94, height - 10);
         g.dispose();
     }
 }

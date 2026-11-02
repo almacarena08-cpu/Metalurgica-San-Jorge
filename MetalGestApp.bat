@@ -41,6 +41,11 @@ for /r "src\main\java" %%F in (*.java) do (
 "%JDK_BIN%\javac.exe" --release 17 -encoding UTF-8 -d "%CLASSES_DIR%" @"%SOURCE_LIST%"
 if errorlevel 1 goto :build_failed
 
+if exist "src\main\resources\modulos" (
+    xcopy /e /i /y "src\main\resources\modulos\*" "%CLASSES_DIR%\modulos\" >nul
+    if errorlevel 1 goto :build_failed
+)
+
 "%JDK_BIN%\jar.exe" --create --file "build\MetalGestApp-latest.jar" --main-class modulos.MetalGestApp -C "%CLASSES_DIR%" .
 if errorlevel 1 goto :build_failed
 
