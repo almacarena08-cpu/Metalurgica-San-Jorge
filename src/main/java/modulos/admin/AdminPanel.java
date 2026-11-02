@@ -16,6 +16,7 @@ import modulos.calidad.QualityPanel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
+import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
@@ -109,10 +110,11 @@ public class AdminPanel {
         JPanel pages = new JPanel(layout);
         pages.add(crearDashboard(name -> {
             layout.show(pages, name);
-            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "Chat");
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "facturacion".equals(name) ? "Facturacion" : "Chat");
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
+        pages.add(crearPanelFacturacion(), "facturacion");
         pages.add(crearPanelChat(session, id -> abrirPedidoDesdeChat(id, layout, pages)), "chat");
         pages.add(crearPanelEmpleados(session.getId()), "empleados");
         pages.add(ProductionPanel.createView(session, onLogout), "mod_produccion");
@@ -127,6 +129,8 @@ public class AdminPanel {
                 layout.show(pages, "pedidos");
             } else if ("Ordenes de trabajo".equals(entry)) {
                 layout.show(pages, "ordenes");
+            } else if ("Facturacion".equals(entry)) {
+                layout.show(pages, "facturacion");
             } else if ("Chat".equals(entry)) {
                 layout.show(pages, "chat");
             } else if ("Empleados".equals(entry)) {
@@ -161,6 +165,129 @@ public class AdminPanel {
         refresh.run();return panel;
     }
 
+    private static final class ChatOption {
+        private final String id, clientId, clientName, subject, orderId;
+        private ChatOption(Map<String, String> data) {
+            id = clean(data.get("id_chat")); clientId = clean(data.get("id_cliente"));
+            clientName = clean(data.get("nombre")).isEmpty() ? "Cliente" : clean(data.get("nombre"));
+            subject = clean(data.get("asunto")).isEmpty() ? "Consulta" : clean(data.get("asunto"));
+            orderId = clean(data.get("id_pedido"));
+        }
+        private static String clean(String value) { return value == null || "null".equalsIgnoreCase(value) ? "" : value; }
+        @Override public String toString() { return subject + "  ·  " + clientName; }
+    }
+
+    private static JPanel crearPanelFacturacion() {
+        JPanel panel = new JPanel(new BorderLayout(10, 10));
+        panel.setBackground(UiTheme.BACKGROUND);
+        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "N.º factura", "Cliente", "Asunto", "Pedido", "Fecha", "Total", "Estado", "ID cliente", "ID chat", "Tipo", "Condición de venta", "IVA"}, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
+        };
+        JTable table = new JTable(model);
+        UiTheme.styleTable(table);
+        for (int i=12; i>=8; i--) table.removeColumn(table.getColumnModel().getColumn(i));
+        panel.add(UiTheme.tableScroll(table), BorderLayout.CENTER);
+        JButton create = new JButton("Crear factura"), edit = new JButton("Editar"), delete = new JButton("Eliminar"), refresh = new JButton("Actualizar"), sendPdf = new JButton("Generar PDF y enviar al chat");
+        UiTheme.styleButton(create, true); UiTheme.styleButton(edit, false); UiTheme.styleButton(delete, false); UiTheme.styleButton(refresh, false); UiTheme.styleButton(sendPdf, true);
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.RIGHT)); actions.setOpaque(false);
+        actions.add(refresh); actions.add(edit); actions.add(delete); actions.add(sendPdf); actions.add(create);
+        panel.add(actions, BorderLayout.SOUTH);
+        Runnable load = () -> {
+            model.setRowCount(0);
+            try {
+                Map<String, Map<String,String>> chats = new LinkedHashMap<>();
+                for (Map<String,String> chat : administracionDao.listarChatsApp()) chats.put(chat.get("id_chat"), chat);
+                for (Map<String, String> invoice : administracionDao.listarFacturas()) {
+                    Map<String,String> chat = chats.get(invoice.get("id_chat"));
+                    String subject = chat == null ? "(sin conversación)" : chat.getOrDefault("asunto", "Consulta");
+                    model.addRow(new Object[]{invoice.get("id_factura"), invoice.get("numero"), invoice.get("razon_social"), subject, invoice.get("id_pedido"), invoice.get("fecha"), invoice.get("total"), invoice.get("estado"), invoice.get("id_cliente"), invoice.get("id_chat"), invoice.get("tipo_comprobante"), invoice.get("condicion_venta"), invoice.get("iva_alicuota")});
+                }
+            } catch (IOException error) { JOptionPane.showMessageDialog(panel, error.getMessage(), "Facturación", JOptionPane.ERROR_MESSAGE); }
+        };
+        java.util.function.Function<Integer,Map<String,String>> invoiceAt = row -> {
+            Map<String,String> item = new LinkedHashMap<>();
+            item.put("id_factura", String.valueOf(model.getValueAt(row,0))); item.put("numero", String.valueOf(model.getValueAt(row,1)));
+            item.put("id_cliente", String.valueOf(model.getValueAt(row,8))); item.put("id_chat", String.valueOf(model.getValueAt(row,9)));
+            item.put("id_pedido", String.valueOf(model.getValueAt(row,4))); item.put("fecha", String.valueOf(model.getValueAt(row,5)));
+            item.put("total", String.valueOf(model.getValueAt(row,6))); item.put("estado", String.valueOf(model.getValueAt(row,7)));
+            item.put("tipo_comprobante", String.valueOf(model.getValueAt(row,10))); item.put("condicion_venta", String.valueOf(model.getValueAt(row,11)));
+            item.put("iva_alicuota", String.valueOf(model.getValueAt(row,12))); return item;
+        };
+        create.addActionListener(event -> { if (abrirFormularioFactura(panel, null, null)) load.run(); });
+        edit.addActionListener(event -> { int selected=table.getSelectedRow(); if(selected<0){JOptionPane.showMessageDialog(panel,"Seleccioná una factura.");return;} if(abrirFormularioFactura(panel,invoiceAt.apply(table.convertRowIndexToModel(selected)),null)) load.run(); });
+        delete.addActionListener(event -> {
+            int selected=table.getSelectedRow(); if(selected<0){JOptionPane.showMessageDialog(panel,"Seleccioná una factura para eliminar.");return;}
+            int row=table.convertRowIndexToModel(selected);
+            if(JOptionPane.showConfirmDialog(panel,"¿Eliminar la factura seleccionada?","Facturación",JOptionPane.YES_NO_OPTION)!=JOptionPane.YES_OPTION)return;
+            Map<String,String> data=new LinkedHashMap<>(); data.put("id_factura",String.valueOf(model.getValueAt(row,0)));
+            try { modulos.common.dao.ApiResult result=administracionDao.eliminarFactura(data); if(result.isSuccess())load.run(); else JOptionPane.showMessageDialog(panel,result.getBody(),"Facturación",JOptionPane.ERROR_MESSAGE); }
+            catch(IOException error){JOptionPane.showMessageDialog(panel,error.getMessage(),"Facturación",JOptionPane.ERROR_MESSAGE);}
+        });
+        sendPdf.addActionListener(event -> {
+            int selected=table.getSelectedRow(); if(selected<0){JOptionPane.showMessageDialog(panel,"Seleccioná una factura.");return;}
+            int row=table.convertRowIndexToModel(selected); Map<String,String> data=new LinkedHashMap<>(); data.put("id_factura",String.valueOf(model.getValueAt(row,0)));
+            try { modulos.common.dao.ApiResult result=administracionDao.enviarFacturaAlChat(data); if(result.isSuccess())JOptionPane.showMessageDialog(panel,"PDF enviado al chat asociado. El archivo está marcado como borrador hasta contar con CAE de ARCA."); else JOptionPane.showMessageDialog(panel,result.getBody(),"Facturación",JOptionPane.ERROR_MESSAGE); }
+            catch(IOException error){JOptionPane.showMessageDialog(panel,error.getMessage(),"Facturación",JOptionPane.ERROR_MESSAGE);}
+        });
+        refresh.addActionListener(event -> load.run());
+        load.run();
+        return panel;
+    }
+
+    private static boolean abrirFormularioFactura(java.awt.Component parent, Map<String,String> factura, ChatOption prefilledChat) {
+        JDialog dialog = new JDialog(SwingUtilities.getWindowAncestor(parent), factura == null ? "Crear factura" : "Editar factura", java.awt.Dialog.ModalityType.APPLICATION_MODAL);
+        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        JPanel form = new JPanel(new GridBagLayout()); form.setBackground(UiTheme.BACKGROUND); form.setBorder(BorderFactory.createEmptyBorder(18,18,12,18));
+        JComboBox<ChatOption> conversation = new JComboBox<>();
+        JLabel client = new JLabel("Seleccioná una conversación"), order = new JLabel("—");
+        JTextField number = new JTextField(18), date = new JTextField(LocalDate.now().toString(), 18), total = new JTextField(18);
+        JComboBox<String> type = new JComboBox<>(new String[]{"A","B","C"}), sale = new JComboBox<>(new String[]{"Cuenta corriente","Transferencia","Contado","Otro"}), vat = new JComboBox<>(new String[]{"21","10.5","27","0"}), status = new JComboBox<>(new String[]{"Pendiente","Pagada","Vencida","Anulada"});
+        for(javax.swing.JComponent c:new javax.swing.JComponent[]{conversation,number,date,total,type,sale,vat,status}) UiTheme.styleInput(c);
+        try {
+            for(Map<String,String> row:administracionDao.listarChatsApp()) conversation.addItem(new ChatOption(row));
+        } catch(IOException error) { JOptionPane.showMessageDialog(parent,error.getMessage(),"Facturación",JOptionPane.ERROR_MESSAGE); dialog.dispose(); return false; }
+        Runnable updateChatLabels=()->{ChatOption selected=(ChatOption)conversation.getSelectedItem(); if(selected!=null){client.setText(selected.clientName);order.setText(selected.orderId.isEmpty()?"Sin pedido vinculado": "Pedido #"+selected.orderId);}};
+        conversation.addActionListener(event->updateChatLabels.run());
+        int y=0;
+        for(Object[] row:new Object[][]{{"Conversación (asunto)",conversation},{"Cliente",client},{"Pedido vinculado",order},{"Número",number},{"Fecha (AAAA-MM-DD)",date},{"Tipo (borrador)",type},{"Condición de venta",sale},{"IVA (%)",vat},{"Total final (IVA incluido)",total},{"Estado",status}}){
+            GridBagConstraints c=new GridBagConstraints(); c.gridx=0;c.gridy=y;c.anchor=GridBagConstraints.WEST;c.insets=new java.awt.Insets(5,4,5,12);form.add(new JLabel(String.valueOf(row[0])),c);
+            c=new GridBagConstraints();c.gridx=1;c.gridy=y++;c.weightx=1;c.fill=GridBagConstraints.HORIZONTAL;c.insets=new java.awt.Insets(5,4,5,4);form.add((java.awt.Component)row[1],c);
+        }
+        if(prefilledChat!=null){ for(int i=0;i<conversation.getItemCount();i++)if(conversation.getItemAt(i).id.equals(prefilledChat.id)){conversation.setSelectedIndex(i);break;} }
+        if(factura!=null){number.setText(factura.getOrDefault("numero",""));date.setText(factura.getOrDefault("fecha",LocalDate.now().toString()));total.setText(factura.getOrDefault("total",""));type.setSelectedItem(factura.getOrDefault("tipo_comprobante","B"));sale.setSelectedItem(factura.getOrDefault("condicion_venta","Cuenta corriente"));vat.setSelectedItem(factura.getOrDefault("iva_alicuota","21"));status.setSelectedItem(factura.getOrDefault("estado","Pendiente"));String id=factura.getOrDefault("id_chat","");for(int i=0;i<conversation.getItemCount();i++)if(conversation.getItemAt(i).id.equals(id)){conversation.setSelectedIndex(i);break;}}
+        updateChatLabels.run();
+        JLabel note=new JLabel("Borrador interno: no válido como factura fiscal sin autorización CAE de ARCA.");note.setForeground(new Color(170,75,35));
+        JPanel content=new JPanel(new BorderLayout(8,8));content.add(form,BorderLayout.CENTER);content.add(note,BorderLayout.NORTH);
+        JButton save=new JButton("Guardar"), saveAndSend=new JButton("Guardar y enviar PDF al chat"), cancel=new JButton("Cancelar");UiTheme.styleButton(save,true);UiTheme.styleButton(saveAndSend,true);UiTheme.styleButton(cancel,false);
+        JPanel buttons=new JPanel(new FlowLayout(FlowLayout.RIGHT));buttons.add(cancel);buttons.add(save);buttons.add(saveAndSend);content.add(buttons,BorderLayout.SOUTH);
+        final boolean[] saved={false};
+        final String[] invoiceId={factura==null?"":factura.getOrDefault("id_factura","")};
+        cancel.addActionListener(event->dialog.dispose());
+        java.util.function.Consumer<Boolean> persist=sendAfterSave->{
+            ChatOption selected=(ChatOption)conversation.getSelectedItem();
+            if(selected==null||number.getText().trim().isEmpty()||total.getText().trim().isEmpty()){JOptionPane.showMessageDialog(dialog,"Completá conversación, número e importe.");return;}
+            try{if(Double.parseDouble(total.getText().trim().replace(',','.'))<0)throw new NumberFormatException();}catch(NumberFormatException error){JOptionPane.showMessageDialog(dialog,"El importe debe ser un número igual o mayor que cero.");return;}
+            if(!date.getText().trim().matches("\\d{4}-\\d{2}-\\d{2}")){JOptionPane.showMessageDialog(dialog,"Ingresá la fecha como AAAA-MM-DD.");return;}
+            Map<String,String> data=new LinkedHashMap<>();data.put("id_cliente",selected.clientId);data.put("id_chat",selected.id);data.put("id_pedido",selected.orderId);data.put("numero",number.getText().trim());data.put("fecha",date.getText().trim());data.put("total",total.getText().trim().replace(',','.'));data.put("tipo_comprobante",String.valueOf(type.getSelectedItem()));data.put("condicion_venta",String.valueOf(sale.getSelectedItem()));data.put("iva_alicuota",String.valueOf(vat.getSelectedItem()));data.put("estado",String.valueOf(status.getSelectedItem()));
+            boolean editing=!invoiceId[0].isEmpty();if(editing)data.put("id_factura",invoiceId[0]);
+            try{
+                modulos.common.dao.ApiResult result=editing?administracionDao.actualizarFactura(data):administracionDao.crearFactura(data);
+                if(!result.isSuccess()){JOptionPane.showMessageDialog(dialog,result.getBody(),"Facturación",JOptionPane.ERROR_MESSAGE);return;}
+                if(!editing){invoiceId[0]=modulos.common.JsonUtil.parseObject(result.getBody()).getOrDefault("id_factura","");}
+                if(sendAfterSave){
+                    if(invoiceId[0].isEmpty()){JOptionPane.showMessageDialog(dialog,"Se guardó la factura, pero no se obtuvo su identificador para generar el PDF.","Facturación",JOptionPane.ERROR_MESSAGE);return;}
+                    Map<String,String> sendData=new LinkedHashMap<>();sendData.put("id_factura",invoiceId[0]);
+                    modulos.common.dao.ApiResult sent=administracionDao.enviarFacturaAlChat(sendData);
+                    if(!sent.isSuccess()){JOptionPane.showMessageDialog(dialog,"La factura se guardó, pero no se pudo enviar el PDF:\n"+sent.getBody(),"Facturación",JOptionPane.ERROR_MESSAGE);return;}
+                }
+                saved[0]=true;dialog.dispose();
+            }
+            catch(IOException error){JOptionPane.showMessageDialog(dialog,error.getMessage(),"Facturación",JOptionPane.ERROR_MESSAGE);}
+        };
+        save.addActionListener(event->persist.accept(false));saveAndSend.addActionListener(event->persist.accept(true));
+        dialog.setContentPane(content);dialog.pack();dialog.setMinimumSize(new java.awt.Dimension(520,460));dialog.setLocationRelativeTo(parent);dialog.setVisible(true);return saved[0];
+    }
+
     private static void cargarMain(String employeeName) {
         JFrame ventana = new JFrame("MetalGest - Administracion");
         UiTheme.configureWindow(ventana);
@@ -171,10 +298,11 @@ public class AdminPanel {
         JPanel pages = new JPanel(layout);
         pages.add(crearDashboard(name -> {
             layout.show(pages, name);
-            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "Chat");
+            UiTheme.selectNavigationFrom(pages, "resumen".equals(name) ? "Inicio" : "pedidos".equals(name) ? "Pedidos" : "ordenes".equals(name) ? "Ordenes" : "facturacion".equals(name) ? "Facturacion" : "Chat");
         }), "resumen");
         pages.add(crearPanelPedidos(), "pedidos");
         pages.add(crearPanelOrdenes(), "ordenes");
+        pages.add(crearPanelFacturacion(), "facturacion");
         pages.add(crearPanelChat(null, id -> abrirPedidoDesdeChat(id, layout, pages)), "chat");
         JPanel shell = UiTheme.shell("Administracion", "Panel de Administracion", employeeName, entry -> {
             if ("Inicio".equals(entry) || "Administracion".equals(entry)) {
@@ -183,6 +311,8 @@ public class AdminPanel {
                 layout.show(pages, "pedidos");
             } else if ("Ordenes de trabajo".equals(entry)) {
                 layout.show(pages, "ordenes");
+            } else if ("Facturacion".equals(entry)) {
+                layout.show(pages, "facturacion");
             } else if ("Chat".equals(entry)) {
                 layout.show(pages, "chat");
             } else if (!"Administracion".equals(entry)) {
@@ -729,7 +859,7 @@ public class AdminPanel {
         JPanel panel = new JPanel(new BorderLayout(0, 0));
         panel.setBackground(UiTheme.WHITE);
         panel.setBorder(BorderFactory.createLineBorder(UiTheme.LINE));
-        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Cliente", "Email", "Último mensaje", "Estado", "Cliente ID"}, 0) {
+        DefaultTableModel model = new DefaultTableModel(new String[]{"ID", "Cliente", "Email", "Último mensaje", "Estado", "Cliente ID", "Asunto", "Pedido ID"}, 0) {
             @Override public boolean isCellEditable(int row, int column) { return false; }
         };
         JTable chats = new JTable(model);
@@ -745,6 +875,7 @@ public class AdminPanel {
         chats.getColumnModel().getColumn(5).setMinWidth(0);
         chats.getColumnModel().getColumn(5).setMaxWidth(0);
         chats.getColumnModel().getColumn(5).setPreferredWidth(0);
+        for (int i=6; i<=7; i++) { chats.getColumnModel().getColumn(i).setMinWidth(0); chats.getColumnModel().getColumn(i).setMaxWidth(0); chats.getColumnModel().getColumn(i).setPreferredWidth(0); }
         JPanel list = new JPanel(new BorderLayout(0, 8));
         list.setPreferredSize(new java.awt.Dimension(410, 0));
         list.setBackground(UiTheme.WHITE);
@@ -757,13 +888,16 @@ public class AdminPanel {
         JButton refresh = new JButton("Actualizar");
         JButton logout = new JButton("Salir del chat");
         JButton createOrder = new JButton("Crear pedido");
+        JButton createInvoice = new JButton("Crear factura");
         UiTheme.styleButton(refresh, false);
         UiTheme.styleButton(logout, false);
         UiTheme.styleButton(createOrder, true);
+        UiTheme.styleButton(createInvoice, true);
         listHeader.add(listTitle, BorderLayout.WEST);
         JPanel headerActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
         headerActions.setOpaque(false);
         headerActions.add(createOrder);
+        headerActions.add(createInvoice);
         headerActions.add(logout);
         listHeader.add(headerActions, BorderLayout.EAST);
         list.add(listHeader, BorderLayout.NORTH);
@@ -822,7 +956,7 @@ public class AdminPanel {
             try {
                 List<Map<String, String>> chatRows = administracionDao.listarChatsApp();
                 for (Map<String, String> row : chatRows) {
-                    model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado"), row.get("id_cliente")});
+                    model.addRow(new Object[]{row.get("id_chat"), row.get("nombre"), row.get("email"), row.get("ultimo_mensaje"), row.get("estado"), row.get("id_cliente"), row.get("asunto"), row.get("id_pedido")});
                 }
                 if (!selectedChat[0].isEmpty()) {
                     for (int i = 0; i < model.getRowCount(); i++) {
@@ -925,6 +1059,15 @@ public class AdminPanel {
                 return;
             }
             crearPedido.accept(customerId);
+        });
+        createInvoice.addActionListener(event -> {
+            int selected=chats.getSelectedRow();
+            if(selected<0){JOptionPane.showMessageDialog(panel,"Seleccioná una conversación para crear la factura.","Facturación",JOptionPane.WARNING_MESSAGE);return;}
+            int row=chats.convertRowIndexToModel(selected); Map<String,String> data=new LinkedHashMap<>();
+            data.put("id_chat",String.valueOf(model.getValueAt(row,0)));data.put("id_cliente",String.valueOf(model.getValueAt(row,5)));
+            data.put("nombre",String.valueOf(model.getValueAt(row,1)));data.put("asunto",String.valueOf(model.getValueAt(row,6)));
+            data.put("id_pedido",model.getValueAt(row,7)==null?"":String.valueOf(model.getValueAt(row,7)));
+            if(abrirFormularioFactura(panel,null,new ChatOption(data))) { loadChats.run(); loadMessages.run(); JOptionPane.showMessageDialog(panel,"Factura guardada y enviada al chat de la conversación.","Facturación",JOptionPane.INFORMATION_MESSAGE); }
         });
         refresh.addActionListener(event -> {
             String keep = selectedChat[0];

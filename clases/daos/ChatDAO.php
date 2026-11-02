@@ -2,9 +2,36 @@
 require_once __DIR__ . '/BaseDAO.php';
 
 class ChatDAO extends BaseDAO {
+    public function obtenerOCrearChatPedido(int $idCliente, int $idPedido): int {
+        if (!$this->hasColumn('chat_conversacion', 'id_pedido')) {
+            throw new RuntimeException('Falta aplicar sql/alter_facturas_chat.sql para asociar chats con pedidos.');
+        }
+        $stmt = $this->db()->prepare('SELECT id_chat FROM chat_conversacion WHERE id_pedido=:id_pedido LIMIT 1');
+        $stmt->execute([':id_pedido' => $idPedido]);
+        $idChat = (int)$stmt->fetchColumn();
+        if ($idChat > 0) return $idChat;
+        $stmt = $this->db()->prepare('INSERT INTO chat_conversacion(id_cliente,id_pedido,asunto,estado,fecha_creacion,fecha_actualizacion) VALUES(:id_cliente,:id_pedido,:asunto,"Abierto",NOW(),NOW())');
+        $stmt->execute([':id_cliente'=>$idCliente, ':id_pedido'=>$idPedido, ':asunto'=>'Factura del pedido #' . $idPedido]);
+        return (int)$this->db()->lastInsertId();
+    }
+
+    public function asociarPedido(int $idChat, int $idPedido): void {
+        if ($idPedido <= 0 || !$this->hasColumn('chat_conversacion', 'id_pedido')) return;
+        $stmt = $this->db()->prepare('SELECT id_cliente,id_pedido FROM chat_conversacion WHERE id_chat=:id_chat LIMIT 1');
+        $stmt->execute([':id_chat'=>$idChat]); $chat=$stmt->fetch();
+        if (!$chat) throw new RuntimeException('No existe la conversación indicada.');
+        if ((int)$chat['id_pedido'] === $idPedido) return;
+        if ((int)$chat['id_pedido'] > 0) throw new RuntimeException('La conversación ya está asociada a otro pedido.');
+        $other=$this->db()->prepare('SELECT id_chat FROM chat_conversacion WHERE id_pedido=:pedido LIMIT 1');
+        $other->execute([':pedido'=>$idPedido]);
+        if ((int)$other->fetchColumn() > 0) throw new RuntimeException('El pedido ya tiene otra conversación asociada.');
+        $update=$this->db()->prepare('UPDATE chat_conversacion SET id_pedido=:pedido WHERE id_chat=:chat');
+        $update->execute([':pedido'=>$idPedido,':chat'=>$idChat]);
+    }
+
     public function listar() {
         return $this->db()->query(
-            'SELECT c.id_chat, c.id_cliente, c.asunto, c.estado, c.fecha_creacion, c.fecha_actualizacion,
+            'SELECT c.id_chat, c.id_cliente, c.id_pedido, c.asunto, c.estado, c.fecha_creacion, c.fecha_actualizacion,
                     cl.razon_social AS nombre, cl.email,
                     COALESCE(ultimo.mensaje, "") AS ultimo_mensaje,
                     COALESCE(ultimo.autor_tipo, "") AS ultimo_autor

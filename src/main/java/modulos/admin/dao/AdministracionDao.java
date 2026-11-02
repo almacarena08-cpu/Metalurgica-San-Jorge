@@ -28,6 +28,15 @@ public class AdministracionDao extends BaseApiDao {
         return getRows("clientes_list");
     }
 
+    public List<Map<String, String>> listarFacturas() throws IOException {
+        return getRows("facturas_list");
+    }
+
+    public ApiResult crearFactura(Map<String, String> datos) throws IOException { return post("facturas_create", datos); }
+    public ApiResult actualizarFactura(Map<String, String> datos) throws IOException { return post("facturas_update", datos); }
+    public ApiResult eliminarFactura(Map<String, String> datos) throws IOException { return post("facturas_delete", datos); }
+    public ApiResult enviarFacturaAlChat(Map<String, String> datos) throws IOException { return post("facturas_enviar_chat", datos); }
+
     public List<Map<String, String>> listarChats() throws IOException {
         return getRows("chat_list");
     }

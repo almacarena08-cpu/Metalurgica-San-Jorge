@@ -11,6 +11,8 @@ require_once __DIR__ . '/../daos/ComprasDAO.php';
 require_once __DIR__ . '/../daos/CalidadDAO.php';
 require_once __DIR__ . '/../daos/ClienteDAO.php';
 require_once __DIR__ . '/../daos/ChatDAO.php';
+require_once __DIR__ . '/../daos/FacturaDAO.php';
+require_once __DIR__ . '/FacturaPDF.php';
 if (session_status() !== PHP_SESSION_ACTIVE) session_start();
 
 function api_db() {
@@ -109,7 +111,7 @@ try {
 }
 $actionScopes = [
     'empleados_list'=>'admin','empleados_create'=>'admin','empleados_update'=>'admin',
-    'pedidos_list'=>'admin','pedidos_create'=>'admin','ordenes_list'=>'read_orders','ordenes_create'=>'admin','orden_update_status'=>'Produccion',
+    'pedidos_list'=>'admin','pedidos_create'=>'admin','facturas_list'=>'admin','facturas_create'=>'admin','facturas_update'=>'admin','facturas_delete'=>'admin','facturas_enviar_chat'=>'admin','ordenes_list'=>'read_orders','ordenes_create'=>'admin','orden_update_status'=>'Produccion',
     'produccion_list'=>'Produccion','produccion_register'=>'Produccion','maquinas_list'=>'maintenance','mantenimiento_report'=>'Produccion',
     'mantenimientos_list'=>'Mantenimiento','mantenimiento_preventivo_create'=>'Mantenimiento','mantenimiento_update'=>'Mantenimiento',
     'materiales_list'=>'materials','materiales_create'=>'Compras','materiales_update'=>'materials','materiales_delete'=>'Compras',
@@ -150,6 +152,7 @@ $comprasDAO = new ComprasDAO();
 $calidadDAO = new CalidadDAO();
 $clienteDAO = new ClienteDAO();
 $chatDAO = new ChatDAO();
+$facturaDAO = new FacturaDAO();
 
 if ($action === 'health') {
     api_json(['success' => true, 'app' => 'MetalGest']);
@@ -705,25 +708,117 @@ if ($action === 'chat_send') {
 }
 
 if ($action === 'chat_reply') {
+    $uploads = [];
     try {
         $idChat = api_int('id_chat');
         if ($idChat <= 0) {
             api_json(['success' => false, 'message' => 'El chat debe ser valido'], 422);
         }
-        $chatDAO->enviarMensaje([
-            'id_chat' => $idChat,
-            'id_usuario' => api_int('id_usuario', 1),
-            'autor_tipo' => 'Administracion',
-            'mensaje' => api_required('mensaje')
-        ]);
+        $mensaje = api_input('mensaje', '');
+        $uploads = api_chat_store_uploads();
+        if (trim($mensaje) === '' && !$uploads) {
+            api_json(['success' => false, 'message' => 'Escribí una respuesta o adjuntá al menos un archivo.'], 422);
+        }
+        $chatDAO->enviarRespuesta($idChat, api_int('id_usuario', 1), $mensaje, $uploads);
         api_json(['success' => true]);
     } catch (Throwable $e) {
+        api_chat_remove_uploads($uploads);
         api_json(['success' => false, 'message' => $e->getMessage()], 500);
     }
 }
 
 if ($action === 'pedidos_list') {
     api_json($pedidoDAO->listar());
+}
+
+if ($action === 'facturas_list') {
+    api_json($facturaDAO->listar());
+}
+
+if (in_array($action, ['facturas_create', 'facturas_update'], true)) {
+    try {
+        $idCliente = api_int('id_cliente');
+        $numero = api_required('numero');
+        $fecha = api_required('fecha');
+        $total = api_input('total', '');
+        $estado = api_input('estado', '');
+        $tipo = api_input('tipo_comprobante', '');
+        $condicionVenta = api_input('condicion_venta', '');
+        $ivaAlicuota = api_input('iva_alicuota', '');
+        $fechaPartes = explode('-', $fecha);
+        $fechaValida = count($fechaPartes) === 3 && checkdate((int)$fechaPartes[1], (int)$fechaPartes[2], (int)$fechaPartes[0]);
+        $clienteExiste = api_db()->prepare('SELECT 1 FROM cliente WHERE id_cliente=:id LIMIT 1');
+        $clienteExiste->execute([':id' => $idCliente]);
+        if ($idCliente <= 0 || !$fechaValida
+            || !is_numeric($total) || (float)$total < 0
+            || (float)$total > 9999999999.99 || strlen($numero) > 30
+            || !in_array($tipo, ['A','B','C'], true)
+            || !in_array($condicionVenta, ['Contado','Cuenta corriente','Transferencia','Otro'], true)
+            || !in_array($ivaAlicuota, ['0','10.5','21','27'], true)
+            || !in_array($estado, ['Pendiente', 'Pagada', 'Vencida', 'Anulada'], true)) {
+            api_json(['success'=>false,'message'=>'Revisá cliente, fecha, importe y estado de la factura.'],422);
+        }
+        if (!$clienteExiste->fetchColumn()) api_json(['success'=>false,'message'=>'El cliente seleccionado no existe.'],422);
+        $idPedido = api_input('id_pedido','');
+        $idChat = api_int('id_chat');
+        $chatValido = api_db()->prepare('SELECT id_cliente,id_pedido FROM chat_conversacion WHERE id_chat=:id_chat LIMIT 1');
+        $chatValido->execute([':id_chat'=>$idChat]);
+        $chatRow = $chatValido->fetch();
+        if (!$chatRow || (int)$chatRow['id_cliente'] !== $idCliente
+            || ((int)($chatRow['id_pedido'] ?? 0) > 0 && (string)$chatRow['id_pedido'] !== (string)$idPedido)) {
+            api_json(['success'=>false,'message'=>'La conversación debe pertenecer al cliente y al pedido seleccionados.'],422);
+        }
+        if ($idPedido !== '') {
+            $pedidoValido = api_db()->prepare('SELECT 1 FROM pedido WHERE id_pedido=:id_pedido AND id_cliente=:id_cliente LIMIT 1');
+            $pedidoValido->execute([':id_pedido'=>(int)$idPedido, ':id_cliente'=>$idCliente]);
+            if (!$pedidoValido->fetchColumn()) api_json(['success'=>false,'message'=>'El pedido no pertenece al cliente seleccionado.'],422);
+        }
+        $datos = ['id_cliente'=>$idCliente, 'id_pedido'=>$idPedido, 'fecha'=>$fecha,
+            'numero'=>$numero, 'total'=>number_format((float)$total, 2, '.', ''), 'estado'=>$estado,
+            'tipo_comprobante'=>$tipo, 'condicion_venta'=>$condicionVenta, 'iva_alicuota'=>$ivaAlicuota, 'id_chat'=>$idChat];
+        if ($action === 'facturas_create') {
+            $idFactura = $facturaDAO->crear($datos);
+            api_audit_creation('factura', $idFactura);
+            api_json(['success'=>true,'id_factura'=>$idFactura]);
+        }
+        $datos['id_factura'] = api_int('id_factura');
+        if ($datos['id_factura'] <= 0) api_json(['success'=>false,'message'=>'Factura inválida.'],422);
+        $facturaDAO->actualizar($datos);
+        api_json(['success'=>true]);
+    } catch (Throwable $e) {
+        api_json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
+}
+
+if ($action === 'facturas_delete') {
+    $idFactura = api_int('id_factura');
+    if ($idFactura <= 0) api_json(['success'=>false,'message'=>'Factura inválida.'],422);
+    try { $facturaDAO->eliminar($idFactura); api_json(['success'=>true]); }
+    catch (Throwable $e) { api_json(['success'=>false,'message'=>$e->getMessage()],500); }
+}
+
+if ($action === 'facturas_enviar_chat') {
+    $idFactura = api_int('id_factura');
+    $invoice = $idFactura > 0 ? $facturaDAO->obtenerCompleta($idFactura) : false;
+    if (!$invoice || ((int)$invoice['id_pedido'] <= 0 && (int)($invoice['id_chat'] ?? 0) <= 0)) api_json(['success'=>false,'message'=>'La factura debe estar vinculada a una conversación.'],422);
+    $uploads = [];
+    try {
+        $idChat = (int)($invoice['id_chat'] ?? 0);
+        if ($idChat <= 0) $idChat = $chatDAO->obtenerOCrearChatPedido((int)$invoice['id_cliente'], (int)$invoice['id_pedido']);
+        if ((int)$invoice['id_pedido'] > 0) $chatDAO->asociarPedido($idChat, (int)$invoice['id_pedido']);
+        $directory = api_chat_upload_directory();
+        if (!is_dir($directory) && !mkdir($directory, 0750, true) && !is_dir($directory)) throw new RuntimeException('No se pudo preparar el almacenamiento de archivos.');
+        $key = bin2hex(random_bytes(24)) . '.pdf';
+        $pdf = (new FacturaPDF())->render($invoice);
+        if (file_put_contents($directory . DIRECTORY_SEPARATOR . $key, $pdf, LOCK_EX) === false) throw new RuntimeException('No se pudo generar el PDF.');
+        $uploads[] = ['nombre_original'=>'Factura-' . preg_replace('/[^A-Za-z0-9_-]/', '-', (string)$invoice['numero']) . '.pdf', 'clave_archivo'=>$key, 'tipo_mime'=>'application/pdf', 'tamano'=>strlen($pdf)];
+        $referencia = (int)$invoice['id_pedido'] > 0 ? 'del pedido #' . (int)$invoice['id_pedido'] : 'de la conversación "' . ($invoice['asunto_chat'] ?: 'Consulta') . '"';
+        $chatDAO->enviarRespuesta($idChat, (int)($_SESSION['metalgest_user_id'] ?? 0), 'Adjuntamos el borrador de factura ' . $referencia . '. Aún no tiene autorización fiscal CAE de ARCA.', $uploads);
+        api_json(['success'=>true,'id_chat'=>$idChat,'message'=>'PDF generado y enviado al chat del pedido.']);
+    } catch (Throwable $e) {
+        api_chat_remove_uploads($uploads);
+        api_json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
 }
 
 if ($action === 'pedidos_create') {

@@ -45,7 +45,7 @@ if errorlevel 1 goto :build_failed
 if errorlevel 1 goto :build_failed
 
 rmdir /s /q "%BUILD_DIR%"
-"%JDK_BIN%\java.exe" -jar "build\MetalGestApp-latest.jar"
+"%JDK_BIN%\java.exe" -Dmetalgest.api.url=http://localhost/Metalurgica-San-Jorge/clases/php/api.php -jar "build\MetalGestApp-latest.jar"
 exit /b %errorlevel%
 
 :build_failed

@@ -60,6 +60,7 @@ INSERT INTO `chat_adjunto` (`id_adjunto`, `id_mensaje`, `nombre_original`, `clav
 CREATE TABLE `chat_conversacion` (
   `id_chat` int(11) NOT NULL,
   `id_cliente` int(11) NOT NULL,
+  `id_pedido` int(11) DEFAULT NULL,
   `asunto` varchar(150) NOT NULL DEFAULT 'Consulta a administracion',
   `estado` varchar(30) NOT NULL DEFAULT 'Abierto',
   `fecha_creacion` datetime NOT NULL,
@@ -437,10 +438,14 @@ CREATE TABLE `factura` (
   `id_factura` int(11) NOT NULL,
   `id_cliente` int(11) NOT NULL,
   `id_pedido` int(11) DEFAULT NULL,
+  `id_chat` int(11) DEFAULT NULL,
   `fecha` date DEFAULT NULL,
   `numero` varchar(30) DEFAULT NULL,
   `total` decimal(12,2) DEFAULT NULL,
-  `estado` varchar(30) DEFAULT NULL
+  `estado` varchar(30) DEFAULT NULL,
+  `tipo_comprobante` varchar(1) NOT NULL DEFAULT 'B',
+  `condicion_venta` varchar(50) NOT NULL DEFAULT 'Cuenta corriente',
+  `iva_alicuota` decimal(5,2) NOT NULL DEFAULT 21.00
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -1006,6 +1011,7 @@ ALTER TABLE `chat_adjunto`
 --
 ALTER TABLE `chat_conversacion`
   ADD PRIMARY KEY (`id_chat`),
+  ADD UNIQUE KEY `uq_chat_pedido` (`id_pedido`),
   ADD KEY `id_cliente` (`id_cliente`);
 
 --
@@ -1065,7 +1071,8 @@ ALTER TABLE `entrega`
 ALTER TABLE `factura`
   ADD PRIMARY KEY (`id_factura`),
   ADD KEY `id_cliente` (`id_cliente`),
-  ADD KEY `id_pedido` (`id_pedido`);
+  ADD KEY `id_pedido` (`id_pedido`),
+  ADD KEY `id_chat` (`id_chat`);
 
 --
 -- Indices de la tabla `mantenimiento`
@@ -1311,7 +1318,8 @@ ALTER TABLE `chat_adjunto`
 -- Filtros para la tabla `chat_conversacion`
 --
 ALTER TABLE `chat_conversacion`
-  ADD CONSTRAINT `chat_conversacion_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`);
+  ADD CONSTRAINT `chat_conversacion_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`),
+  ADD CONSTRAINT `chat_conversacion_ibfk_pedido` FOREIGN KEY (`id_pedido`) REFERENCES `pedido` (`id_pedido`);
 
 --
 -- Filtros para la tabla `chat_mensaje`
@@ -1357,7 +1365,8 @@ ALTER TABLE `entrega`
 --
 ALTER TABLE `factura`
   ADD CONSTRAINT `factura_ibfk_1` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`),
-  ADD CONSTRAINT `factura_ibfk_2` FOREIGN KEY (`id_pedido`) REFERENCES `pedido` (`id_pedido`);
+  ADD CONSTRAINT `factura_ibfk_2` FOREIGN KEY (`id_pedido`) REFERENCES `pedido` (`id_pedido`),
+  ADD CONSTRAINT `factura_ibfk_chat` FOREIGN KEY (`id_chat`) REFERENCES `chat_conversacion` (`id_chat`);
 
 --
 -- Filtros para la tabla `mantenimiento`

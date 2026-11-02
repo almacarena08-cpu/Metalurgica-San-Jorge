@@ -255,9 +255,9 @@ public final class UiTheme {
     private static String[] menuEntries(String module, boolean globalAdmin) {
         if ("Administracion".equals(module)) {
             if (!globalAdmin) {
-                return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat"};
+                return new String[]{"Administracion", "Pedidos", "Ordenes", "Facturacion", "Chat"};
             }
-            return new String[]{"Administracion", "Pedidos", "Ordenes", "Chat", "Empleados", "Produccion", "Mantenimiento", "Deposito", "Compras", "Calidad"};
+            return new String[]{"Administracion", "Pedidos", "Ordenes", "Facturacion", "Chat", "Empleados", "Produccion", "Mantenimiento", "Deposito", "Compras", "Calidad"};
         }
         if ("Produccion".equals(module)) {
             return new String[]{"Produccion", "Ordenes recibidas", "Historial de avance", "Aviso a mantenimiento"};

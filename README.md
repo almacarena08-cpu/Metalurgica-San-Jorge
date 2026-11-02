@@ -72,11 +72,11 @@ Ejecutar la aplicacion con un unico login:
 & C:\jdk\bin\java.exe -Dmetalgest.api.url=http://localhost:8080/clases/php/api.php -cp build\classes modulos.MetalGestApp
 ```
 
-Para compilar la version actual y ejecutarla con doble clic en Windows, iniciar `MetalGestApp.bat` desde la carpeta del proyecto. El lanzador genera `build\MetalGestApp-latest.jar` en cada ejecucion y requiere JDK 17 o superior.
+Para compilar la version actual y ejecutarla con doble clic en Windows, iniciar `MetalGestApp.bat` desde la carpeta del proyecto con Apache y MySQL de XAMPP iniciados. El lanzador genera `build\MetalGestApp-latest.jar` en cada ejecucion y requiere JDK 17 o superior; al iniciarlo configura la API local de XAMPP. Si se ejecuta el JAR directamente, se usa la API de produccion predeterminada, salvo que se indique `-Dmetalgest.api.url=...`.
 
 El sistema abre automaticamente el modulo segun el rol del empleado autenticado. La API queda disponible en `http://localhost/Metalurgica-San-Jorge/clases/php/api.php?action=health` con XAMPP, o en `http://localhost:8080/clases/php/api.php?action=health` con el servidor PHP manual.
 
-En producción, la app usa su propia API en `https://metalurgicasj.cavernservices.org/app/Metalurgica-San-Jorge/clases/php/api.php`; el chat también usa esa API y no depende del sitio web (`/index`). Se puede cambiar la URL con `-Dmetalgest.api.url=...`. Configurá su propia base mediante las variables de entorno `METALGEST_DB_HOST`, `METALGEST_DB_PORT`, `METALGEST_DB_NAME`, `METALGEST_DB_USER` y `METALGEST_DB_PASSWORD`, o con un archivo privado `clases/php/database.local.php` dentro del despliegue de la app. Si la base de la app es nueva, inicializala con `sql/metalgest.sql` y `sql/alter_modulos_faltantes.sql`; para el chat, aplicá también `sql/alter_chat_mensajes_cliente.sql`.
+En producción, la app usa su propia API en `https://metalurgicasj.cavernservices.org/app/Metalurgica-San-Jorge/clases/php/api.php`; el chat también usa esa API y no depende del sitio web (`/index`). Se puede cambiar la URL con `-Dmetalgest.api.url=...`. Configurá su propia base mediante las variables de entorno `METALGEST_DB_HOST`, `METALGEST_DB_PORT`, `METALGEST_DB_NAME`, `METALGEST_DB_USER` y `METALGEST_DB_PASSWORD`, o con un archivo privado `clases/php/database.local.php` dentro del despliegue de la app. Si la base de la app es nueva, inicializala con `sql/metalgest.sql` y `sql/alter_modulos_faltantes.sql`; para el chat, aplicá también `sql/alter_chat_mensajes_cliente.sql`. Para bases existentes con facturación, aplicá además una vez `sql/alter_facturas_chat.sql`.
 
 ## Acceso por rol
 
@@ -103,6 +103,8 @@ Luego del acceso, la cabecera muestra `Hola, Nombre!`.
 ## Chat de Administración
 
 El chat usa la misma API y la misma base de datos propias de la app. Para entrar se usa una cuenta de Administración o Gerencia. Si la base se creó desde el SQL de esta aplicación, aplicar una vez `sql/alter_chat_mensajes_cliente.sql` para permitir mensajes de clientes sin usuario interno asociado.
+
+Facturación permite elegir tipo A/B/C, condición de venta y alícuota de IVA, generar un PDF borrador y enviarlo al chat del pedido. El total ingresado se considera IVA incluido. Para bases existentes, aplicar una vez `sql/alter_facturas_chat.sql`. El PDF queda marcado como documento interno no válido como factura fiscal: para emitir comprobantes oficiales se requiere autorización de ARCA (CAE), que esta app todavía no solicita. El emisor incluye valores predeterminados de Metalúrgica San Jorge S.A. (razón social, CUIT, domicilio, condición de IVA, IIBB e inicio de actividades). El punto de venta se muestra como pendiente de asignación, porque debe coincidir con el que la empresa tenga habilitado en ARCA. Para otras instalaciones o para sobrescribir un dato, definir `METALGEST_FACTURA_RAZON_SOCIAL`, `METALGEST_FACTURA_CUIT`, `METALGEST_FACTURA_DOMICILIO`, `METALGEST_FACTURA_CONDICION_IVA`, `METALGEST_FACTURA_PUNTO_VENTA`, `METALGEST_FACTURA_IIBB` y `METALGEST_FACTURA_INICIO_ACTIVIDADES` en el entorno de PHP.
 
 La app no lee la API ni la configuración de base de datos de la web (`/index`). Sin variables de entorno ni archivo local, PHP usa los valores predeterminados de XAMPP (`127.0.0.1`, puerto `3306`, base `metalurgica_san_jorge`, usuario `root` y contraseña vacía). En un servidor, creá el archivo privado `clases/php/database.local.php` con este formato y reemplazá los valores localmente:
 
